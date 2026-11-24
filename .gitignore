@@ -1,0 +1,5 @@
+cache/
+results/*.csv
+results/*.jsonl
+.venv/
+__pycache__/

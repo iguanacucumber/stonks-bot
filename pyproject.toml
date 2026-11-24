@@ -1,0 +1,14 @@
+[project]
+name = "stonks-bot"
+version = "0.1.0"
+description = "Momentum portfolio with a constrained LLM news overlay. Paper only."
+requires-python = ">=3.12"
+dependencies = [
+  "pandas>=2.2",
+  "numpy>=2.0",
+  "matplotlib>=3.9",
+  "pyarrow>=17",
+  "requests>=2.32",
+  "beautifulsoup4>=4.12",
+  "tabulate>=0.10.0",
+]
