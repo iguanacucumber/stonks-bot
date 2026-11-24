@@ -157,12 +157,14 @@ def filing_text(cik: str, accession: str, primary_doc: str) -> str:
     # prefer exhibits (press release) and the primary document
     candidates.sort(key=lambda x: -x[0])
     text = ""
-    for _, name in candidates[:2]:
+    for _, _, name in candidates[:2]:
         try:
             r = requests.get(f"{base}/{name}", headers=UA, timeout=40)
             if r.status_code != 200:
                 continue
             t = _strip_html(r.text)
+            if t[:200].upper().startswith("XML") or "IDEA: XBRL DOCUMENT" in t[:300]:
+                continue
             if len(t) > len(text):
                 text = t
         except Exception:

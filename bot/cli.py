@@ -275,20 +275,22 @@ def cmd_paper(args):
         print(f"\n[{pd.Timestamp.now():%H:%M:%S}] signal {d.date()}  "
               f"SPY {prices.get('SPY', float('nan')):.2f}  (paper, no orders)")
         stops = {}
-        for t, w in sorted(targets.items(), key=lambda x: -x[1]):
+        for t in targets:
+            p = prices.get(t)
+            peak = mkt.px[t].loc[:d].tail(60).max() if t in mkt.px else float("nan")
+            stops[t] = bool(p and pd.notna(peak) and p < peak * (1 - cfg.stop))
+        shown = {t: (0.0 if stops[t] else w) for t, w in targets.items()}
+        for t, w in sorted(shown.items(), key=lambda x: -x[1]):
             p = prices.get(t)
             chg = (p / last_close[t] - 1) if p and t in last_close and pd.notna(last_close[t]) else float("nan")
-            peak = mkt.px[t].loc[:d].tail(60).max() if t in mkt.px else float("nan")
-            hit = bool(p and pd.notna(peak) and p < peak * (1 - cfg.stop))
-            stops[t] = hit
-            flag = " STOP" if hit else ""
+            flag = " STOP -> exit" if stops[t] else ""
             if p:
                 print(f"  {t:6s} target {w:6.2%}  last {p:9.2f}  vs close {chg:+6.2%}{flag}")
             else:
                 print(f"  {t:6s} target {w:6.2%}  no quote")
-        print(f"  CASH   {1-sum(targets.values()):6.2%}")
+        print(f"  CASH   {1-sum(shown.values()):6.2%}")
         row = {"time": str(pd.Timestamp.now()), "signal_date": str(d.date()),
-               "targets": json.dumps({k: round(v, 6) for k, v in targets.items()}),
+               "targets": json.dumps({k: round(v, 6) for k, v in shown.items()}),
                "prices": json.dumps({k: round(v, 4) for k, v in prices.items()}),
                "stops": json.dumps(stops)}
         pd.DataFrame([row]).to_csv(path, mode="a", header=not path.exists(), index=False)
