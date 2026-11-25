@@ -55,6 +55,10 @@ this is one industry's 11-year run plus the sleeve, not stock alpha. Rounds 4-10
 removing stop/regime protection and are tuned on this path; only rounds 1-3 also improved the
 held-back 2023-2026 window.
 
+**Cross-market check:** the same bot on 54 CAC 40 names (2015-2026) returns **$15,823**
+vs **$26,644** for the CAC 40 total-return ETF, and below equal weight ($29,323). The US
+result is a US asset, not a portable rule: `results/cac40.md`, `scripts/cac40.py`.
+
 ## Run
 
 ```bash
