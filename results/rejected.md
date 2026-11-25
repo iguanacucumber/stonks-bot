@@ -182,6 +182,19 @@ Cut exposure when VIX is at/above 20/25/30/35, alone and on top of the 200-day t
 VIX-only is far behind the trend rule; adding it removes $360k of terminal wealth with
 no drawdown improvement. Rejected.
 
-## 15. SOXX/SMH rotation
+## 15. 42-day rebalance (looked spectacular)
+
+| rebalance | US final | US Sharpe | US 2020-22 CAGR |
+|---|---:|---:|---:|
+| 21d (shipped) | $1,402,314 | 0.977 | 47.0% |
+| 35d | $1,092,773 | 0.953 | — |
+| **42d** | **$3,616,915** | **1.127** | **37.0%** |
+| 49d | $229,156 | 0.744 | — |
+| 56d | $1,133,278 | 0.976 | — |
+
+A lone spike: neighbours collapse, and the advertised 42-day book is *worse* in 2020-2022.
+Classic path-specific overfit. Rejected; 21 days stays.
+
+## 16. SOXX/SMH rotation
 
 Top-1 by 126d/10d between SOXX and SMH: $545k at 2x, below SMH alone ($889k). Rejected.
