@@ -82,6 +82,20 @@ legitimate risk preference, not an improvement. Available as `--dd-stop` (off by
 Weekly and daily clocks: 60-300x NAV turnover, worse 1-day and 1-week means, and at 2x the
 S&P book goes from $889k to $22k (weekly) / $1.5k (daily). See `results/short.md`.
 
-## 7. SOXX/SMH rotation
+## 7. Next-open execution
+
+Signal at the close, fill at the next open instead of the next close (removes one day
+of lag, pays the overnight gap).
+
+| market | close fill | open fill | close DD | open DD |
+|---|---:|---:|---:|---:|
+| S&P 500 | **$1,402,314** | $995,571 | -59.9% | -65.4% |
+| NASDAQ tech | **$1,226,554** | $1,111,132 | -63.1% | -63.3% |
+
+Verdict: the overnight gap is a cost, not a free lunch. Momentum names tend to gap in
+the signal's direction, so buying at the open pays up. Close fill stays the default;
+`exec_price="open"` remains available for a different execution assumption.
+
+## 8. SOXX/SMH rotation
 
 Top-1 by 126d/10d between SOXX and SMH: $545k at 2x, below SMH alone ($889k). Rejected.

@@ -116,6 +116,33 @@ def main():
     assert r2.equity.iloc[-1] > 0, "2x wiped the book on a positive-drift panel"
     assert r2f.equity.iloc[-1] < r2.equity.iloc[-1], "financing is free"
 
+    # next-open execution fills at the next day's open, not its close
+    n2 = 300
+    dts2 = pd.bdate_range("2020-01-01", periods=n2)
+    rows2 = []
+    for k in range(2):
+        t = f"O{k}"
+        for i, d in enumerate(dts2):
+            px = 100.0 + (i % 2) * 0.5
+            rows2.append((d, t, px, px, 5_000_000))
+    for d in dts2:
+        rows2.append((d, "SPY", 100.0, 100.0, 9_000_000))
+    op = pd.DataFrame(
+        rows2, columns=["date", "ticker", "adjclose", "open", "volume"]
+    )
+    op.loc[(op.ticker == "O0") & (op.date == dts2[26]), "open"] = 150.0
+    omem = pd.DataFrame({"date": [dts2[0]] * 2, "ticker": ["O0", "O1"]})
+    for mode, want in (("open", 150.0), ("close", 100.0)):
+        ocfg = strategy.Config(
+            start=str(dts2[25].date()), top_n=1, rebalance_days=50, lookback=20,
+            skip=2, core=None, core_weight=0.0, min_dollar_vol=0.0,
+            max_weight=1.0, sector_cap=1.0, stop=1.0, cost_bps=0.0,
+            exec_price=mode,
+        )
+        ores = backtest.run(strategy.Market(op, omem, ocfg))
+        first = ores.trades[ores.trades.side == "BUY"].iloc[0]
+        assert abs(first.price - want) < 1e-9, f"{mode} fill {first.price} != {want}"
+
     # P&L windows: 1/5/21/252 trading days, chained with the live day
     eq = pd.Series(1.01 ** np.arange(300))
     for live in (1.0, 1.02):

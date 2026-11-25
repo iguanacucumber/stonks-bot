@@ -45,14 +45,14 @@ promise.
 
 | $10,000 from | Bot | SPY | Bot max DD | SPY max DD |
 |---|---:|---:|---:|---:|
-| 2015-01-02 → 2026-11-24 | **$1,368,999** | $42,186 | -59.9% | **-33.7%** |
-| 2026-01-02 → 2026-11-24 | **$13,303** | $10,534 | -61.5% | **-11.5%** |
+| 2015-01-02 → 2026-11-24 | **$1,402,314** | $42,186 | -59.9% | **-33.7%** |
+| 2026-01-02 → 2026-11-24 | **$13,082** | $10,534 | -64.1% | **-11.5%** |
 
-Full-window CAGR 51.4% vs 12.9%; Sharpe 0.97 vs 0.79. Walk-forward CAGR: 34.8% / 47.0% / 90.6%
+Full-window CAGR 51.7% vs 12.9%; Sharpe 0.98 vs 0.79. Walk-forward CAGR: 34.4% / 47.0% / 90.6%
 vs SPY 11.6% / 7.3% / 19.1%; beats SPY in 9 of 12 calendar years (loses 2015, 2018, 2022).
-The ladder: 1x $222,636 (-36.3%, Sharpe 0.99), 1.5x $507,334 (-49.8%), 2x $889,382 (-60.7%),
-plain 2.5x $1,222,440 (-69.4%), **2.5x + daily trend $1,368,999 (-59.9%, Sharpe 0.97)**.
-The trend cut is what makes 2.5x carry the same drawdown as plain 2x, with 54% more money.
+The ladder: 1x $224,860 (-36.3%, Sharpe 0.99), 1.5x $514,342 (-49.8%), 2x $904,486 (-60.7%),
+plain 2.5x $1,246,358 (-69.4%), **2.5x + daily trend $1,402,314 (-59.9%, Sharpe 0.98)**.
+The trend cut is what makes 2.5x carry the same drawdown as plain 2x, with 55% more money.
 `results/leverage.md`, `scripts/leverage.py`.
 
 The catch: SMH is the semiconductor index (more NVDA-concentrated than SOXX). The rotation is

@@ -176,6 +176,10 @@ def local_core(symbol: str, currency: str, calendar=None) -> pd.Series:
 
 def _rows(df: pd.DataFrame, ticker: str) -> pd.DataFrame:
     out = df[["date", "adjclose", "close", "volume"]].copy()
+    if "open" in df.columns:
+        out["open"] = df["open"] * df["adjclose"] / df["close"]
+    else:
+        out["open"] = df["adjclose"]
     out["ticker"] = ticker
     return out
 
@@ -222,6 +226,7 @@ def build(name: str) -> tuple[pd.DataFrame, pd.DataFrame]:
                     "date": core.index,
                     "adjclose": core.to_numpy(),
                     "close": core.to_numpy(),
+                    "open": core.to_numpy(),
                     "volume": 1e9,  # cores are never screened for liquidity
                     "ticker": sym,
                 }

@@ -96,6 +96,8 @@ def run(
     cols = mkt._px_col
     rows = mkt._px_row
     arr = mkt._px_arr
+    arr_open = mkt._px_open
+    exec_open = cfg.exec_price == "open"
     cost_rate = cfg.cost_bps / 1e4
     borrow_rate = cfg.financing_bps / 1e4 / 252.0
     stop_keep = 1.0 - cfg.stop
@@ -127,6 +129,8 @@ def run(
         row = arr[ri] if ri is not None else np.full(nc, np.nan)
         # prices usable for trading: missing/non-positive -> 0.0 (skipped)
         pr = np.where(np.isnan(row) | (row <= 0), 0.0, row)
+        orow = arr_open[ri] if ri is not None else np.full(nc, np.nan)
+        po = np.where(np.isnan(orow) | (orow <= 0), 0.0, orow)
         seen = pr > 0
         last_px[seen] = pr[seen]
 
@@ -147,11 +151,12 @@ def run(
                         keep.add(ci)
             for ci in pending_exit:
                 keep.discard(ci)
-            equity_now = cash + float(shares @ pr)
+            mark = np.where(exec_open & (po > 0), po, pr)
+            equity_now = cash + float(shares @ mark)
             # sell exits first
             for ci in list(held):
                 if ci in pending_exit or (has_target and ci not in keep):
-                    p = pr[ci]
+                    p = mark[ci]
                     if p == 0.0:
                         continue
                     notional = shares[ci] * p
@@ -172,11 +177,11 @@ def run(
                     peak[ci] = np.nan
                     held.remove(ci)
             if tgt:
-                equity_now = cash + float(shares @ pr)
+                equity_now = cash + float(shares @ mark)
                 if pending_exit:
                     tgt = [(ci, w) for ci, w in tgt if ci not in pending_exit]
                 for ci, w in tgt:
-                    p = pr[ci]
+                    p = mark[ci]
                     if p == 0.0:
                         continue
                     cur = shares[ci] * p
@@ -192,7 +197,7 @@ def run(
                                 sh = delta / p
                                 cost = delta * cost_rate
                         else:
-                            gross_now = float((shares * pr).sum())
+                            gross_now = float((shares * mark).sum())
                             headroom = cfg.leverage * equity_now - gross_now
                             affordable = max(0.0, headroom) / (1.0 + cost_rate)
                             if delta > affordable:

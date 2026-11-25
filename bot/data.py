@@ -124,16 +124,24 @@ def fetch_all(
 def build_panel(membership: pd.DataFrame, force: bool = False) -> pd.DataFrame:
     """Long panel: date, ticker (canonical Yahoo symbol), adjclose, close, volume."""
     path = CACHE / "panel.parquet"
+    needed = {"SPY", "QQQ", "SOXX", "SMH"}
     if path.exists() and not force:
-        return pd.read_parquet(path)
+        cached = pd.read_parquet(path)
+        if "open" in cached.columns and needed <= set(cached.ticker.unique()):
+            return cached
     tickers = sorted(membership["ticker"].unique())
     canonical = {t: universe.canonical(t) for t in tickers}
-    symbols = sorted(set(canonical.values()) | {"SPY", "QQQ"})
+    symbols = sorted(set(canonical.values()) | needed)
     print(f"fetching {len(symbols)} symbols from Yahoo...", flush=True)
     frames = fetch_all(symbols, force=force)
     parts = []
     for sym, df in frames.items():
         d = df[["date", "adjclose", "close", "volume"]].copy()
+        # adjust the open by the same split/dividend factor as adjclose
+        if "open" in df.columns:
+            d["open"] = df["open"] * df["adjclose"] / df["close"]
+        else:
+            d["open"] = df["adjclose"]
         d["ticker"] = sym
         parts.append(d)
     panel = pd.concat(parts, ignore_index=True)

@@ -60,6 +60,7 @@ class Config:
     reentry_days: int = 20
     cost_bps: float = 10.0
     min_dollar_vol: float = 5e6
+    exec_price: str = "close"  # "close" or "open" (signal at close, fill next open)
     llm_active_share: float = 0.20
     # Margin: leverage 1.0 = no borrowing. Above 1.0 target weights are scaled and
     # negative cash pays `financing_bps` a year, accrued daily.
@@ -134,6 +135,14 @@ class Market:
         self._elig: dict[pd.Timestamp, pd.DataFrame] = {}
         # numpy view for the inner accounting loop; date -> row
         self._px_arr = px.to_numpy(dtype=float, copy=False)
+        if "open" in panel.columns:
+            op = (
+                panel.pivot(index="date", columns="ticker", values="open")
+                .reindex(index=px.index, columns=px.columns)
+            )
+            self._px_open = op.to_numpy(dtype=float)
+        else:
+            self._px_open = self._px_arr
         self._px_row = {d: i for i, d in enumerate(px.index)}
         self._px_col = {t: i for i, t in enumerate(px.columns)}
 

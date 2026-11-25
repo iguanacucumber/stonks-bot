@@ -9,15 +9,15 @@ Interest, commissions and forced de-leveraging are all in the numbers.
 
 | leverage | trend | final | CAGR | Sharpe | maxDD | 2022 | turnover |
 |---:|---|---:|---:|---:|---:|---:|---:|
-| 1.0x | none | **$222,636** | 29.9% | 0.99 | -36.3% | -13.1% | 4.9x |
-| 1.5x | none | **$507,334** | 39.2% | 0.95 | -49.8% | -23.1% | 7.5x |
-| 2.0x | none | **$889,382** | 46.0% | 0.93 | -60.7% | -33.3% | 10.7x |
-| 2.5x | none | **$1,222,440** | 49.9% | 0.92 | -69.4% | -43.3% | 14.3x |
-| 2.5x **<- shipped** | 200d | **$1,368,999** | 51.4% | 0.97 | -59.9% | -32.8% | 13.8x |
-| 3.0x | 200d | **$1,914,437** | 55.7% | 0.97 | -67.5% | -38.9% | 17.8x |
+| 1.0x | none | **$224,860** | 30.0% | 0.99 | -36.3% | -13.1% | 4.8x |
+| 1.5x | none | **$514,342** | 39.4% | 0.95 | -49.8% | -23.1% | 7.5x |
+| 2.0x | none | **$904,486** | 46.2% | 0.93 | -60.7% | -33.3% | 10.6x |
+| 2.5x | none | **$1,246,358** | 50.2% | 0.92 | -69.4% | -43.3% | 14.3x |
+| 2.5x **<- shipped** | 200d | **$1,402,314** | 51.7% | 0.98 | -59.9% | -32.8% | 13.8x |
+| 3.0x | 200d | **$1,966,774** | 56.1% | 0.97 | -67.5% | -38.9% | 17.8x |
 
-1x makes **$222,636** with a -36.3% drawdown. The shipped config
-makes **$1,368,999** (6.1x) with a -59.9%
+1x makes **$224,860** with a -36.3% drawdown. The shipped config
+makes **$1,402,314** (6.2x) with a -59.9%
 drawdown and -32.8% in 2022. The daily cut is what lets 2.5x carry
 roughly the same drawdown as plain 2x did before it: compare the 2.5x rows.
 Sharpe is still flat across leverage: the extra money is borrowed, not discovered.
@@ -34,7 +34,7 @@ Sharpe is still flat across leverage: the extra money is borrowed, not discovere
 
 | market | bot $ | index $ | margin | maxDD |
 |---|---:|---:|---:|---:|
-| S&P 500 | **$979,006** | $42,186 | +2221% | -63.6% |
+| S&P 500 | **$965,733** | $42,186 | +2189% | -63.6% |
 | DAX (EWG) | **$568,211** | $19,295 | +2845% | -74.3% |
 | CAC 40 | **$65,999** | $26,553 | +149% | -71.0% |
 | IBEX 35 (EWP) | **$177,660** | $23,299 | +663% | -79.7% |
@@ -57,7 +57,7 @@ Sharpe is still flat across leverage: the extra money is borrowed, not discovere
 
 ## Verdict
 
-Shipped: **$1,368,999** from $10,000 at 2.5x with a daily trend cut,
+Shipped: **$1,402,314** from $10,000 at 2.5x with a daily trend cut,
 a -59.9% max drawdown, beat the local index in all 39 markets.
 That is more money than plain 2x, with the same drawdown. The risk is still one
 industry and one decade.
