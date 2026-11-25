@@ -127,14 +127,22 @@ def main():
         print(f"wrote {REPLAY}")
         return
 
-    w = current_weights(res, d)
-    scale = risk_scale(mkt, d, cfg)
+    now = datetime.now()
+    quote_date = pd.Timestamp(now.date())
+    # the P&L of the day belongs to yesterday's holdings: today's trades execute
+    # at today's close, so only the prior book was exposed to today's move
+    if quote_date >= mkt.dates[-1] and len(mkt.dates) > 1:
+        ref = mkt.dates[-2]
+    else:
+        ref = mkt.dates[-1]
+    w = current_weights(res, ref)
+    scale = risk_scale(mkt, ref, cfg)
     prices = data.latest_prices(list(w) + ["SPY"])
     raw = panel.pivot(index="date", columns="ticker", values="close")
     px, prev = {}, {}
     for t in w:
         live = prices.get(t)
-        p0 = raw[t].loc[d] if t in raw.columns else float("nan")
+        p0 = raw[t].loc[ref] if t in raw.columns else float("nan")
         px[t] = float(live) if live else float(p0)
         prev[t] = float(p0)
     move = sum(
@@ -142,8 +150,6 @@ def main():
         for t, x in w.items()
         if prev.get(t) and pd.notna(prev[t])
     )
-    now = datetime.now()
-    quote_date = pd.Timestamp(now.date())
     daily = {
         "time": str(now),
         "market": args.market,
@@ -171,7 +177,7 @@ def main():
     pd.DataFrame([row]).to_csv(
         LEDGER, mode="a", header=not LEDGER.exists(), index=False
     )
-    print(f"paper {args.market} signal {d.date()} quote {quote_date.date()}")
+    print(f"paper {args.market} signal {d.date()} quote {quote_date.date()} held-from {ref.date()}")
     print(
         f"  gross {sum(w.values()):.0%}  risk scale {scale:.0%}  day move {move:+.2%}"
     )

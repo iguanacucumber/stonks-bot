@@ -35,13 +35,20 @@ Mean |difference|: **0.5 bps/day**. The forward accounting matches the backtest.
 recorded day moves, and compares each day with the backtest's close-to-close return for the
 same date. It skips rows whose date has no completed daily bar yet. Current state:
 
-```
-no comparable rows yet (1 waiting for a completed close)
-```
+First comparable row (2026-11-25, taken intraday at ~14:40 ET):
 
-That is correct at 19:40 UTC: the 2026-11-25 row was taken intraday and the panel's last
-completed daily bar is 2026-11-24. The 21:15 UTC run sees the finished bar and the row
-becomes comparable.
+| date | live | shadow | diff | gross | risk | live equity | shadow equity |
+|---|---|---:|---:|---:|---:|---:|---:|
+| 2026-11-25 | -0.13% | -1.02% | +88.8 bp | 1.27 | 50% | $9,987 | $9,898 |
+
+The 88.8 bp gap is expected intraday noise: the live leg uses the latest 1-minute price,
+the shadow uses the daily bar's close field, and the market was still open. The 21:15 UTC
+run is the first close-valid row.
+
+**Bug found by the report:** the logger used *today's* post-close weights for today's move,
+but today's trades fill at today's close, so the day's P&L belongs to **yesterday's**
+holdings. It now records `held_from` and uses the prior book. Without this, the first live
+row was +0.57% versus the shadow's -1.02% — a fake +159 bp.
 
 ## 21-session reconciliation
 
