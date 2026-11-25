@@ -157,6 +157,18 @@ Park the freed half in TLT or GLD instead of cash.
 GLD adds 15-25% pre-tax but deepens the drawdown and loses after tax. TLT is worse
 everywhere. The semis book does not need a bond/gold sleeve. Rejected.
 
-## 13. SOXX/SMH rotation
+## 13. Risk-adjusted momentum ranking
+
+Rank the sleeve by momentum/vol or momentum - 0.5*vol instead of raw momentum.
+
+| ranking | pre-tax | after 37% | maxDD |
+|---|---:|---:|---:|
+| raw (shipped) | **$1,402,314** | **$107,839** | -59.9% |
+| mom / vol | $698,990 | $64,318 | -69.4% |
+| mom - 0.5 vol | $965,085 | $79,634 | -65.7% |
+
+Verdict: raw momentum wins. De-risking the ranking also de-risks the return. Rejected.
+
+## 14. SOXX/SMH rotation
 
 Top-1 by 126d/10d between SOXX and SMH: $545k at 2x, below SMH alone ($889k). Rejected.
