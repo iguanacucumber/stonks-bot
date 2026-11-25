@@ -67,7 +67,7 @@ $2.19M. That is the turn-of-month effect; it won in all 8 start dates and all 3 
 
 The catch: SMH is the semiconductor index (more NVDA-concentrated than SOXX). The rotation is
 an overlay on that asset, not stock alpha. Ten rounds of single-knob changes took the
-unlevered SOXX-era book from $91,136 to $212,063: `results/rounds10.md`; SMH later beat SOXX
+historical SOXX-era chain from $34,531 to $214,182 (regenerated after the 2026-11 panel rebuild): `results/rounds10.md`; SMH later beat SOXX
 on the US and tech books (`results/core.md`). Rounds 4-10 buy return by removing stop/regime
 protection and are tuned on this path; only rounds 1-3 also improved the held-back 2023-2026
 window. At 2.5x the full-window drawdown reaches -60.7%, and 2022 is -39.3% (the older 21-day
