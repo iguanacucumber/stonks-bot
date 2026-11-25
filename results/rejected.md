@@ -169,6 +169,19 @@ Rank the sleeve by momentum/vol or momentum - 0.5*vol instead of raw momentum.
 
 Verdict: raw momentum wins. De-risking the ranking also de-risks the return. Rejected.
 
-## 14. SOXX/SMH rotation
+## 14. VIX risk cut
+
+Cut exposure when VIX is at/above 20/25/30/35, alone and on top of the 200-day trend cut.
+
+| rule | final | Sharpe | maxDD | 2022 |
+|---|---:|---:|---:|---:|
+| 200d trend only (shipped) | **$1,402,314** | 0.977 | -59.9% | -32.8% |
+| VIX 35 only, 50% | $579,433 | 0.844 | -69.4% | -45.3% |
+| trend + VIX 35 | $1,039,831 | 0.941 | -59.9% | -32.8% |
+
+VIX-only is far behind the trend rule; adding it removes $360k of terminal wealth with
+no drawdown improvement. Rejected.
+
+## 15. SOXX/SMH rotation
 
 Top-1 by 126d/10d between SOXX and SMH: $545k at 2x, below SMH alone ($889k). Rejected.
