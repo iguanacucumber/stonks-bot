@@ -130,6 +130,19 @@ $15,715 / $18,976 / $7,911 versus $1.4M for the book. The stop is a permanent
 out-of-the-market penalty. The partial 50% version is the only usable form; the engine
 now raises if `dd_scale <= 0`.
 
-## 11. SOXX/SMH rotation
+## 11. Selection hysteresis
+
+Keep a held name if it ranks within top_n + 2/4/6/8 instead of replacing it.
+
+| buffer | pre-tax | after 37% | turnover |
+|---|---:|---:|---:|
+| 0 | **$1,402,314** | $107,839 | 13.8x |
+| 4 | $1,290,567 | $111,027 | 14.0x |
+| 8 | $1,276,523 | $112,242 | 14.0x |
+
+Verdict: the sleeve's edge decays when stale names are kept, and turnover barely moves
+because daily leverage trims dominate. Not shipped.
+
+## 12. SOXX/SMH rotation
 
 Top-1 by 126d/10d between SOXX and SMH: $545k at 2x, below SMH alone ($889k). Rejected.
