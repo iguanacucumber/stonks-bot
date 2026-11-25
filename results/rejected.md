@@ -17,7 +17,9 @@ Scale exposure when SPY/SMH is below its 200-day MA, monthly sampled.
 Verdict: **monthly sampling** is a leverage knob, not a signal. The daily version is
 different and is now shipped: checked every day, 2.5x + 200d cut to 50% makes $1,368,999
 vs $1,222,440 for plain 2.5x while cutting the drawdown from -69.4% to -59.9%
-(`results/leverage.md`). Sampling frequency was the whole difference.
+(`results/leverage.md`). Sampling frequency was the whole difference. Watching the
+benchmark instead of the core is worse at every lookback ($694k US vs $1,369k), and
+"either" is worse too; 250d adds $14k but 9pp more drawdown. Core-200d stands.
 
 ## 2. Core rotation among tech ETFs
 
