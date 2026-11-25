@@ -110,9 +110,11 @@ def main():
     if args.replay:
         df = replay(mkt, res, cfg, args.replay)
         print(df.round(4).to_string(index=False))
+        a = df.diff_bps.abs()
         print(
-            f"\nmean |tracking difference| "
-            f"{df.diff_bps.abs().mean():.1f} bps across {len(df)} sessions"
+            f"\n|tracking difference| median {a.median():.1f} bps, "
+            f"p95 {a.quantile(0.95):.1f} bps, max {a.max():.1f} bps "
+            f"across {len(df)} sessions"
         )
         print(f"wrote {REPLAY}")
         return

@@ -26,6 +26,16 @@ not a fill mismatch.
 
 Mean |difference|: **0.5 bps/day**. The forward accounting matches the backtest.
 
+## 21-session reconciliation
+
+`uv run python scripts/paper_daily.py --replay 21` over 2026-10-14 → 2026-11-24:
+
+- |tracking difference| median **0.55 bps/day**, p95 **15.4 bps**, max **25.3 bps**.
+- Gross exposure ranged **1.25x → 2.50x**; the risk scale was 50% on part of the window
+  (SMH below its 200-day MA) and 100% on the rest.
+- The median is financing on negative cash. The largest days are rebalance/leverage-change
+  days, where the backtest also pays 10 bps and books the trade at the close.
+
 ## First live entry (2026-11-25)
 
 | holding | weight | quote | vs prior close |
@@ -59,6 +69,8 @@ intraday mark with the official close.
   equity, holdings JSON, prices JSON.
 - `paper_replay.csv`: the five-session reconciliation above.
 
-One forward day is not a track record. The job adds one row per weekday; re-run
-`uv run python scripts/paper_daily.py --replay 21` after a month to compare a full
-forward month with the backtest.
+Forward status: **one live row so far** (header + 1 data row in `paper_daily.csv`).
+One day is not a track record. The job adds one row per weekday, so five weekday rows
+appear after five sessions; re-run the replay then to compare the forward week with the
+backtest. Nothing here is fabricated: the 21-session table above is a replay on panel
+closes, not live data.

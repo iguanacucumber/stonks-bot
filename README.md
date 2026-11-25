@@ -70,7 +70,8 @@ weekday job at 21:15 UTC now logs it automatically (`results/paper.md`).
 
 **Taxable account:** `--profile tax --tax-rate 0.37` drops the stock sleeve, widens the
 leverage band, and sells the highest-basis tax lots first. It makes less pre-tax ($953k vs
-$1.40M) but keeps more after tax: **$258,648 vs $107,889**, at 7.3x turnover instead of
+$1.40M) but keeps more after tax: **$258,648 vs $107,889** at 37%, and still
+**$109,224 vs $26,558** at 54.1% (federal + NIIT + 13.3% state), at 7.3x turnover instead of
 13.8x, 1-day mean +0.198% vs +0.165%. HIFO hurts the high-turnover monthly sleeve
 ($108k → $87k) and helps the low-turnover tax book (+26%). A tax-sheltered account should
 run the monthly book. `results/realism.md`.

@@ -71,6 +71,22 @@ monthly sleeve it makes things worse ($108k -> $87k) because the deferred lots
 get sold again soon anyway. If the account is tax-sheltered, the monthly sleeve
 wins outright.
 
+## State tax and NIIT sensitivity (US, close fill, 10 bps)
+
+Rates are summed (no SALT deduction), so they are an upper bound.
+
+| scenario | rate | monthly after tax | tax profile after tax |
+|---|---:|---:|---:|
+| + NIIT 3.8% | 40.8% | $80,168 | $217,825 |
+| + state 13.3% | 54.1% | $26,558 | $109,224 |
+| + state 5% | 45.8% | $53,596 | $171,132 |
+| + state 9.3% | 50.1% | $37,461 | $136,667 |
+| federal 37% | 37.0% | $107,889 | $258,648 |
+
+The tax profile wins at every rate: at federal-only 37% it is $259k vs $108k,
+and at 54.1% (37 + 3.8 + 13.3) it is still ahead of the monthly book at 37%.
+Wash-sale rules, lot-level deferral beyond HIFO, and local taxes are not modeled.
+
 ## Verdict
 
 - At 30 bps close fill the US book still makes **$928,859** (vs $1,402,314 at 10 bps). Costs are a haircut, not a wipeout.

@@ -31,6 +31,17 @@ GRID = [
     ("open", 30.0),
 ]
 TAXES = [0.0, 0.20, 0.37]
+TAX_SCENARIOS = [
+    ("federal 37%", 0.37),
+    ("+ NIIT 3.8%", 0.408),
+    ("+ state 5%", 0.458),
+    ("+ state 9.3%", 0.501),
+    ("+ state 13.3%", 0.541),
+]
+PROFILE_KW = {
+    "monthly sleeve": {},
+    "tax profile": {"core_mode": "always", "leverage_band": 0.10, "tax_lots": "hifo"},
+}
 
 
 def one(panel, mem, **kw):
@@ -66,7 +77,7 @@ VARIANTS = {
 
 
 def main():
-    cost_rows, tax_rows, var_rows = [], [], []
+    cost_rows, tax_rows, var_rows, scen_rows = [], [], [], []
     for name in ("US", "TECH"):
         panel, mem = markets.build(name)
         if name != "US":
@@ -78,6 +89,16 @@ def main():
             r = one(panel, mem, exec_price="close", cost_bps=10.0, tax_rate=tax)
             tax_rows.append({"market": name, "tax": tax, **r})
         if name == "US":
+            for sname, rate in TAX_SCENARIOS:
+                for pname, pkw in PROFILE_KW.items():
+                    r = one(
+                        panel, mem, exec_price="close", cost_bps=10.0,
+                        tax_rate=rate, **pkw,
+                    )
+                    scen_rows.append({
+                        "scenario": sname, "profile": pname,
+                        "tax": rate, "final": r["final"], "cagr": r["cagr"],
+                    })
             for label, kw in VARIANTS.items():
                 pre = one(panel, mem, exec_price="close", cost_bps=10.0, **kw)
                 post = one(
@@ -92,6 +113,7 @@ def main():
     cost = pd.DataFrame(cost_rows)
     tax = pd.DataFrame(tax_rows)
     var = pd.DataFrame(var_rows)
+    scen = pd.DataFrame(scen_rows)
 
     ship = cost[(cost.exec == "close") & (cost.cost == 10.0)].set_index("market")
     assert (ship.final > 1_000_000).all(), "shipped numbers moved"
@@ -174,6 +196,24 @@ def main():
         "monthly sleeve it makes things worse ($108k -> $87k) because the deferred lots",
         "get sold again soon anyway. If the account is tax-sheltered, the monthly sleeve",
         "wins outright.",
+        "",
+        "## State tax and NIIT sensitivity (US, close fill, 10 bps)",
+        "",
+        "Rates are summed (no SALT deduction), so they are an upper bound.",
+        "",
+        "| scenario | rate | monthly after tax | tax profile after tax |",
+        "|---|---:|---:|---:|",
+    ]
+    for _, r in scen.pivot(index=["scenario", "tax"], columns="profile", values="final").reset_index().iterrows():
+        lines.append(
+            f"| {r['scenario']} | {r['tax']:.1%} | ${r['monthly sleeve']:,.0f} | "
+            f"${r['tax profile']:,.0f} |"
+        )
+    lines += [
+        "",
+        "The tax profile wins at every rate: at federal-only 37% it is $259k vs $108k,",
+        "and at 54.1% (37 + 3.8 + 13.3) it is still ahead of the monthly book at 37%.",
+        "Wash-sale rules, lot-level deferral beyond HIFO, and local taxes are not modeled.",
         "",
         "## Verdict",
         "",
