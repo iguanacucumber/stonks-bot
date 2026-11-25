@@ -67,31 +67,77 @@ def risk_scale(mkt, date, cfg) -> float:
 
 
 def current_weights(res, date) -> dict[str, float]:
-    """What the book actually holds at the close: post-trade, post-drift."""
-    w = res.weights.loc[date].drop(labels=["CASH"], errors="ignore")
+    """Holdings at a date; accepts a Result or a weights DataFrame."""
+    frame = res.weights if hasattr(res, "weights") else res
+    w = frame.loc[date].drop(labels=["CASH"], errors="ignore")
     return {t: float(x) for t, x in w.items() if x > 1e-9}
 
 
-def replay(mkt, res, cfg, n: int):
+def replay(mkt, res, cfg, n: int, panel):
+    """Daily P&L split at the open: prior book overnight, post-fill book intraday."""
     dates = list(res.equity.index)
+    now_et = datetime.now(timezone.utc).astimezone(ZoneInfo("America/New_York"))
+    if (
+        len(dates) > n + 2
+        and dates[-1].date() == now_et.date()
+        and now_et.hour < 16
+    ):
+        dates = dates[:-1]  # today's bar is still forming
+    raw_close = panel.pivot(index="date", columns="ticker", values="close")
+    raw_open = (
+        panel.pivot(index="date", columns="ticker", values="open")
+        if "open" in panel.columns
+        else raw_close
+    )
+    wopen = res.weights_open if res.weights_open is not None else res.weights
     rows = []
     for i in range(max(1, n), 0, -1):
-        # signal at close d1, fill at d2 close, marked at d3 close
-        d1, d2, d3 = dates[-i - 2], dates[-i - 1], dates[-i]
-        w = current_weights(res, d2)
-        paper = sum(
-            x * (mkt.px[t].loc[d3] / mkt.px[t].loc[d2] - 1.0)
-            for t, x in w.items()
-            if t in mkt.px.columns and pd.notna(mkt.px[t].loc[d2])
+        dprev, dm = dates[-i - 1], dates[-i]
+        old = current_weights(res, dprev)
+        new = current_weights(wopen, dm)
+        overnight = 0.0
+        for t, x in old.items():
+            if t not in raw_close.columns:
+                continue
+            cp = raw_close[t].loc[dprev]
+            op = raw_open[t].loc[dm] if t in raw_open.columns else float("nan")
+            if pd.isna(op) or op <= 0:
+                op = cp
+            if pd.notna(cp) and cp > 0:
+                overnight += x * (op / cp - 1.0)
+        intraday = 0.0
+        for t, x in new.items():
+            if t not in raw_open.columns:
+                continue
+            op = raw_open[t].loc[dm]
+            cp = raw_close[t].loc[dm] if t in raw_close.columns else float("nan")
+            if pd.isna(op) or op <= 0:
+                op = cp
+            if pd.notna(op) and op > 0 and pd.notna(cp):
+                intraday += x * (cp / op - 1.0)
+        simple = 0.0
+        for t, x in old.items():
+            if t not in raw_close.columns:
+                continue
+            cp0 = raw_close[t].loc[dprev]
+            cp1 = raw_close[t].loc[dm]
+            if pd.notna(cp0) and pd.notna(cp1) and cp0 > 0:
+                simple += x * (cp1 / cp0 - 1.0)
+        total_new = sum(new.values())
+        dirty = (
+            total_new < 0.1
+            or total_new > cfg.leverage * 1.2
+            or (len(old) > 0 and len(new) < 0.6 * len(old))
         )
-        bt = res.equity.loc[d3] / res.equity.loc[d2] - 1.0
+        paper = simple if dirty else (1.0 + overnight) * (1.0 + intraday) - 1.0
+        bt = res.equity.loc[dm] / res.equity.loc[dprev] - 1.0
         rows.append(
             {
-                "signal": str(d1.date()),
-                "fill": str(d2.date()),
-                "mark": str(d3.date()),
-                "gross": sum(w.values()),
-                "risk_scale": risk_scale(mkt, d2, cfg),
+                "signal": str(dprev.date()),
+                "fill": str(dm.date()),
+                "mark": str(dm.date()),
+                "gross": sum(new.values()),
+                "risk_scale": risk_scale(mkt, dm, cfg),
                 "paper_return": paper,
                 "backtest_return": bt,
                 "diff_bps": (paper - bt) * 1e4,
@@ -99,6 +145,12 @@ def replay(mkt, res, cfg, n: int):
         )
     df = pd.DataFrame(rows)
     df.to_csv(REPLAY, index=False)
+    if len(df):
+        med = float(df["diff_bps"].abs().median())
+        mx = float(df["diff_bps"].abs().max())
+        print(f"replay tracking: median {med:.2f} bps, max {mx:.2f} bps over {len(df)} sessions")
+        if med > 2.0 or mx > 50.0:
+            print("WARNING: tracking exceeds tolerance; forward comparison not trustworthy")
     return df
 
 
@@ -119,7 +171,7 @@ def main():
     d = mkt.dates[-1]
 
     if args.replay:
-        df = replay(mkt, res, cfg, args.replay)
+        df = replay(mkt, res, cfg, args.replay, panel)
         print(df.round(4).to_string(index=False))
         a = df.diff_bps.abs()
         print(
@@ -135,27 +187,64 @@ def main():
     et = now.astimezone(ZoneInfo("America/New_York"))
     quote_date = pd.Timestamp(et.date())
     close_valid = et.hour >= 16
-    # the P&L of the day belongs to yesterday's holdings: today's trades execute
-    # at today's close, so only the prior book was exposed to today's move
-    if quote_date >= mkt.dates[-1] and len(mkt.dates) > 1:
-        ref = mkt.dates[-2]
-    else:
-        ref = mkt.dates[-1]
-    w = current_weights(res, ref)
-    scale = risk_scale(mkt, ref, cfg)
-    prices = data.latest_prices(list(w) + ["SPY"])
-    raw = panel.pivot(index="date", columns="ticker", values="close")
-    px, prev = {}, {}
-    for t in w:
-        live = prices.get(t)
-        p0 = raw[t].loc[ref] if t in raw.columns else float("nan")
-        px[t] = float(live) if live else float(p0)
-        prev[t] = float(p0)
-    move = sum(
-        x * (px[t] / prev[t] - 1.0)
-        for t, x in w.items()
-        if prev.get(t) and pd.notna(prev[t])
+    # day P&L: prior book overnight, post-open book intraday (next-open fills)
+    raw_close = panel.pivot(index="date", columns="ticker", values="close")
+    raw_open = (
+        panel.pivot(index="date", columns="ticker", values="open")
+        if "open" in panel.columns
+        else raw_close
     )
+    last = mkt.dates[-1]
+    if quote_date >= last and len(mkt.dates) > 1:
+        dm = last
+        dprev = mkt.dates[-2] if quote_date == last else last
+    else:
+        dm = last
+        dprev = last
+    old = current_weights(res, dprev)
+    wopen = res.weights_open if res.weights_open is not None else res.weights
+    w = current_weights(wopen, dm)
+    scale = risk_scale(mkt, dm, cfg)
+    prices = data.latest_prices(sorted(set(w) | set(old)) + ["SPY"])
+    overnight = 0.0
+    for t, x in old.items():
+        if t not in raw_close.columns:
+            continue
+        cp = raw_close[t].loc[dprev]
+        op = raw_open[t].loc[dm] if t in raw_open.columns else float("nan")
+        if pd.isna(op) or op <= 0:
+            op = cp
+        if pd.notna(cp) and cp > 0:
+            overnight += x * (op / cp - 1.0)
+    intraday = 0.0
+    px, prev = {}, {}
+    for t, x in w.items():
+        op = raw_open[t].loc[dm] if t in raw_open.columns else float("nan")
+        cp = raw_close[t].loc[dm] if t in raw_close.columns else float("nan")
+        if pd.isna(op) or op <= 0:
+            op = cp
+        live = prices.get(t)
+        p1 = float(live) if live else float(cp)
+        px[t] = p1
+        cp_prev = raw_close[t].loc[dprev] if t in raw_close.columns else float("nan")
+        prev[t] = float(cp_prev) if pd.notna(cp_prev) else float("nan")
+        if pd.notna(op) and op > 0 and pd.notna(p1):
+            intraday += x * (p1 / op - 1.0)
+    total_w = sum(w.values())
+    if total_w < 0.1 or total_w > cfg.leverage * 1.2 or len(w) < 0.6 * len(old):
+        w = old
+        move = sum(
+            x * (float(prices.get(t) or raw_close[t].loc[dprev]) / raw_close[t].loc[dprev] - 1.0)
+            for t, x in old.items()
+            if t in raw_close.columns
+            and pd.notna(raw_close[t].loc[dprev])
+            and raw_close[t].loc[dprev] > 0
+        )
+        px = {t: float(prices.get(t) or raw_close[t].loc[dprev]) for t in w if t in raw_close.columns}
+        prev = {t: float(raw_close[t].loc[dprev]) for t in w if t in raw_close.columns}
+    else:
+        move = (1.0 + overnight) * (1.0 + intraday) - 1.0
+    ref = dprev
     daily = {
         "time": str(now),
         "market": args.market,

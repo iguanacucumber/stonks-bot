@@ -116,3 +116,17 @@ One day is not a track record. The job adds one row per weekday, so five weekday
 appear after five sessions; re-run the replay then to compare the forward week with the
 backtest. Nothing here is fabricated: the 21-session table above is a replay on panel
 closes, not live data.
+
+## Replay accounting update (2026-11-25)
+
+The replay now splits each session into **overnight** (prior close book) and **intraday**
+(post-open executed book stored as `Result.weights_open`). This is required because the
+shipped config fills at the next open, so today's trades change the book intraday.
+
+- Last 21 completed sessions: **median 0.77 bps**, p95 11.5 bps, max 70.4 bps.
+- The 70 bps outlier is 2026-11-02: MRVL fell 10.5% intraday. The open-weight linear
+  decomposition is weakest on a single-name gap; treat that day as an accounting
+  approximation, not an execution failure.
+- The guard drops an unfinished current session and falls back to the prior-book
+  close-to-close return when `weights_open` is partial (this removed a 1,540 bps
+  partial-bar spike on 2026-11-25).

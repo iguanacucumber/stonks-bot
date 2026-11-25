@@ -50,6 +50,7 @@ class Result:
     trades: pd.DataFrame
     weights: pd.DataFrame
     nav: pd.DataFrame
+    weights_open: pd.DataFrame | None = None
 
 
 def _sector_fallback(mkt: Market, date: pd.Timestamp) -> dict[str, float]:
@@ -207,6 +208,7 @@ def run(
     eqs = np.zeros(n)
     cashs = np.zeros(n)
     wmat = np.zeros((n, nc))
+    wopen = np.zeros((n, nc))
 
     for i, d in enumerate(dates):
         ri = rows.get(d)
@@ -329,6 +331,12 @@ def run(
                         entry[ci] = np.nan
                         peak[ci] = np.nan
             pending_target, pending_exit, pending_reason = None, set(), {}
+
+        # executed book at the fill price, used by the forward paper tracker to split
+        # overnight (previous book) from intraday (post-fill book) P&L
+        mark_open = np.where(po > 0, po, pr) if exec_open else pr
+        eq_open = cash + float((shares * mark_open).sum())
+        wopen[i] = (shares * mark_open) / eq_open if eq_open > 0 else 0.0
 
         # 2. mark to market and check trailing stops
         # A missing bar (foreign holiday, halted name) is carried at the last observed
@@ -459,7 +467,15 @@ def run(
     wdf = pd.DataFrame(wmat, index=dates, columns=names)
     wdf["CASH"] = cash_s / equity
     nav = pd.DataFrame({"equity": equity, "cash": cash_s})
-    return Result(equity=equity, cash=cash_s, trades=tr, weights=wdf, nav=nav)
+    wopen_df = pd.DataFrame(wopen, index=dates, columns=names)
+    return Result(
+        equity=equity,
+        cash=cash_s,
+        trades=tr,
+        weights=wdf,
+        nav=nav,
+        weights_open=wopen_df,
+    )
 
 
 def spy_result(mkt: Market) -> Result:
