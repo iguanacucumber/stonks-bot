@@ -90,6 +90,32 @@ def main():
     step = gres.equity.loc[dts[202]] / gres.equity.loc[dts[201]] - 1
     assert abs(step) < 1e-9, f"missing bar marked at entry price: {step:.1%} jump"
 
+    # leverage: gross exposure scales, borrowing costs money, no free lunch
+    l1 = strategy.Config(start=str(dates[250].date()), top_n=5, rebalance_days=5)
+    l2 = strategy.Config(
+        start=str(dates[250].date()),
+        top_n=5,
+        rebalance_days=5,
+        leverage=2.0,
+        financing_bps=0.0,
+    )
+    l2f = strategy.Config(
+        start=str(dates[250].date()),
+        top_n=5,
+        rebalance_days=5,
+        leverage=2.0,
+        financing_bps=1000.0,
+    )
+    r1 = backtest.run(strategy.Market(panel, mem, l1))
+    r2 = backtest.run(strategy.Market(panel, mem, l2))
+    r2f = backtest.run(strategy.Market(panel, mem, l2f))
+    gross = r2.weights.drop(columns=["CASH"]).sum(axis=1)
+    assert 1.8 < gross.mean() < 2.05, f"2x gross exposure is {gross.mean():.2f}"
+    lev = (r2.cash / r2.equity).min()
+    assert lev > -1.02, f"borrowed more than 1x equity: {lev:.2f}"
+    assert r2.equity.iloc[-1] > 0, "2x wiped the book on a positive-drift panel"
+    assert r2f.equity.iloc[-1] < r2.equity.iloc[-1], "financing is free"
+
     print(
         f"ok: {len(res.equity)} days, final {res.equity.iloc[-1]:.3f}, "
         f"{len(res.trades)} trades, sharpe {backtest.metrics(res.equity, mkt.spy)['sharpe']:.2f}"

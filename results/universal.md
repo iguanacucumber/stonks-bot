@@ -28,6 +28,9 @@ ETF, whichever has the higher 126-day return. Same lookback, same monthly clock,
 same costs. No stock picking and no survivorship, because ETFs do not delist out
 of the sample.
 
+Every table here is **1x** so the market comparison is clean. The shipped bot runs
+2x with 5%/yr margin; the levered result is in `results/leverage.md`.
+
 ## Tier 1: stock-level markets (local currency)
 
 | market | ccy | names | full history | bot $ | index $ | core only | sleeve only | CAGR | Sharpe | maxDD | core days | 2022 bot | 2022 index |

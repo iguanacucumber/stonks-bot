@@ -17,6 +17,9 @@ ROOT = Path(__file__).resolve().parent.parent
 CACHE = ROOT / "cache"
 RESULTS = ROOT / "results"
 RESULTS.mkdir(exist_ok=True)
+# Shipped default: 2x gross, financed at 5%/yr. `--leverage 1` reverts.
+DEFAULT_LEVERAGE = 2.0
+DEFAULT_FINANCING_BPS = 500.0
 
 
 def _load(
@@ -24,6 +27,8 @@ def _load(
     end: str | None = None,
     core_weight: float | None = None,
     core_mode: str | None = None,
+    leverage: float | None = None,
+    financing_bps: float | None = None,
 ):
     mem = universe.load_membership()
     panel = data.build_panel(mem)
@@ -32,6 +37,10 @@ def _load(
         kw["core_weight"] = core_weight
     if core_mode:
         kw["core_mode"] = core_mode
+    if leverage is not None:
+        kw["leverage"] = leverage
+    if financing_bps is not None:
+        kw["financing_bps"] = financing_bps
     cfg = strategy.Config(start=start, end=end, **kw)
     mkt = strategy.Market(panel, mem, cfg)
     return panel, mem, mkt, cfg
@@ -59,7 +68,10 @@ def _random_bench(mkt, seeds: int) -> pd.DataFrame:
 
 
 def cmd_backtest(args):
-    panel, mem, mkt, cfg = _load(args.start, args.end, args.core_weight, args.core_mode)
+    panel, mem, mkt, cfg = _load(
+        args.start, args.end, args.core_weight, args.core_mode,
+        args.leverage, args.financing_bps,
+    )
     print(
         f"dates {mkt.dates[0].date()} -> {mkt.dates[-1].date()}  tickers {mkt.px.shape[1]}"
     )
@@ -69,7 +81,9 @@ def cmd_backtest(args):
     spy_res = backtest.spy_result(mkt)
     m_spy, _ = backtest.summarize(spy_res, mkt)
 
-    eq_cfg = replace(cfg, rebalance_days=21, top_n=10000, sector_cap=1.0, stop=1.0)
+    eq_cfg = replace(
+        cfg, rebalance_days=21, top_n=10000, sector_cap=1.0, stop=1.0, leverage=1.0
+    )
     eq_mkt = strategy.Market(panel, mem, eq_cfg)
     res_eq = backtest.run(eq_mkt, selector=backtest.equal_weight_selector)
     m_eq, _ = backtest.summarize(res_eq, eq_mkt)
@@ -106,7 +120,9 @@ def _bench_2026(panel, mem, cfg, res_llm, res_pl, judgments, cal, args):
     m_llm, _ = backtest.summarize(res_llm, mkt26)
     m_pl, _ = backtest.summarize(res_pl, mkt26)
 
-    eq_cfg = replace(cfg, rebalance_days=21, top_n=10000, sector_cap=1.0, stop=1.0)
+    eq_cfg = replace(
+        cfg, rebalance_days=21, top_n=10000, sector_cap=1.0, stop=1.0, leverage=1.0
+    )
     eq_mkt = strategy.Market(panel, mem, eq_cfg)
     m_eq, _ = backtest.summarize(
         backtest.run(eq_mkt, selector=backtest.equal_weight_selector), eq_mkt
@@ -191,13 +207,30 @@ def cmd_study(args):
     print(f"wrote {RESULTS}/metrics_2026.csv calibration.csv equity_2026.svg")
 
 
+def _metrics_2026() -> pd.DataFrame:
+    mem = universe.load_membership()
+    panel = data.build_panel(mem)
+    cfg = strategy.Config(
+        start="2026-01-02", leverage=DEFAULT_LEVERAGE,
+        financing_bps=DEFAULT_FINANCING_BPS,
+    )
+    mkt = strategy.Market(panel, mem, cfg)
+    m_bot, _ = backtest.summarize(backtest.run(mkt), mkt)
+    m_spy, _ = backtest.summarize(backtest.spy_result(mkt), mkt)
+    out = pd.DataFrame({"bot": m_bot, "spy": m_spy}).T
+    out.to_csv(RESULTS / "metrics_2026.csv")
+    return out
+
+
 def cmd_report(args):
+    _metrics_2026()
     lines = [
         "# stonks-bot — results",
         "",
         "Default: dual-momentum rotation. Hold SOXX while its 6-month total return beats SPY;",
         "otherwise rotate into the S&P momentum sleeve (6 names, 10-day skip). Monthly check,",
-        "next-close execution, 10 bps per side, no leverage, no trailing stop, no regime cut.",
+        "next-close execution, 10 bps per side, 2x gross with 5%/yr margin interest",
+        "(`--leverage 1` for the unlevered book), no trailing stop, no regime cut.",
         "",
     ]
     for fname, title in [
@@ -239,12 +272,13 @@ def cmd_report(args):
         "## Caveats",
         "",
         "- SOXX is a semiconductor ETF: most of the return is one industry's 11-year run, not alpha.",
-        "- SOXX buy-and-hold made $140,256 with a -45.8% drawdown; the rotation adds ~$72k",
-        "  and cuts the drawdown to -39.5%, but the core is still one industry.",
-        "- 2022 was still -13.3% and the full-window drawdown is -39.5% vs SPY -33.7%.",
+        f"- Leverage: {DEFAULT_LEVERAGE:.1f}x gross at {DEFAULT_FINANCING_BPS / 100:.1f}%/yr.",
+        f"  The full-window drawdown is {b['max_dd']:.1%} vs {s0['max_dd']:.1%} for SPY;",
+        "  leverage multiplies the losses as well as the wins.",
+        "- Daily de-leveraging when gross drifts above target adds turnover:",
+        f"  {b['turnover_ann']:.1f}x NAV/yr, which is why costs matter.",
         "- No trailing stop and no regime cut: the ten rounds traded crash protection for return.",
         "- Ten rounds were tuned on this one price path; 2023-2026 was held back as a check and won.",
-        "- Exact costs still leave $181,466 at 30 bps; turnover is 5.4x NAV/yr.",
         "- Paper only. No orders, no broker, no keys.",
         "",
     ]
@@ -253,7 +287,10 @@ def cmd_report(args):
 
 
 def cmd_paper(args):
-    panel, mem, mkt, cfg = _load("2026-01-02", None, args.core_weight, args.core_mode)
+    panel, mem, mkt, cfg = _load(
+        "2026-01-02", None, args.core_weight, args.core_mode,
+        args.leverage, args.financing_bps,
+    )
     d = mkt.dates[-1]
     res = backtest.run(mkt)
     held = overlay.held_names(res, d)
@@ -262,6 +299,8 @@ def cmd_paper(args):
         j = llm.load_judgments(RESULTS / "llm_judgments.jsonl")
         targets = llm.make_overlay(j, max_active=cfg.llm_active_share)(d, targets, mkt)
         print("paper: LLM overlay applied")
+    if cfg.leverage != 1.0:
+        targets = {t: w * cfg.leverage for t, w in targets.items()}
     last_close = mkt.px.loc[d]
     path = RESULTS / "paper_ledger.csv"
     for it in range(args.iterations):
@@ -326,6 +365,8 @@ def main(argv=None):
     pb.add_argument("--random-seeds", type=int, default=100)
     pb.add_argument("--core-weight", type=float, default=None)
     pb.add_argument("--core-mode", default=None)
+    pb.add_argument("--leverage", type=float, default=DEFAULT_LEVERAGE)
+    pb.add_argument("--financing-bps", type=float, default=DEFAULT_FINANCING_BPS)
     pb.set_defaults(func=cmd_backtest)
 
     ps = sub.add_parser("study")
@@ -344,6 +385,8 @@ def main(argv=None):
     pp.add_argument("--llm", action="store_true")
     pp.add_argument("--core-weight", type=float, default=None)
     pp.add_argument("--core-mode", default=None)
+    pp.add_argument("--leverage", type=float, default=DEFAULT_LEVERAGE)
+    pp.add_argument("--financing-bps", type=float, default=DEFAULT_FINANCING_BPS)
     pp.set_defaults(func=cmd_paper)
 
     args = p.parse_args(argv)

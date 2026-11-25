@@ -55,11 +55,17 @@ class Config:
     gross: float = 1.00
     regime_ma: int = 200
     regime_gross: float = 1.00
-    stop: float = 1.00      # 1.0 = no trailing stop (ten-round optimum)
+    stop: float = 1.00  # 1.0 = no trailing stop (ten-round optimum)
     reentry_days: int = 20
     cost_bps: float = 10.0
     min_dollar_vol: float = 5e6
     llm_active_share: float = 0.20
+    # Margin: leverage 1.0 = no borrowing. Above 1.0 target weights are scaled and
+    # negative cash pays `financing_bps` a year, accrued daily.
+    leverage: float = 1.0
+    financing_bps: float = 300.0
+    leverage_mode: str = "constant"  # "constant" | "trend"
+    leverage_down: float = 1.0  # exposure when the regime filter is off
     # Default: dual-momentum rotation. Hold SOXX while its 6-month return beats SPY,
     # otherwise run the S&P momentum sleeve. Set core_weight < 1 to blend.
     core: str | None = "SOXX"

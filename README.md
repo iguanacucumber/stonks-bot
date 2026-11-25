@@ -1,13 +1,14 @@
 # stonks-bot
 
-Paper-only systematic long-only US equity portfolio with a constrained LLM news overlay.
-No broker connection, no orders, no keys.
+Paper-only systematic long-only equity portfolio (US by default, tested across 37 markets)
+with a constrained LLM news overlay. No broker connection, no orders, no keys.
 
 ## What it does
 
-**Default: dual-momentum rotation.** Hold SOXX while its 6-month total return beats SPY;
-otherwise rotate into the S&P momentum sleeve. Monthly check, next-close execution, 10 bps
-per side, no leverage, no trailing stop, no regime cut.
+**Default: dual-momentum rotation, 2x gross.** Hold SOXX while its 6-month total return
+beats SPY; otherwise rotate into the S&P momentum sleeve. Monthly check, next-close
+execution, 10 bps per side, 2x gross financed at 5%/yr with a daily de-leverage cap
+(`--leverage 1` for the unlevered book), no trailing stop, no regime cut.
 
 The S&P sleeve (used when SOXX lags) is:
 1. **Universe**: point-in-time S&P 500 membership (fja05680 history + 2026 changes), liquid names only.
@@ -39,25 +40,30 @@ Known bias: ~18% of 2015–2026 index members have no Yahoo history (mostly acqu
 names). They are dropped. Results are survivor-biased; treat them as a sanity check, not a
 promise.
 
-## Results (paper backtest, 10 bps)
+## Results (paper backtest, 10 bps, 2x gross at 5%/yr)
 
 | $10,000 from | Bot | SPY | Bot max DD | SPY max DD |
 |---|---:|---:|---:|---:|
-| 2015-01-02 → 2026-11-24 | **$212,063** | $42,186 | -39.5% | **-33.7%** |
-| 2026-01-02 → 2026-11-24 | **$12,573** | $10,534 | -40.9% | **-11.5%** |
+| 2015-01-02 → 2026-11-24 | **$762,997** | $42,186 | -66.1% | **-33.7%** |
+| 2026-01-02 → 2026-11-24 | **$12,340** | $10,534 | -67.3% | **-11.5%** |
 
-Full-window CAGR 29.4% vs 12.9%; Sharpe 0.95 vs 0.79. Walk-forward CAGR: 18.0% / 27.2% / 47.4%
-vs SPY 11.6% / 7.3% / 19.1%; beats SPY in 11 of 12 calendar years (loses 2015 by 1.1 pp).
-Ten rounds of single-knob changes took $91,136 to $212,063, each richer than the last:
-`results/rounds10.md`. The catch: SOXX is the semiconductor index. SOXX buy-and-hold alone made
-$140,256 with a -45.8% drawdown; the rotation adds ~$72k and cuts the drawdown to -39.5%, but
-this is one industry's 11-year run plus the sleeve, not stock alpha. Rounds 4-10 buy return by
-removing stop/regime protection and are tuned on this path; only rounds 1-3 also improved the
-held-back 2023-2026 window.
+Full-window CAGR 44.1% vs 12.9%; Sharpe 0.90 vs 0.79. Walk-forward CAGR: 25.8% / 37.7% / 76.3%
+vs SPY 11.6% / 7.3% / 19.1%; beats SPY in 9 of 12 calendar years (loses 2015, 2018, 2022).
+The leverage ladder is the whole story: 1x makes $212,063 with a -39.5% drawdown, 1.5x $461,047
+(-54.4%), 2x $762,997 (-66.1%), 2.5x $980,671 (-75.1%). Sharpe is flat across the ladder, so
+leverage buys money, not skill: `results/leverage.md`, `scripts/leverage.py`.
+
+The catch: SOXX is the semiconductor index. Even at 1x, SOXX buy-and-hold made $140,256 with a
+-45.8% drawdown, and the rotation is an overlay on that asset, not stock alpha. Ten rounds of
+single-knob changes took the unlevered book from $91,136 to $212,063: `results/rounds10.md`.
+Rounds 4-10 buy return by removing stop/regime protection and are tuned on this path; only
+rounds 1-3 also improved the held-back 2023-2026 window. At 2x the drawdown reaches -66%, and
+2022 is -33.7%.
 
 **Cross-market:** the same config on **37 markets** (8 stock-level, 29 country ETFs) is
-profitable in **37/37** and beats the local index in **37/37** over 2015-2026, at 10 bps
-and at 30 bps: `results/universal.md`, `scripts/universal.py`. The catch is the engine:
+profitable in **37/37** and beats the local index in **37/37** over 2015-2026, at 1x and
+at 2x, at 10 bps and at 30 bps: `results/universal.md`, `results/leverage.md`,
+`scripts/universal.py`. The catch is the engine:
 ~70% of days are spent in SOXX, and the local sleeve alone loses to the CAC
 (`results/cac40.md`). Universality here is the exported semiconductor core, not portable
 stock alpha.

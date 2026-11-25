@@ -97,6 +97,7 @@ def run(
     rows = mkt._px_row
     arr = mkt._px_arr
     cost_rate = cfg.cost_bps / 1e4
+    borrow_rate = cfg.financing_bps / 1e4 / 252.0
     stop_keep = 1.0 - cfg.stop
     protected_ci = np.array(
         [cols[t] for t in {cfg.core, *cfg.fallback_sectors} if t in cols], dtype=int
@@ -125,6 +126,10 @@ def run(
         pr = np.where(np.isnan(row) | (row <= 0), 0.0, row)
         seen = pr > 0
         last_px[seen] = pr[seen]
+
+        # margin interest on yesterday's negative cash (debt grows by the daily rate)
+        if cash < 0 and borrow_rate:
+            cash *= 1.0 + borrow_rate
 
         # 1. execute orders decided at the previous close, at today's close
         if pending_target is not None or pending_exit:
@@ -177,10 +182,20 @@ def run(
                         continue
                     sh = delta / p
                     cost = abs(delta) * cost_rate
-                    if delta > 0 and cash < delta + cost:
-                        delta = max(0.0, cash - cost)
-                        sh = delta / p
-                        cost = delta * cost_rate
+                    if delta > 0:
+                        if cfg.leverage <= 1.0:
+                            if cash < delta + cost:
+                                delta = max(0.0, cash - cost)
+                                sh = delta / p
+                                cost = delta * cost_rate
+                        else:
+                            gross_now = float((shares * pr).sum())
+                            headroom = cfg.leverage * equity_now - gross_now
+                            affordable = max(0.0, headroom) / (1.0 + cost_rate)
+                            if delta > affordable:
+                                delta = affordable
+                                sh = delta / p
+                                cost = delta * cost_rate
                     cash -= delta + cost
                     if shares[ci] == 0.0 and sh != 0.0:
                         held.append(ci)
@@ -212,6 +227,47 @@ def run(
         cashs[i] = cash
         wmat[i] = vals / equity
 
+        # margin discipline: after a drop, gross exposure drifts above the target.
+        # A real account would be forced to sell, so do it here too (and pay costs).
+        if cfg.leverage > 1.0 and equity > 0:
+            for _ in range(2):
+                gross_now = float((shares * prm).sum())
+                cap = cfg.leverage * equity
+                if gross_now <= cap * 1.000001:
+                    break
+                scale = cap / gross_now
+                for ci in list(held):
+                    p = pr[ci]
+                    if p <= 0:
+                        continue
+                    sell_sh = shares[ci] * (1.0 - scale)
+                    if sell_sh <= 0:
+                        continue
+                    notional = sell_sh * p
+                    cash += notional - notional * cost_rate
+                    shares[ci] -= sell_sh
+                    trades.append(
+                        (
+                            d,
+                            names[ci],
+                            "SELL",
+                            sell_sh,
+                            float(p),
+                            notional,
+                            "deleverage",
+                        )
+                    )
+                    if shares[ci] * p < 1e-6:
+                        shares[ci] = 0.0
+                        entry[ci] = np.nan
+                        peak[ci] = np.nan
+                        held.remove(ci)
+                vals = shares * prm
+                equity = cash + float(vals.sum())
+                eqs[i] = equity
+                cashs[i] = cash
+                wmat[i] = vals / equity
+
         if held:
             hi = np.array(held, dtype=int)
             live = (pr[hi] > 0) & ~np.isin(hi, protected_ci)
@@ -234,6 +290,11 @@ def run(
             base = selector(mkt, d, [names[ci] for ci in held], banned_names)
             if overlay is not None:
                 base = overlay(d, base, mkt)
+            if cfg.leverage != 1.0 and base:
+                lev = cfg.leverage
+                if cfg.leverage_mode == "trend" and not bool(mkt.regime.loc[d]):
+                    lev = cfg.leverage_down
+                base = {t: w * lev for t, w in base.items()}
             pending_target = base
             pending_reason = {cols[t]: "rebalance" for t in base if t in cols}
 
