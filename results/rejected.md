@@ -96,6 +96,18 @@ Verdict: the overnight gap is a cost, not a free lunch. Momentum names tend to g
 the signal's direction, so buying at the open pays up. Close fill stays the default;
 `exec_price="open"` remains available for a different execution assumption.
 
-## 8. SOXX/SMH rotation
+## 8. SMH/SOXX 50/50 core blend
+
+Synthetic core = 0.5 SMH + 0.5 SOXX, daily rebalanced, same 2.5x + trend rules.
+
+| core | final | Sharpe | maxDD |
+|---|---:|---:|---:|
+| SMH | **$1,402,314** | 0.977 | -59.9% |
+| 50/50 blend | $1,236,163 | 0.959 | -65.2% |
+
+Verdict: no diversification benefit in this sample; the blend dilutes the stronger fund.
+Rejected.
+
+## 9. SOXX/SMH rotation
 
 Top-1 by 126d/10d between SOXX and SMH: $545k at 2x, below SMH alone ($889k). Rejected.

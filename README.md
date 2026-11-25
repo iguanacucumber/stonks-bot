@@ -53,6 +53,8 @@ vs SPY 11.6% / 7.3% / 19.1%; beats SPY in 9 of 12 calendar years (loses 2015, 20
 The ladder: 1x $224,860 (-36.3%, Sharpe 0.99), 1.5x $514,342 (-49.8%), 2x $904,486 (-60.7%),
 plain 2.5x $1,246,358 (-69.4%), **2.5x + daily trend $1,402,314 (-59.9%, Sharpe 0.98)**.
 The trend cut is what makes 2.5x carry the same drawdown as plain 2x, with 55% more money.
+A leverage band lets gross overshoot before trimming: `--leverage-band 0.10` makes $1,435,896
+(-60.9% DD), `0.20` makes $1,547,284 (-63.3% DD). Off by default; more money for more tail.
 `results/leverage.md`, `scripts/leverage.py`.
 
 The catch: SMH is the semiconductor index (more NVDA-concentrated than SOXX). The rotation is
