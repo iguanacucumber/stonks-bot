@@ -29,14 +29,14 @@ class Config:
     cost_bps: float = 10.0
     min_dollar_vol: float = 5e6
     llm_active_share: float = 0.20
-    # Default: dual-momentum rotation. Hold QQQ while its 12-month return beats
+    # Default: dual-momentum rotation. Hold VGT while its 12-month return beats
     # SPY, otherwise run the S&P momentum sleeve. Set core_weight < 1 to blend.
-    core: str | None = "QQQ"
+    core: str | None = "VGT"
     core_weight: float = 1.0
     core_mode: str = "relative"        # "always" | "relative" | "relative_switch"
     core_lookback: int = 252
     core_alt: str | None = "SPY"
-    fallback: str = "sectors"          # "sectors" or "momentum"
+    fallback: str = "momentum"         # "momentum" or "sectors"
     fallback_sectors: tuple[str, ...] = ("XLK", "XLF", "XLE", "XLV", "XLI", "XLP", "XLU", "XLB", "XLY")
     sector_top: int = 3
 

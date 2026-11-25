@@ -5,9 +5,9 @@ No broker connection, no orders, no keys.
 
 ## What it does
 
-**Default: dual-momentum rotation.** Hold QQQ while its 12-month total return beats SPY;
-otherwise rotate into the top 3 of 9 sector ETFs by 12-1 momentum. Monthly check, next-close
-execution, 10 bps per side, no leverage.
+**Default: dual-momentum rotation.** Hold VGT while its 12-month total return beats SPY;
+otherwise rotate into the S&P momentum sleeve. Monthly check, next-close execution, 10 bps
+per side, no leverage.
 
 The S&P sleeve (used when QQQ lags) is:
 1. **Universe**: point-in-time S&P 500 membership (fja05680 history + 2026 changes), liquid names only.
@@ -43,13 +43,13 @@ promise.
 
 | $10,000 from | Bot | SPY | Bot max DD | SPY max DD |
 |---|---:|---:|---:|---:|
-| 2015-01-02 → 2026-11-24 | **$60,851** | $42,186 | **-28.6%** | -33.7% |
-| 2026-01-02 → 2026-11-24 | $10,526 | $10,534 | -17.1% | -11.5% |
+| 2015-01-02 → 2026-11-24 | **$91,136** | $42,186 | **-31.8%** | -33.7% |
+| 2026-01-02 → 2026-11-24 | **$10,939** | $10,534 | -24.8% | -11.5% |
 
-Full-window CAGR 16.4% vs 12.9%; Sharpe 0.87 vs 0.79. The paired excess return is +3.5%/yr
-with a bootstrap 95% CI of -1.4% to +8.5% — a real terminal-wealth win, not a statistically
-significant alpha claim. The edge is QQQ beta plus the sector-9 fallback in lag periods. 2026
-is a tie (-$8); 2023-2026 lags SPY, and the full win is carried by 2020-2022.
+Full-window CAGR 20.5% vs 12.9%; Sharpe 0.95 vs 0.79. The paired excess return is +7.4%/yr with
+a bootstrap 95% CI of +1.3% to +13.3%. Walk-forward CAGR: 20.0% / 15.7% / 20.3% vs SPY
+11.6% / 7.3% / 19.1%. The catch: VGT is a tech-sector ETF. VGT buy-and-hold alone made $88,581;
+the rotation adds ~$2.5k and trims drawdown. 2026 beats SPY but with a deeper drawdown.
 
 ## Run
 

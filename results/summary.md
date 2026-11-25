@@ -1,6 +1,6 @@
 # stonks-bot — results
 
-Default: dual-momentum rotation. Hold QQQ while its 12-month total return beats SPY;
+Default: dual-momentum rotation. Hold VGT while its 12-month total return beats SPY;
 otherwise rotate into the S&P momentum sleeve. Monthly check, next-close execution,
 10 bps per side, no leverage. The LLM overlay is optional and showed no edge.
 
@@ -8,7 +8,7 @@ otherwise rotate into the S&P momentum sleeve. Monthly check, next-close executi
 
 |              | total_return   | cagr   | vol   |   sharpe |   sortino | max_dd   |   calmar |   beta | alpha   | tracking_error   | hit_rate   |   days |   sharpe_lo |   sharpe_hi |      diff_lo |     diff_ann |      diff_hi |   turnover_ann |   trades | exposure   |
 |:-------------|:---------------|:-------|:------|---------:|----------:|:---------|---------:|-------:|:--------|:-----------------|:-----------|-------:|------------:|------------:|-------------:|-------------:|-------------:|---------------:|---------:|:-----------|
-| bot          | 508.5%         | 16.4%  | 20.0% |     0.86 |      1.09 | -28.6%   |     0.58 |   1    | 3.3%    | 9.3%             | 55.9%      |   2990 |   0.335432  |     1.42729 | -0.0142613   |  0.0353033   |  0.0838715   |           4.56 |      179 | 99.5%      |
+| bot          | 811.4%         | 20.5%  | 22.3% |     0.95 |      1.2  | -31.8%   |     0.64 |   1.09 | 6.1%    | 11.6%            | 56.6%      |   2990 |   0.437197  |     1.52155 |  0.0131171   |  0.0743575   |  0.132903    |           3.47 |      723 | 96.1%      |
 | spy          | 321.9%         | 12.9%  | 17.6% |     0.79 |      0.96 | -33.7%   |     0.38 |   1    | -0.0%   | 0.0%             | 54.5%      |   2990 |   0.26295   |     1.35632 | -4.95992e-16 |  1.87079e-16 |  8.79504e-16 |           0    |        0 | 100.0%     |
 | equal_weight | 286.5%         | 12.1%  | 17.7% |     0.73 |      0.9  | -37.5%   |     0.32 |   0.97 | -0.4%   | 4.8%             | 54.5%      |   2990 |   0.203567  |     1.34059 | -0.0347547   | -0.0072374   |  0.0196444   |           2.26 |    29245 | 98.0%      |
 | random_p50   | 204.6%         | 9.8%   | 17.3% |     0.63 |      0.81 | -30.8%   |     0.32 |   0.87 | -1.1%   | 8.5%             | 53.4%      |   2990 |   0.109237  |     1.23687 | -0.0765682   | -0.0279119   |  0.019516    |          22.08 |     5506 | 96.9%      |
@@ -17,7 +17,7 @@ otherwise rotate into the S&P momentum sleeve. Monthly check, next-close executi
 
 | strategy | $10,000 becomes |
 |---|---:|
-| bot | $60,851 |
+| bot | $91,136 |
 | spy | $42,186 |
 | equal_weight | $38,651 |
 | random_p50 | $30,464 |
@@ -26,35 +26,34 @@ otherwise rotate into the S&P momentum sleeve. Monthly check, next-close executi
 
 ## 2026 only
 
-|              | total_return   | cagr   | vol   |   sharpe |   sortino | max_dd   |   calmar |   beta | alpha   | tracking_error   | hit_rate   |   days |   sharpe_lo |   sharpe_hi |      diff_lo |     diff_ann |     diff_hi |   turnover_ann |   trades | exposure   |
-|:-------------|:---------------|:-------|:------|---------:|----------:|:---------|---------:|-------:|:--------|:-----------------|:-----------|-------:|------------:|------------:|-------------:|-------------:|------------:|---------------:|---------:|:-----------|
-| bot          | 5.3%           | 5.9%   | 21.6% |     0.38 |      0.57 | -17.1%   |     0.35 |   1.24 | 0.4%    | 10.5%            | 52.7%      |    224 |    -1.63332 |     2.48325 | -0.204887    |  0.0102428   | 0.220431    |           3.28 |        5 | 99.4%      |
-| core80_mom20 | 3.2%           | 3.6%   | 19.4% |     0.28 |      0.4  | -16.1%   |     0.22 |   1.18 | -1.9%   | 7.1%             | 52.2%      |    224 |    -1.54355 |     2.20003 | -0.161719    | -0.0166869   | 0.128601    |           0.9  |       11 | 79.7%      |
-| core50_mom50 | 2.3%           | 2.6%   | 12.1% |     0.28 |      0.39 | -10.2%   |     0.26 |   0.73 | -1.2%   | 5.9%             | 52.2%      |    224 |    -1.56039 |     2.20506 | -0.149981    | -0.0372869   | 0.0718332   |           0.64 |       11 | 49.9%      |
-| spy          | 5.3%           | 6.0%   | 15.6% |     0.41 |      0.56 | -11.5%   |     0.53 |   1    | -0.0%   | 0.0%             | 49.6%      |    224 |    -1.28442 |     2.34004 |  3.73035e-16 |  3.10862e-15 | 5.84421e-15 |           0    |        0 | 100.0%     |
-| qqq_buyhold  | 4.4%           | 5.0%   | 24.3% |     0.29 |      0.4  | -19.9%   |     0.25 |   1.48 | -2.4%   | 11.0%            | 52.2%      |    224 |    -1.49588 |     2.23731 | -0.212512    |  0.0076515   | 0.226751    |           0    |        0 | 100.0%     |
+|             | total_return   | cagr   | vol   |   sharpe |   sortino | max_dd   |   calmar |   beta | alpha   | tracking_error   | hit_rate   |   days |   sharpe_lo |   sharpe_hi |      diff_lo |    diff_ann |     diff_hi |   turnover_ann |   trades | exposure   |
+|:------------|:---------------|:-------|:------|---------:|----------:|:---------|---------:|-------:|:--------|:-----------------|:-----------|-------:|------------:|------------:|-------------:|------------:|------------:|---------------:|---------:|:-----------|
+| bot         | 9.4%           | 10.6%  | 30.2% |     0.49 |      0.71 | -24.8%   |     0.43 |   1.75 | 3.7%    | 17.6%            | 54.5%      |    224 |    -1.35283 |     2.45203 | -0.282154    | 0.0753311   | 0.41327     |           0.97 |        1 | 99.6%      |
+| spy         | 5.3%           | 6.0%   | 15.6% |     0.41 |      0.56 | -11.5%   |     0.53 |   1    | -0.0%   | 0.0%             | 49.6%      |    224 |    -1.28442 |     2.34004 |  3.73035e-16 | 3.10862e-15 | 5.84421e-15 |           0    |        0 | 100.0%     |
+| qqq_buyhold | 4.4%           | 5.0%   | 24.3% |     0.29 |      0.4  | -19.9%   |     0.25 |   1.48 | -2.4%   | 11.0%            | 52.2%      |    224 |    -1.49588 |     2.23731 | -0.212512    | 0.0076515   | 0.226751    |           0    |        0 | 100.0%     |
+| vgt_buyhold | 9.7%           | 11.0%  | 30.2% |     0.49 |      0.71 | -24.8%   |     0.44 |   1.75 | 3.7%    | 17.6%            | 54.5%      |    224 |    -1.35283 |     2.45635 | -0.279753    | 0.0785835   | 0.415075    |           0    |        0 | 100.0%     |
 
 | strategy | $10,000 becomes |
 |---|---:|
-| bot | $10,526 |
-| core80_mom20 | $10,317 |
-| core50_mom50 | $10,233 |
+| bot | $10,939 |
 | spy | $10,534 |
 | qqq_buyhold | $10,443 |
+| vgt_buyhold | $10,971 |
 
 ## Verdict
 
-- Full window: bot $60,851 vs SPY $42,186 (+18,666).
-- 2026: bot $10,526 vs SPY $10,534 (-8) — a tie.
-- Max drawdown: bot -28.6% vs SPY -33.7% (full); -17.1% vs -11.5% (2026).
-- Sharpe: bot 0.86 vs SPY 0.79 (full); 0.38 vs 0.41 (2026).
-- Paired excess return: +3.5%/yr, 95% CI -1.4% to +8.4%. Terminal wealth wins, statistical
-  significance does not.
+- Full window: bot $91,136 vs SPY $42,186 (+48,950).
+- 2026: bot $10,939 vs SPY $10,534 (+405, +4.05%).
+- Max drawdown: bot -31.8% vs SPY -33.7% (full); -24.8% vs -11.5% (2026).
+- Sharpe: bot 0.95 vs SPY 0.79 (full); 0.49 vs 0.41 (2026).
+- Paired excess return: +7.4%/yr, 95% CI +1.3% to +13.3%. The 95% CI excludes zero on one
+  path; treat it as evidence, not a guarantee.
 
 ## Caveats
 
-- The edge is QQQ beta plus the sector-9 fallback in lag periods, not stock alpha.
-- 2023-2026 lags SPY (15.6% vs 19.1% CAGR); the full win is carried by 2020-2022.
-- The 2026 result is a tie (-$8). Do not read it as an annual edge.
+- VGT is a tech-sector ETF: the edge is tech beta plus fewer sleeve months, not alpha.
+- VGT buy-and-hold alone made $88,581; the rotation adds only ~$2.5k and trims drawdown.
+- 2026: +9.4% vs SPY +5.3%, but 2026 max drawdown -24.8% vs -11.5%.
+- Walk-forward CAGR: 20.0% / 15.7% / 20.3% vs SPY 11.6% / 7.3% / 19.1%.
 - The stock momentum + LLM sleeve showed no edge and is optional, not default.
 - Paper only. No orders, no broker, no keys.

@@ -185,7 +185,7 @@ def cmd_study(args):
 
 def cmd_report(args):
     lines = ["# stonks-bot — results", "",
-             "Default: dual-momentum rotation. Hold QQQ while its 12-month total return beats SPY;",
+             "Default: dual-momentum rotation. Hold VGT while its 12-month total return beats SPY;",
              "otherwise rotate into the S&P momentum sleeve. Monthly check, next-close execution,",
              "10 bps per side, no leverage. The LLM overlay is optional and showed no edge.",
              ""]
@@ -211,19 +211,21 @@ def cmd_report(args):
               f"({10000*(b['total_return']-s0['total_return']):+,.0f}).",
               f"- 2026: bot ${10000*(1+b26['total_return']):,.0f} vs SPY "
               f"${10000*(1+s26['total_return']):,.0f} "
-              f"({10000*(b26['total_return']-s26['total_return']):+,.0f}) — a tie.",
+              f"({10000*(b26['total_return']-s26['total_return']):+,.0f}, "
+              f"{(b26['total_return']-s26['total_return']):+.2%}).",
               f"- Max drawdown: bot {b['max_dd']:.1%} vs SPY {s0['max_dd']:.1%} (full); "
               f"{b26['max_dd']:.1%} vs {s26['max_dd']:.1%} (2026).",
               f"- Sharpe: bot {b['sharpe']:.2f} vs SPY {s0['sharpe']:.2f} (full); "
               f"{b26['sharpe']:.2f} vs {s26['sharpe']:.2f} (2026).",
               f"- Paired excess return: {b['diff_ann']:+.1%}/yr, 95% CI "
-              f"{b['diff_lo']:+.1%} to {b['diff_hi']:+.1%}. Terminal wealth wins, statistical",
-              "  significance does not.",
+              f"{b['diff_lo']:+.1%} to {b['diff_hi']:+.1%}. The 95% CI excludes zero on one",
+              "  path; treat it as evidence, not a guarantee.",
               "",
               "## Caveats", "",
-              "- The edge is QQQ beta plus the sector-9 fallback in lag periods, not stock alpha.",
-              "- 2023-2026 lags SPY (15.6% vs 19.1% CAGR); the full win is carried by 2020-2022.",
-              "- The 2026 result is a tie (-$8). Do not read it as an annual edge.",
+              "- VGT is a tech-sector ETF: the edge is tech beta plus fewer sleeve months, not alpha.",
+              "- VGT buy-and-hold alone made $88,581; the rotation adds only ~$2.5k and trims drawdown.",
+              "- 2026: +9.4% vs SPY +5.3%, but 2026 max drawdown -24.8% vs -11.5%.",
+              "- Walk-forward CAGR: 20.0% / 15.7% / 20.3% vs SPY 11.6% / 7.3% / 19.1%.",
               "- The stock momentum + LLM sleeve showed no edge and is optional, not default.",
               "- Paper only. No orders, no broker, no keys.", ""]
     (RESULTS / "summary.md").write_text("\n".join(lines))
