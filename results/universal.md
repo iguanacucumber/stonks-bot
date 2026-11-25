@@ -29,7 +29,8 @@ same costs. No stock picking and no survivorship, because ETFs do not delist out
 of the sample.
 
 Every table here is **1x** so the market comparison is clean. The shipped bot runs
-2x with 5%/yr margin; the levered result is in `results/leverage.md`.
+2.5x with 5%/yr margin and a daily 200-day core cut; that result is in
+`results/leverage.md`.
 
 ## Tier 1: stock-level markets (local currency)
 

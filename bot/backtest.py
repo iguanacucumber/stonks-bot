@@ -115,6 +115,7 @@ def run(
     pending_reason: dict[int, str] = {}
     peak_eq = 1.0
     risk_off = False
+    risk_reason = ""
 
     trades: list[tuple] = []
     eqs = np.zeros(n)
@@ -283,20 +284,32 @@ def run(
                     banned[ci] = i + cfg.reentry_days
 
         # 2b. drawdown circuit breaker, decided at the close and executed next close
-        if cfg.dd_stop and equity > 0:
+        if (cfg.dd_stop or cfg.trend_ma) and equity > 0:
             peak_eq = max(peak_eq, equity)
             dd = equity / peak_eq - 1.0
-            if not risk_off and dd <= -cfg.dd_stop and held:
+            dd_breach = bool(cfg.dd_stop) and dd <= -cfg.dd_stop
+            trend_breach = False
+            if cfg.trend_ma and mkt.core_ma is not None and cfg.core in cols:
+                ma = mkt.core_ma.loc[d]
+                px_core = pr[cols[cfg.core]]
+                trend_breach = bool(pd.notna(ma) and px_core > 0 and px_core < ma)
+            if not risk_off and (dd_breach or trend_breach) and held:
                 risk_off = True
+                risk_reason = "dd" if dd_breach else "trend"
                 cur = {
                     names[ci]: shares[ci] * pr[ci] / equity
                     for ci in held
                     if pr[ci] > 0
                 }
-                pending_target = {t: w * cfg.dd_scale for t, w in cur.items()}
-                pending_reason = {cols[t]: "drawdown" for t in pending_target}
-            elif risk_off and dd >= -cfg.dd_recover:
-                risk_off = False
+                scale = cfg.dd_scale if risk_reason == "dd" else cfg.trend_scale
+                pending_target = {t: w * scale for t, w in cur.items()}
+                pending_reason = {cols[t]: "risk_off" for t in pending_target}
+            elif risk_off:
+                # a trend exit clears when the trend is back, not when cash "recovers"
+                if risk_reason == "trend" and not trend_breach:
+                    risk_off = False
+                elif risk_reason == "dd" and dd >= -cfg.dd_recover:
+                    risk_off = False
 
         # 3. decide next close's trades
         if i % cfg.rebalance_days == 0 and i + 1 < n:
@@ -313,7 +326,7 @@ def run(
                 if cfg.leverage_mode == "trend" and not bool(mkt.regime.loc[d]):
                     lev = cfg.leverage_down
                 if risk_off:
-                    lev *= cfg.dd_scale
+                    lev *= cfg.dd_scale if risk_reason == "dd" else cfg.trend_scale
                 base = {t: w * lev for t, w in base.items()}
             pending_target = base
             pending_reason = {cols[t]: "rebalance" for t in base if t in cols}

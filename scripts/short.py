@@ -34,8 +34,10 @@ BASE = dict(
     core_mode="relative",
     core_lookback=126,
     cost_bps=10.0,
-    leverage=2.0,
+    leverage=2.5,
     financing_bps=500.0,
+    trend_ma=200,
+    trend_scale=0.5,
 )
 PROFILES = {
     "monthly": {},

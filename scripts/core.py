@@ -95,7 +95,7 @@ def main():
         )
     lines += [
         "",
-        "## At 2x, shipped config (40% sector cap)",
+        "## At 2x, pre-trend config (40% sector cap)",
         "",
         "| market | SOXX | SMH | SMH / SOXX |",
         "|---|---:|---:|---:|",

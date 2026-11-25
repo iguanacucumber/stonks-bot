@@ -19,8 +19,12 @@ CACHE = ROOT / "cache"
 RESULTS = ROOT / "results"
 RESULTS.mkdir(exist_ok=True)
 # Shipped default: 2x gross, financed at 5%/yr. `--leverage 1` reverts.
-DEFAULT_LEVERAGE = 2.0
+DEFAULT_LEVERAGE = 2.5
 DEFAULT_FINANCING_BPS = 500.0
+# Daily risk cut: below the core's 200-day MA, hold half size. It is checked every
+# day, not at the monthly rebalance; the monthly version did not work (results/rejected.md).
+DEFAULT_TREND_MA = 200
+DEFAULT_TREND_SCALE = 0.5
 # `monthly` is the researched default. Faster rebalancing is available, but it pays
 # far more in costs than it earns: see results/short.md.
 PROFILES = {
@@ -43,6 +47,8 @@ def _load(
     profile: str = "monthly",
     core: str | None = None,
     dd_stop: float | None = None,
+    trend_ma: int | None = None,
+    trend_scale: float | None = None,
 ):
     panel, mem = markets.build(market)
     if market != "US":
@@ -53,6 +59,10 @@ def _load(
         kw["core"] = core
     if dd_stop:
         kw["dd_stop"] = dd_stop
+    kw["trend_ma"] = DEFAULT_TREND_MA if trend_ma is None else trend_ma
+    kw["trend_scale"] = (
+        DEFAULT_TREND_SCALE if trend_scale is None else trend_scale
+    )
     if core_weight is not None:
         kw["core_weight"] = core_weight
     if core_mode:
@@ -99,6 +109,8 @@ def cmd_backtest(args):
         args.profile,
         args.core,
         args.dd_stop,
+        args.trend_ma,
+        args.trend_scale,
     )
     print(
         f"dates {mkt.dates[0].date()} -> {mkt.dates[-1].date()}  tickers {mkt.px.shape[1]}"
@@ -244,6 +256,8 @@ def _metrics_2026() -> pd.DataFrame:
         start="2026-01-02",
         leverage=DEFAULT_LEVERAGE,
         financing_bps=DEFAULT_FINANCING_BPS,
+        trend_ma=DEFAULT_TREND_MA,
+        trend_scale=DEFAULT_TREND_SCALE,
     )
     mkt = strategy.Market(panel, mem, cfg)
     m_bot, _ = backtest.summarize(backtest.run(mkt), mkt)
@@ -260,8 +274,9 @@ def cmd_report(args):
         "",
         "Default: dual-momentum rotation. Hold SMH while its 6-month total return beats SPY;",
         "otherwise rotate into the S&P momentum sleeve (6 names, 10-day skip). Monthly check,",
-        "next-close execution, 10 bps per side, 2x gross with 5%/yr margin interest",
-        "(`--leverage 1` for the unlevered book), no trailing stop, no regime cut.",
+        "next-close execution, 10 bps per side, 2.5x gross with 5%/yr margin interest,",
+        "half size when the core is below its 200-day MA (`--trend-ma 0` disables),",
+        "no trailing stop, no monthly regime cut.",
         "",
     ]
     for fname, title in [
@@ -392,15 +407,25 @@ def _pnl_box(rows: list[tuple[str, float | None]], capital: float, head: list[st
     return "\n".join(out)
 
 
+def _risk_scale(mkt, date, cfg) -> float:
+    """Half size when the core is below its trend MA, as the backtest does daily."""
+    if not cfg.trend_ma or cfg.core not in mkt.px.columns:
+        return 1.0
+    px = mkt.px[cfg.core]
+    ma = px.rolling(cfg.trend_ma, min_periods=cfg.trend_ma).mean().loc[date]
+    return cfg.trend_scale if pd.notna(ma) and px.loc[date] < ma else 1.0
+
+
 def cmd_pnl(args):
     panel, mem, mkt, cfg = _load(
         "2015-01-01", None, None, None, args.leverage, args.financing_bps,
         args.market, args.profile, args.core, args.dd_stop,
+        args.trend_ma, args.trend_scale,
     )
     res = backtest.run(mkt)
     d = mkt.dates[-1]
     targets = backtest._default_selector(mkt, d, overlay.held_names(res, d), set())
-    targets = {t: w * cfg.leverage for t, w in targets.items()}
+    targets = {t: w * cfg.leverage * _risk_scale(mkt, d, cfg) for t, w in targets.items()}
     hour_pct, day_pct, last_ts, quoted = _live_moves(targets, mkt, d)
     live = 1.0 + day_pct if last_ts is not None and last_ts.date() > d.date() else 1.0
     daily = backtest.horizon_returns(res.equity, live)
@@ -437,6 +462,8 @@ def cmd_paper(args):
         args.profile,
         args.core,
         args.dd_stop,
+        args.trend_ma,
+        args.trend_scale,
     )
     d = mkt.dates[-1]
     res = backtest.run(mkt)
@@ -448,6 +475,9 @@ def cmd_paper(args):
         print("paper: LLM overlay applied")
     if cfg.leverage != 1.0:
         targets = {t: w * cfg.leverage for t, w in targets.items()}
+    scale = _risk_scale(mkt, d, cfg)
+    if scale != 1.0:
+        targets = {t: w * scale for t, w in targets.items()}
     last_close = mkt.px.loc[d]
     path = RESULTS / "paper_ledger.csv"
     for it in range(args.iterations):
@@ -515,6 +545,8 @@ def main(argv=None):
     pb.add_argument("--market", choices=sorted(markets.MARKETS), default="US")
     pb.add_argument("--core", default=None, help="core ETF, default SMH")
     pb.add_argument("--dd-stop", type=float, default=0.0, help="drawdown stop, 0=off")
+    pb.add_argument("--trend-ma", type=int, default=DEFAULT_TREND_MA)
+    pb.add_argument("--trend-scale", type=float, default=DEFAULT_TREND_SCALE)
     pb.add_argument("--profile", choices=sorted(PROFILES), default="monthly")
     pb.add_argument("--leverage", type=float, default=DEFAULT_LEVERAGE)
     pb.add_argument("--financing-bps", type=float, default=DEFAULT_FINANCING_BPS)
@@ -534,6 +566,9 @@ def main(argv=None):
     pn.add_argument("--capital", type=float, default=10000.0)
     pn.add_argument("--market", choices=sorted(markets.MARKETS), default="US")
     pn.add_argument("--core", default=None, help="core ETF, default SMH")
+    pn.add_argument("--dd-stop", type=float, default=0.0, help="drawdown stop, 0=off")
+    pn.add_argument("--trend-ma", type=int, default=DEFAULT_TREND_MA)
+    pn.add_argument("--trend-scale", type=float, default=DEFAULT_TREND_SCALE)
     pn.add_argument("--profile", choices=sorted(PROFILES), default="monthly")
     pn.add_argument("--leverage", type=float, default=DEFAULT_LEVERAGE)
     pn.add_argument("--financing-bps", type=float, default=DEFAULT_FINANCING_BPS)
@@ -548,6 +583,8 @@ def main(argv=None):
     pp.add_argument("--market", choices=sorted(markets.MARKETS), default="US")
     pp.add_argument("--core", default=None, help="core ETF, default SMH")
     pp.add_argument("--dd-stop", type=float, default=0.0, help="drawdown stop, 0=off")
+    pp.add_argument("--trend-ma", type=int, default=DEFAULT_TREND_MA)
+    pp.add_argument("--trend-scale", type=float, default=DEFAULT_TREND_SCALE)
     pp.add_argument("--profile", choices=sorted(PROFILES), default="monthly")
     pp.add_argument("--leverage", type=float, default=DEFAULT_LEVERAGE)
     pp.add_argument("--financing-bps", type=float, default=DEFAULT_FINANCING_BPS)

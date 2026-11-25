@@ -14,9 +14,10 @@ Scale exposure when SPY/SMH is below its 200-day MA, monthly sampled.
 | SPY<MA -> cash | $241,000 | -59.2% | -17.7% | $242,000 | -58.0% |
 | SMH<MA -> 50% | $775,000 | -58.0% | -20.4% | $672,000 | -59.5% |
 
-Verdict: the filter costs a third of terminal wealth to trim 2022, and it misses the 2026
-semis drawdown because the index never broke its MA. At equal average gross, constant 1.7x
-beats every ×0.5 variant. It is a leverage knob, not a signal.
+Verdict: **monthly sampling** is a leverage knob, not a signal. The daily version is
+different and is now shipped: checked every day, 2.5x + 200d cut to 50% makes $1,368,999
+vs $1,222,440 for plain 2.5x while cutting the drawdown from -69.4% to -59.9%
+(`results/leverage.md`). Sampling frequency was the whole difference.
 
 ## 2. Core rotation among tech ETFs
 

@@ -72,6 +72,10 @@ class Config:
     dd_stop: float = 0.0
     dd_scale: float = 0.5
     dd_recover: float = 0.10
+    # Daily trend cut on the core ETF: below its trend_ma, scale to trend_scale.
+    # 0 disables it. Unlike the monthly overlay, this is checked every day.
+    trend_ma: int = 0
+    trend_scale: float = 0.5
     # Default: dual-momentum rotation. Hold SMH while its 6-month return beats the
     # benchmark, otherwise run the momentum sleeve. SMH beat SOXX on the US and tech
     # books (results/core.md); SOXX still edges it in most of Europe, use --core SOXX.
@@ -117,6 +121,12 @@ class Market:
         self.mom = d["mom"]
         self.dollar = d["dollar"]
         self.spy_ma = d["spy_ma"]
+        core = cfg.core
+        self.core_ma = (
+            px[core].rolling(cfg.trend_ma, min_periods=cfg.trend_ma).mean()
+            if cfg.trend_ma and core in px.columns
+            else None
+        )
         self.regime = self.spy > self.spy_ma
         self.members = self._membership(membership, panel)
         self.sectors = universe.sector_map()

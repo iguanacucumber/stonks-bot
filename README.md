@@ -5,10 +5,11 @@ with a constrained LLM news overlay. No broker connection, no orders, no keys.
 
 ## What it does
 
-**Default: dual-momentum rotation, 2x gross.** Hold SMH while its 6-month total return
-beats SPY; otherwise rotate into the S&P momentum sleeve. Monthly check, next-close
-execution, 10 bps per side, 2x gross financed at 5%/yr with a daily de-leverage cap
-(`--leverage 1` for the unlevered book), no trailing stop, no regime cut.
+**Default: dual-momentum rotation, 2.5x gross, daily trend cut.** Hold SMH while its
+6-month total return beats SPY; otherwise rotate into the S&P momentum sleeve. Monthly
+check, next-close execution, 10 bps per side, 2.5x gross financed at 5%/yr with a daily
+de-leverage cap. While the core is below its 200-day MA, gross is halved until it recovers
+(`--trend-ma 0` disables, `--leverage 1` unlevers). No trailing stop, no monthly regime cut.
 
 The S&P sleeve (used when SOXX lags) is:
 1. **Universe**: point-in-time S&P 500 membership (fja05680 history + 2026 changes), liquid names only.
@@ -40,31 +41,32 @@ Known bias: ~18% of 2015–2026 index members have no Yahoo history (mostly acqu
 names). They are dropped. Results are survivor-biased; treat them as a sanity check, not a
 promise.
 
-## Results (paper backtest, 10 bps, 2x gross at 5%/yr)
+## Results (paper backtest, 10 bps, 2.5x gross + trend at 5%/yr)
 
 | $10,000 from | Bot | SPY | Bot max DD | SPY max DD |
 |---|---:|---:|---:|---:|
-| 2015-01-02 → 2026-11-24 | **$889,382** | $42,186 | -60.7% | **-33.7%** |
-| 2026-01-02 → 2026-11-24 | **$11,500** | $10,534 | -60.6% | **-11.5%** |
+| 2015-01-02 → 2026-11-24 | **$1,368,999** | $42,186 | -59.9% | **-33.7%** |
+| 2026-01-02 → 2026-11-24 | **$13,303** | $10,534 | -61.5% | **-11.5%** |
 
-Full-window CAGR 46.0% vs 12.9%; Sharpe 0.93 vs 0.79. Walk-forward CAGR: 29.2% / 38.1% / 87.0%
+Full-window CAGR 51.4% vs 12.9%; Sharpe 0.97 vs 0.79. Walk-forward CAGR: 34.8% / 47.0% / 90.6%
 vs SPY 11.6% / 7.3% / 19.1%; beats SPY in 9 of 12 calendar years (loses 2015, 2018, 2022).
-The leverage ladder: 1x $222,636 (-36.3%, Sharpe 0.99), 1.5x $507,334 (-49.8%), 2x $889,382
-(-60.7%), 2.5x $1,222,440 (-69.4%). Sharpe is flat across the ladder, so leverage buys money,
-not skill: `results/leverage.md`, `scripts/leverage.py`.
+The ladder: 1x $222,636 (-36.3%, Sharpe 0.99), 1.5x $507,334 (-49.8%), 2x $889,382 (-60.7%),
+plain 2.5x $1,222,440 (-69.4%), **2.5x + daily trend $1,368,999 (-59.9%, Sharpe 0.97)**.
+The trend cut is what makes 2.5x carry the same drawdown as plain 2x, with 54% more money.
+`results/leverage.md`, `scripts/leverage.py`.
 
 The catch: SMH is the semiconductor index (more NVDA-concentrated than SOXX). The rotation is
 an overlay on that asset, not stock alpha. Ten rounds of single-knob changes took the
 unlevered SOXX-era book from $91,136 to $212,063: `results/rounds10.md`; SMH later beat SOXX
 on the US and tech books (`results/core.md`). Rounds 4-10 buy return by removing stop/regime
 protection and are tuned on this path; only rounds 1-3 also improved the held-back 2023-2026
-window. At 2x the drawdown reaches -61%, and 2022 is -33.3%.
+window. At 2.5x the drawdown reaches -60%, and 2022 is -32.8%.
 
 **Cross-market:** the same config on **39 markets** (9 stock-level including a 48-name
 NASDAQ tech book, 30 country/tech ETFs) is profitable in **39/39** and beats the local
-index in **39/39** over 2015-2026, at 1x and at 2x, at 10 bps and at 30 bps:
+index in **39/39** over 2015-2026, at 1x and at the shipped 2.5x + trend, at 10 bps and at 30 bps:
 `results/universal.md`, `results/leverage.md`, `scripts/universal.py`. The catch is the engine:
-~70% of days are spent in SOXX, and the local sleeve alone loses to the CAC
+~70% of days are spent in the semis core, and the local sleeve alone loses to the CAC
 (`results/cac40.md`). Universality here is the exported semiconductor core, not portable
 stock alpha.
 
