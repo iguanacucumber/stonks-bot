@@ -149,6 +149,47 @@ def wide(panel: pd.DataFrame, field: str) -> pd.DataFrame:
     return panel.pivot(index="date", columns="ticker", values=field).sort_index()
 
 
+def intraday(
+    symbols: list[str], interval: str = "1m", period: str = "5d", workers: int = 6
+) -> dict[str, pd.DataFrame]:
+    """Minute bars in New York time, keyed by symbol. Empty frame on failure."""
+
+    def one(s: str) -> tuple[str, pd.DataFrame]:
+        try:
+            r = requests.get(
+                f"https://query1.finance.yahoo.com/v8/finance/chart/{s}",
+                params={
+                    "range": period,
+                    "interval": interval,
+                    "includePrePost": "false",
+                    "events": "div,split",
+                },
+                headers=UA,
+                timeout=30,
+            )
+            if r.status_code != 200:
+                return s, pd.DataFrame()
+            res = r.json().get("chart", {}).get("result")
+            if not res:
+                return s, pd.DataFrame()
+            ts = pd.to_datetime(res[0]["timestamp"], unit="s", utc=True).tz_convert(
+                "America/New_York"
+            )
+            close = (res[0].get("indicators", {}).get("quote") or [{}])[0].get("close")
+            if close is None:
+                return s, pd.DataFrame()
+            df = pd.DataFrame({"ts": ts, "close": close}).dropna()
+            return s, df.sort_values("ts").reset_index(drop=True)
+        except Exception:
+            return s, pd.DataFrame()
+
+    out: dict[str, pd.DataFrame] = {}
+    with ThreadPoolExecutor(max_workers=workers) as ex:
+        for s, df in ex.map(one, symbols):
+            out[s] = df
+    return out
+
+
 def latest_prices(symbols: list[str], workers: int = 4) -> dict[str, float]:
     """Last intraday/minute price per symbol, for the paper monitor only."""
 

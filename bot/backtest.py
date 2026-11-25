@@ -351,6 +351,20 @@ def random_selector(seed: int, top_n: int) -> Selector:
     return sel
 
 
+def horizon_returns(eq: pd.Series, live: float = 1.0) -> dict[str, float]:
+    """Trailing returns ending at the last close, chained with today's live move."""
+    out = {}
+    for label, n in (("1 day", 1), ("1 week", 5), ("1 month", 21), ("1 year", 252)):
+        # `live` is today's not-yet-in-the-series move, so it replaces one day of history
+        j = n - 1 if live != 1.0 else n
+        out[label] = (
+            float("nan")
+            if len(eq) <= j
+            else float(eq.iloc[-1] / eq.iloc[-1 - j] * live - 1)
+        )
+    return out
+
+
 def metrics(equity: pd.Series, spy: pd.Series) -> dict[str, float]:
     r = equity.pct_change().dropna()
     b = spy.reindex(r.index).pct_change().dropna()

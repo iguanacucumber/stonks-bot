@@ -116,6 +116,15 @@ def main():
     assert r2.equity.iloc[-1] > 0, "2x wiped the book on a positive-drift panel"
     assert r2f.equity.iloc[-1] < r2.equity.iloc[-1], "financing is free"
 
+    # P&L windows: 1/5/21/252 trading days, chained with the live day
+    eq = pd.Series(1.01 ** np.arange(300))
+    for live in (1.0, 1.02):
+        h = backtest.horizon_returns(eq, live)
+        for label, n in (("1 day", 1), ("1 week", 5), ("1 month", 21), ("1 year", 252)):
+            steps = n - 1 if live != 1.0 else n
+            want = 1.01 ** steps * live - 1
+            assert abs(h[label] - want) < 1e-12, f"{label}: {h[label]} != {want}"
+
     print(
         f"ok: {len(res.equity)} days, final {res.equity.iloc[-1]:.3f}, "
         f"{len(res.trades)} trades, sharpe {backtest.metrics(res.equity, mkt.spy)['sharpe']:.2f}"

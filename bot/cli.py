@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import sys
 import time
 from dataclasses import replace
 from pathlib import Path
@@ -69,8 +70,12 @@ def _random_bench(mkt, seeds: int) -> pd.DataFrame:
 
 def cmd_backtest(args):
     panel, mem, mkt, cfg = _load(
-        args.start, args.end, args.core_weight, args.core_mode,
-        args.leverage, args.financing_bps,
+        args.start,
+        args.end,
+        args.core_weight,
+        args.core_mode,
+        args.leverage,
+        args.financing_bps,
     )
     print(
         f"dates {mkt.dates[0].date()} -> {mkt.dates[-1].date()}  tickers {mkt.px.shape[1]}"
@@ -211,7 +216,8 @@ def _metrics_2026() -> pd.DataFrame:
     mem = universe.load_membership()
     panel = data.build_panel(mem)
     cfg = strategy.Config(
-        start="2026-01-02", leverage=DEFAULT_LEVERAGE,
+        start="2026-01-02",
+        leverage=DEFAULT_LEVERAGE,
         financing_bps=DEFAULT_FINANCING_BPS,
     )
     mkt = strategy.Market(panel, mem, cfg)
@@ -286,10 +292,120 @@ def cmd_report(args):
     print(f"wrote {RESULTS}/summary.md")
 
 
+def _live_moves(targets: dict[str, float], mkt, d):
+    """Hour and day P&L for the current book from 1-minute bars."""
+    frames = data.intraday(list(targets) + ["SPY"])
+    hour: dict[str, float] = {}
+    day: dict[str, float] = {}
+    last_ts = None
+    for t in targets:
+        df = frames.get(t)
+        if df is None or df.empty:
+            continue
+        session = df.ts.dt.date.max()
+        bars = df[df.ts.dt.date == session]
+        last = bars.iloc[-1]
+        cutoff = last.ts - pd.Timedelta(minutes=60)
+        base = bars[bars.ts <= cutoff]
+        if len(base):
+            hour[t] = float(last.close / base.close.iloc[-1] - 1)
+        prev = mkt.px[t].loc[d] if t in mkt.px.columns else float("nan")
+        if pd.notna(prev) and prev > 0 and session > d.date():
+            day[t] = float(last.close / prev - 1)
+        if last_ts is None or last.ts > last_ts:
+            last_ts = last.ts
+    return (
+        sum(w * hour.get(t, 0.0) for t, w in targets.items()),
+        sum(w * day.get(t, 0.0) for t, w in targets.items()),
+        last_ts,
+        len(hour),
+    )
+
+
+def _paint(text: str, value: float) -> str:
+    if not sys.stdout.isatty():
+        return text
+    color = "\033[32m" if value >= 0 else "\033[31m"
+    return f"{color}{text}\033[0m"
+
+
+def _pnl_box(rows: list[tuple[str, float | None]], capital: float, head: list[str]):
+    widths = [10, 11, 14, 16]
+    probe = "│ " + " │ ".join("x" * w for w in widths) + " │"
+    inner = max(len(probe) - 2, max(len(h) for h in head) + 2)
+    rule = "├" + "─" * inner + "┤"
+    out = ["╭" + "─" * inner + "╮"]
+    for h in head:
+        out.append("│ " + h.ljust(inner - 2)[: inner - 2] + " │")
+    out += [rule]
+    head_row = " │ ".join(
+        f"{h:>{w}}" for h, w in zip(("horizon", "return", "P&L", "end value"), widths)
+    )
+    out.append("│ " + head_row.ljust(inner - 2) + " │")
+    out.append(rule)
+    for label, pct in rows:
+        if pct is None or pd.isna(pct):
+            cells = [
+                f"{label:<{widths[0]}}",
+                f"{'n/a':>{widths[1]}}",
+                f"{'n/a':>{widths[2]}}",
+                f"{'n/a':>{widths[3]}}",
+            ]
+        else:
+            pnl = capital * pct
+            end = capital * (1 + pct)
+            cells = [
+                f"{label:<{widths[0]}}",
+                _paint(f"{pct:+.2%}".rjust(widths[1]), pct),
+                _paint(
+                    f"{'+' if pnl >= 0 else '-'}${abs(pnl):,.0f}".rjust(widths[2]), pct
+                ),
+                f"${end:,.0f}".rjust(widths[3]),
+            ]
+        out.append("│ " + " │ ".join(cells).ljust(inner - 2) + " │")
+    out.append("╰" + "─" * inner + "╯")
+    return "\n".join(out)
+
+
+def cmd_pnl(args):
+    panel, mem, mkt, cfg = _load(
+        "2015-01-01", None, None, None, args.leverage, args.financing_bps
+    )
+    res = backtest.run(mkt)
+    d = mkt.dates[-1]
+    targets = backtest._default_selector(mkt, d, overlay.held_names(res, d), set())
+    targets = {t: w * cfg.leverage for t, w in targets.items()}
+    hour_pct, day_pct, last_ts, quoted = _live_moves(targets, mkt, d)
+    live = 1.0 + day_pct if last_ts is not None and last_ts.date() > d.date() else 1.0
+    daily = backtest.horizon_returns(res.equity, live)
+    rows = [
+        ("1 hour", hour_pct if quoted else None),
+        ("1 day", daily["1 day"]),
+        ("1 week", daily["1 week"]),
+        ("1 month", daily["1 month"]),
+        ("1 year", daily["1 year"]),
+    ]
+    stamp = last_ts.strftime("%Y-%m-%d %H:%M ET") if last_ts is not None else "no quote"
+    head = [
+        "STONKS-BOT  ·  paper P&L",
+        f"${args.capital:,.0f}  ·  {cfg.leverage:.1f}x gross  ·  signal {d.date()}  ·  {stamp}",
+    ]
+    print(_pnl_box(rows, args.capital, head))
+    book = "  ".join(
+        f"{t} {w:.0%}" for t, w in sorted(targets.items(), key=lambda x: -x[1])
+    )
+    print(f"  book: {book or 'cash'}")
+    print(f"  hour quotes: {quoted}/{len(targets)} names")
+
+
 def cmd_paper(args):
     panel, mem, mkt, cfg = _load(
-        "2026-01-02", None, args.core_weight, args.core_mode,
-        args.leverage, args.financing_bps,
+        "2026-01-02",
+        None,
+        args.core_weight,
+        args.core_mode,
+        args.leverage,
+        args.financing_bps,
     )
     d = mkt.dates[-1]
     res = backtest.run(mkt)
@@ -378,6 +494,12 @@ def main(argv=None):
 
     pr = sub.add_parser("report")
     pr.set_defaults(func=cmd_report)
+
+    pn = sub.add_parser("pnl")
+    pn.add_argument("--capital", type=float, default=10000.0)
+    pn.add_argument("--leverage", type=float, default=DEFAULT_LEVERAGE)
+    pn.add_argument("--financing-bps", type=float, default=DEFAULT_FINANCING_BPS)
+    pn.set_defaults(func=cmd_pnl)
 
     pp = sub.add_parser("paper")
     pp.add_argument("--interval", type=int, default=60)

@@ -75,11 +75,15 @@ uv sync
 .venv/bin/python -m bot.cli ingest                 # ~8 min, cached
 .venv/bin/python -m bot.cli backtest --random-seeds 50
 .venv/bin/python -m bot.cli report
+.venv/bin/python -m bot.cli pnl --capital 10000    # 1h / 1d / 1w / 1m / 1y P&L
 .venv/bin/python -m bot.cli paper --interval 60 --iterations 10
-# stock + LLM sleeve instead of the QQQ core:
+# stock + LLM sleeve instead of the SOXX core:
 .venv/bin/python -m bot.cli backtest --core-weight 0
 .venv/bin/python -m bot.cli study --max-names 40
 ```
+
+`pnl` prices the current book with 1-minute bars for the last hour and today, and uses the
+backtest equity for the week/month/year windows. It reads no state and places no orders.
 
 `paper` polls last prices on a seconds-to-minutes cadence and appends target weights to
 `results/paper_ledger.csv`. It never sends an order. The strategy itself rebalances monthly;
