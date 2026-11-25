@@ -46,7 +46,7 @@ SALT_SCENARIOS = [
 ]
 PROFILE_KW = {
     "monthly sleeve": {},
-    "tax profile": {"core_mode": "always", "leverage_band": 0.10, "tax_lots": "hifo"},
+    "tax profile": {"core_mode": "always", "leverage_band": 0.30, "tax_lots": "hifo"},
 }
 
 
@@ -75,8 +75,8 @@ VARIANTS = {
     "monthly sleeve, HIFO lots": {"tax_lots": "hifo"},
     "core only": {"core_mode": "always"},
     "core + 10% band": {"core_mode": "always", "leverage_band": 0.10},
-    "core + 10% band + HIFO (tax profile)": {
-        "core_mode": "always", "leverage_band": 0.10, "tax_lots": "hifo",
+    "core + 30% band + HIFO (tax profile)": {
+        "core_mode": "always", "leverage_band": 0.30, "tax_lots": "hifo",
     },
     "core + 20% band": {"core_mode": "always", "leverage_band": 0.20},
 }

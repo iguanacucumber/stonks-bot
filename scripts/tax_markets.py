@@ -27,7 +27,7 @@ BASE = dict(
 )
 PROFILES = {
     "monthly sleeve": {},
-    "tax profile": {"core_mode": "always", "leverage_band": 0.10, "tax_lots": "hifo"},
+    "tax profile": {"core_mode": "always", "leverage_band": 0.30, "tax_lots": "hifo"},
 }
 
 

@@ -82,10 +82,10 @@ Paper forward run on 2026-11-25 printed 127% gross because the 200-day cut was a
 weekday job at 21:15 UTC now logs it automatically (`results/paper.md`).
 
 **Taxable account:** `--profile tax --tax-rate 0.37` drops the stock sleeve, widens the
-leverage band, and sells the highest-basis tax lots first. It makes less pre-tax ($953k vs
-$1.40M) but keeps more after tax: **$252,271 vs $107,839** at 37%, **$191,672 vs $67,999**
-with a 9.3% state tax (SALT-deductible, wash sales enforced), and **$104,416 vs $26,540** at
-54.1% (federal + NIIT + 13.3% state), at 7.4x turnover instead of 13.8x, 1-day mean +0.197% vs
+leverage band, and sells the highest-basis tax lots first. It makes less pre-tax ($1.14M vs
+$1.40M) but keeps more after tax: **$324,234 vs $107,839** at 37%, **$251,290 vs $67,999**
+with a 9.3% state tax (SALT-deductible, wash sales enforced), and **$144,036 vs $26,540** at
+54.1% (federal + NIIT + 13.3% state), at 6.1x turnover instead of 13.8x, 1-day mean +0.210% vs
 +0.165%. HIFO hurts the high-turnover monthly sleeve
 ($108k → $87k) and helps the low-turnover tax book (+26%). A tax-sheltered account should
 run the monthly book. `results/realism.md`.

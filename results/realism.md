@@ -25,12 +25,12 @@ is in `results/paper_ledger.csv`; `pnl` shows the same state:
 | S&P 500 | open | 10 | **$995,571** | 47.4% | 0.94 | -65.4% | +0.235% | +1.133% |
 | S&P 500 | open | 20 | **$810,088** | 44.8% | 0.91 | -66.4% | +0.228% | +1.099% |
 | S&P 500 | open | 30 | **$658,644** | 42.3% | 0.88 | -67.3% | +0.221% | +1.066% |
-| NASDAQ tech | close | 10 | **$1,226,554** | 50.0% | 0.96 | -63.1% | +0.242% | +1.166% |
-| NASDAQ tech | close | 20 | **$971,482** | 47.1% | 0.93 | -63.8% | +0.234% | +1.128% |
-| NASDAQ tech | close | 30 | **$768,885** | 44.2% | 0.90 | -65.0% | +0.226% | +1.089% |
-| NASDAQ tech | open | 10 | **$1,111,132** | 48.7% | 0.94 | -63.3% | +0.239% | +1.151% |
-| NASDAQ tech | open | 20 | **$880,762** | 45.9% | 0.91 | -64.0% | +0.231% | +1.113% |
-| NASDAQ tech | open | 30 | **$697,348** | 43.0% | 0.88 | -65.1% | +0.223% | +1.074% |
+| NASDAQ tech | close | 10 | **$1,214,051** | 49.8% | 0.96 | -63.1% | +0.241% | +1.164% |
+| NASDAQ tech | close | 20 | **$961,565** | 46.9% | 0.93 | -63.8% | +0.234% | +1.126% |
+| NASDAQ tech | close | 30 | **$761,026** | 44.0% | 0.90 | -65.0% | +0.226% | +1.087% |
+| NASDAQ tech | open | 10 | **$1,099,757** | 48.6% | 0.94 | -63.3% | +0.238% | +1.149% |
+| NASDAQ tech | open | 20 | **$871,733** | 45.7% | 0.91 | -64.0% | +0.231% | +1.111% |
+| NASDAQ tech | open | 30 | **$690,190** | 42.9% | 0.88 | -65.1% | +0.223% | +1.072% |
 
 The short-horizon mean barely moves: costs are paid at rebalances, not every day.
 What moves is terminal wealth and the drawdown, because the drag compounds.
@@ -42,9 +42,9 @@ What moves is terminal wealth and the drawdown, because the drag compounds.
 | S&P 500 | 0% | **$1,402,314** | 51.7% | 0.98 | -59.9% |
 | S&P 500 | 20% | **$374,437** | 35.7% | 0.80 | -65.4% |
 | S&P 500 | 37% | **$107,839** | 22.2% | 0.64 | -72.0% |
-| NASDAQ tech | 0% | **$1,226,554** | 50.0% | 0.96 | -63.1% |
-| NASDAQ tech | 20% | **$293,935** | 33.0% | 0.77 | -69.3% |
-| NASDAQ tech | 37% | **$78,329** | 18.9% | 0.60 | -74.8% |
+| NASDAQ tech | 0% | **$1,214,051** | 49.8% | 0.96 | -63.1% |
+| NASDAQ tech | 20% | **$290,939** | 32.8% | 0.77 | -69.3% |
+| NASDAQ tech | 37% | **$77,530** | 18.8% | 0.60 | -74.8% |
 
 Tax is charged on net realized gains with loss carryforward, at every sale.
 This is a high-turnover book (13.8x NAV/yr), so the drag is large: a 37% rate
@@ -60,7 +60,7 @@ change this materially; the model does not assume either.
 | monthly sleeve, HIFO lots | $1,402,314 | **$86,907** | 13.8x | +0.246% / +0.160% | +1.183% / +0.760% |
 | core only | $918,668 | **$187,940** | 8.1x | +0.235% / +0.185% | +1.124% / +0.882% |
 | core + 10% band | $952,797 | **$201,488** | 7.4x | +0.240% / +0.191% | +1.143% / +0.914% |
-| core + 10% band + HIFO (tax profile) | $952,797 | **$252,271** | 7.4x | +0.240% / +0.197% | +1.143% / +0.945% |
+| core + 30% band + HIFO (tax profile) | $1,143,561 | **$324,234** | 6.0x | +0.250% / +0.210% | +1.190% / +1.002% |
 | core + 20% band | $1,085,819 | **$246,037** | 6.6x | +0.246% / +0.200% | +1.174% / +0.957% |
 
 The sleeve earns its keep before tax but not after: the monthly book makes
@@ -77,18 +77,18 @@ Rates are summed (no SALT deduction), so they are an upper bound.
 
 | scenario | rate | monthly after tax | tax profile after tax |
 |---|---:|---:|---:|
-| + NIIT 3.8% | 40.8% | $80,126 | $211,662 |
-| + state 13.3% | 54.1% | $26,540 | $104,416 |
-| + state 5% | 45.8% | $53,564 | $165,383 |
-| + state 9.3% | 50.1% | $37,437 | $131,378 |
-| federal 37% | 37.0% | $107,839 | $252,271 |
+| + NIIT 3.8% | 40.8% | $80,126 | $275,455 |
+| + state 13.3% | 54.1% | $26,540 | $144,036 |
+| + state 5% | 45.8% | $53,564 | $219,406 |
+| + state 9.3% | 50.1% | $37,437 | $177,641 |
+| federal 37% | 37.0% | $107,839 | $324,234 |
 
 | scenario | monthly after tax | tax profile after tax |
 |---|---:|---:|
-| + state 9.3%, SALT cap 10k | $68,036 | $197,681 |
-| + state 9.3%, cap + wash | $67,999 | $191,672 |
-| + state 9.3%, no SALT cap | $68,036 | $197,681 |
-| federal 37%, no state | $107,889 | $258,648 |
+| + state 9.3%, SALT cap 10k | $68,036 | $259,417 |
+| + state 9.3%, cap + wash | $67,999 | $251,290 |
+| + state 9.3%, no SALT cap | $68,036 | $259,417 |
+| federal 37%, no state | $107,889 | $332,665 |
 
 SALT and wash sales are second-order at this scale: the $10k deduction cap is
 tiny against the gains, and the monthly book rarely repurchases a name within 30
