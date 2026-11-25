@@ -105,6 +105,7 @@ def run(
     cash = 1.0
     shares = np.zeros(nc)
     entry = np.full(nc, np.nan)
+    last_px = np.full(nc, np.nan)
     peak = np.full(nc, np.nan)
     banned = np.full(nc, -1, dtype=int)
     held: list[int] = []  # column indices, insertion order
@@ -122,6 +123,8 @@ def run(
         row = arr[ri] if ri is not None else np.full(nc, np.nan)
         # prices usable for trading: missing/non-positive -> 0.0 (skipped)
         pr = np.where(np.isnan(row) | (row <= 0), 0.0, row)
+        seen = pr > 0
+        last_px[seen] = pr[seen]
 
         # 1. execute orders decided at the previous close, at today's close
         if pending_target is not None or pending_exit:
@@ -199,11 +202,10 @@ def run(
             pending_target, pending_exit, pending_reason = None, set(), {}
 
         # 2. mark to market and check trailing stops
-        prm = pr
-        missing = prm == 0.0
-        if missing.any():
-            fill = np.where(np.isnan(entry), 0.0, entry)
-            prm = np.where(missing, fill, prm)
+        # A missing bar (foreign holiday, halted name) is carried at the last observed
+        # price. Marking at the entry price used to invent drawdowns on every US holiday.
+        prm = np.where(pr > 0, pr, last_px)
+        prm = np.where(np.isnan(prm), 0.0, prm)
         vals = shares * prm
         equity = cash + float(vals.sum())
         eqs[i] = equity

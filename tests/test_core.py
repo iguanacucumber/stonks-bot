@@ -62,6 +62,34 @@ def main():
     b = res2.equity.loc[:cut].iloc[:-1]
     assert np.allclose(a.values, b.values), "look-ahead detected: truncated run differs"
 
+    # a missing bar (US holiday vs a local calendar) must carry the last price, not
+    # the entry price: entry 50 -> last 100 would otherwise invent a -50% day
+    n = 320
+    dts = pd.bdate_range("2020-01-01", periods=n)
+    a = np.r_[np.full(160, 50.0), np.full(n - 160, 100.0)]
+    rows = [(d, "A", p, 5_000_000) for d, p in zip(dts, a)]
+    rows += [(d, "SPY", 100.0, 9_000_000) for d in dts]
+    gap = pd.DataFrame(rows, columns=["date", "ticker", "adjclose", "volume"])
+    gap = gap[~((gap.ticker == "A") & (gap.date == dts[202]))]
+    gmem = pd.DataFrame({"date": [dts[0]], "ticker": ["A"]})
+    gcfg = strategy.Config(
+        start=str(dts[0].date()),
+        top_n=1,
+        rebalance_days=5,
+        lookback=20,
+        skip=2,
+        core=None,
+        core_weight=0.0,
+        min_dollar_vol=0.0,
+        max_weight=1.0,
+        sector_cap=1.0,
+        stop=1.0,
+        cost_bps=0.0,
+    )
+    gres = backtest.run(strategy.Market(gap, gmem, gcfg))
+    step = gres.equity.loc[dts[202]] / gres.equity.loc[dts[201]] - 1
+    assert abs(step) < 1e-9, f"missing bar marked at entry price: {step:.1%} jump"
+
     print(
         f"ok: {len(res.equity)} days, final {res.equity.iloc[-1]:.3f}, "
         f"{len(res.trades)} trades, sharpe {backtest.metrics(res.equity, mkt.spy)['sharpe']:.2f}"

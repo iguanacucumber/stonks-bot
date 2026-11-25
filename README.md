@@ -55,9 +55,12 @@ this is one industry's 11-year run plus the sleeve, not stock alpha. Rounds 4-10
 removing stop/regime protection and are tuned on this path; only rounds 1-3 also improved the
 held-back 2023-2026 window.
 
-**Cross-market check:** the same bot on 54 CAC 40 names (2015-2026) returns **$15,823**
-vs **$26,644** for the CAC 40 total-return ETF, and below equal weight ($29,323). The US
-result is a US asset, not a portable rule: `results/cac40.md`, `scripts/cac40.py`.
+**Cross-market:** the same config on **37 markets** (8 stock-level, 29 country ETFs) is
+profitable in **37/37** and beats the local index in **37/37** over 2015-2026, at 10 bps
+and at 30 bps: `results/universal.md`, `scripts/universal.py`. The catch is the engine:
+~70% of days are spent in SOXX, and the local sleeve alone loses to the CAC
+(`results/cac40.md`). Universality here is the exported semiconductor core, not portable
+stock alpha.
 
 ## Run
 
