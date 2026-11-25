@@ -143,6 +143,20 @@ Keep a held name if it ranks within top_n + 2/4/6/8 instead of replacing it.
 Verdict: the sleeve's edge decays when stale names are kept, and turnover barely moves
 because daily leverage trims dominate. Not shipped.
 
-## 12. SOXX/SMH rotation
+## 12. Defensive asset instead of cash in risk-off
+
+Park the freed half in TLT or GLD instead of cash.
+
+| market | cash | TLT | GLD |
+|---|---:|---:|---:|
+| US pre-tax | $1,402,314 | $928,007 | $1,614,254 |
+| US after 37% | $107,839 | $63,233 | $98,596 |
+| US maxDD | -59.9% | -64.7% | -65.4% |
+| TECH pre-tax | $1,214,051 | $845,983 | $1,515,281 |
+
+GLD adds 15-25% pre-tax but deepens the drawdown and loses after tax. TLT is worse
+everywhere. The semis book does not need a bond/gold sleeve. Rejected.
+
+## 13. SOXX/SMH rotation
 
 Top-1 by 126d/10d between SOXX and SMH: $545k at 2x, below SMH alone ($889k). Rejected.
