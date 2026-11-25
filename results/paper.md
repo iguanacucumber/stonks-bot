@@ -5,9 +5,11 @@ unattended: a weekday job at **21:15 UTC** (after the US close) appends a row to
 `results/paper_ledger.csv` and `results/paper_daily.csv`, with a log in
 `results/paper_daily.log`.
 
-- Automation: `aut_21435414b001hyZ0E5xugHgtvy`, cron `15 21 * * 1-5`.
-- Command: `uv run python scripts/paper_daily.py --market TECH --refresh`, then
-  `uv run python scripts/paper_report.py --market TECH` into `results/paper_daily.log`.
+- Automation: `aut_214468bbe001VIxK8wlbulpsqf`, cron `15 21 * * 1-5`.
+- Health alert: `aut_214468bc4001XZsFdl4bGrtyDD`, cron `30 21 * * 1-5`; it sends a message
+  if the paper job's `lastRunAt` is not today (New York).
+- Commands: `paper_daily.py --market TECH --refresh`, then `paper_report.py`, then
+  `paper_health.py`, all into `results/paper_daily.log`.
 - `--refresh` force-fetches the 54 TECH/ETF symbols. Without it the panel never advances:
   `fetch_one` serves the cached CSV forever.
 - It records **actual holdings** from the backtest (post-trade weights), not a fresh
@@ -28,6 +30,16 @@ not a fill mismatch.
 | 2026-11-20 | 2026-11-23 | 2026-11-24 | 1.27 | 50% | -0.88% | -0.89% | +0.53 bp |
 
 Mean |difference|: **0.5 bps/day**. The forward accounting matches the backtest.
+
+## Health check
+
+`uv run python scripts/paper_health.py` exits 2 if a weekday session has closed and there
+is still no close-valid row for that date. It reads only local files.
+
+```
+HEALTH OK  rows=6  close_valid=0  valid_dates=0  last_valid=None  now_et=2026-11-25 14:55
+HEALTH STALE  rows=6 ... now_et=2026-11-26 16:30   (tested with --as-of, exit 2)
+```
 
 ## Live vs shadow
 
