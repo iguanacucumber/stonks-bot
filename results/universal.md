@@ -43,7 +43,7 @@ Every table here is **1x** so the market comparison is clean. The shipped bot ru
 | AEX (EWN) | EUR | 28 | 82% | **$82,568** | $31,926 | $143,852 | $61,085 | 19.5% | 0.73 | -40.0% | 70% | -30.7% | -24.9% |
 | FTSE 100 (EWU) | GBP | 71 | 97% | **$101,403** | $20,041 | $154,046 | $25,337 | 21.6% | 0.80 | -41.7% | 71% | -27.7% | -5.5% |
 | SMI (EWL) | CHF | 32 | 91% | **$74,641** | $25,990 | $109,140 | $32,528 | 18.5% | 0.72 | -37.5% | 66% | -34.1% | -19.2% |
-| NASDAQ tech | USD | 48 | 85% | **$186,493** | $67,550 | $142,809 | $228,972 | 28.0% | 0.92 | -42.6% | 67% | -40.7% | -33.2% |
+| NASDAQ tech | USD | 49 | 84% | **$186,493** | $67,550 | $142,809 | $228,972 | 28.0% | 0.92 | -42.6% | 67% | -40.7% | -33.2% |
 
 Full history = share of requested names with bars at both ends of the window.
 For the US that is index churn (point-in-time membership); outside the US it is

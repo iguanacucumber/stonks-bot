@@ -62,7 +62,7 @@ UNIVERSES: dict[str, list[str]] = {
     "TECH": """AAPL MSFT NVDA AMZN GOOGL META AVGO TSLA COST NFLX AMD PEP ADBE
         CSCO TMUS INTU QCOM TXN AMAT MU LRCX KLAC ADI PANW SNPS CDNS CRWD MRVL
         FTNT ANET ASML ARM MELI PYPL SBUX BKNG ISRG VRTX REGN AMGN GILD MDLZ
-        CTSH WDAY TEAM DDOG ZS OKTA""".split(),
+        CTSH WDAY TEAM DDOG ZS OKTA ANT""".split(),
     "CH": """NESN.SW ROG.SW NOVN.SW UBSG.SW ZURN.SW ABBN.SW CFR.SW HOLN.SW SIKA.SW
         GIVN.SW LONN.SW ALC.SW SREN.SW SCMN.SW GEBN.SW LOGN.SW ADEN.SW TEMN.SW
         STMN.SW BUCN.SW BALN.SW HELN.SW EMSN.SW KNIN.SW SOON.SW BCVN.SW VACN.SW
@@ -79,6 +79,8 @@ MARKETS: dict[str, dict] = {
     "NL": {"bench": "EWN", "fx": "EUR", "label": "AEX (EWN)"},
     "GB": {"bench": "EWU", "fx": "GBP", "label": "FTSE 100 (EWU)"},
     "CH": {"bench": "EWL", "fx": "CHF", "label": "SMI (EWL)"},
+    # ANT = Anthropic, PBC: IPO 2026-11-19, so it enters the universe now but has no
+    # 126-day signal until roughly 2027-05. It cannot affect the backtest before then.
     "TECH": {"bench": "QQQ", "fx": "USD", "label": "NASDAQ tech"},
 }
 

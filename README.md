@@ -82,8 +82,10 @@ uv run python -m bot.cli backtest --core-weight 0
 uv run python -m bot.cli study --max-names 40
 ```
 
-**Tech / short horizons.** `--market TECH` runs the 48-name NASDAQ book (NVDA, MSFT, GOOGL,
-META, AVGO, ... benchmark QQQ); it is the best 1-day/1-week book in the sample. `--profile
+**Tech / short horizons.** `--market TECH` runs the 49-name NASDAQ book (NVDA, MSFT, GOOGL,
+META, AVGO, ..., benchmark QQQ); it is the best 1-day/1-week book in the sample. Anthropic
+(`ANT`, IPO 2026-11-19) is in the universe but has only 5 bars, so it cannot pass the
+126-day momentum filter until roughly May 2027 — it holds no weight today. `--profile
 monthly|weekly|daily` changes the clock; faster profiles lose to costs, measured in
 `results/short.md`.
 
