@@ -67,10 +67,12 @@ fills lose at every cost level; a 20% tax on realized gains leaves **$374,527**,
 **$107,889** (22.2%/yr). The 1-day mean survives all three (+0.246% → +0.232% → +0.165%).
 Paper forward run on 2026-11-25 printed 125% gross because the 200-day cut was active.
 
-**Taxable account:** `--profile tax --tax-rate 0.37` drops the stock sleeve and widens the
-leverage band. It makes less pre-tax ($953k vs $1.40M) but keeps more after tax:
-**$204,573 vs $107,889**, at 7.4x turnover instead of 13.8x, 1-day mean +0.192% vs +0.165%.
-A tax-sheltered account should run the monthly book. `results/realism.md`.
+**Taxable account:** `--profile tax --tax-rate 0.37` drops the stock sleeve, widens the
+leverage band, and sells the highest-basis tax lots first. It makes less pre-tax ($953k vs
+$1.40M) but keeps more after tax: **$258,648 vs $107,889**, at 7.3x turnover instead of
+13.8x, 1-day mean +0.198% vs +0.165%. HIFO hurts the high-turnover monthly sleeve
+($108k → $87k) and helps the low-turnover tax book (+26%). A tax-sheltered account should
+run the monthly book. `results/realism.md`.
 
 **Cross-market:** the same config on **39 markets** (9 stock-level including a 48-name
 NASDAQ tech book, 30 country/tech ETFs) is profitable in **39/39** and beats the local

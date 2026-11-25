@@ -55,8 +55,12 @@ def one(panel, mem, **kw):
 VARIANTS = {
     "monthly sleeve": {},
     "semiannual sleeve": {"rebalance_days": 126},
+    "monthly sleeve, HIFO lots": {"tax_lots": "hifo"},
     "core only": {"core_mode": "always"},
     "core + 10% band": {"core_mode": "always", "leverage_band": 0.10},
+    "core + 10% band + HIFO (tax profile)": {
+        "core_mode": "always", "leverage_band": 0.10, "tax_lots": "hifo",
+    },
     "core + 20% band": {"core_mode": "always", "leverage_band": 0.20},
 }
 
@@ -165,8 +169,11 @@ def main():
         "",
         "The sleeve earns its keep before tax but not after: the monthly book makes",
         "$1.40M pre-tax and $108k after; dropping the sleeve keeps $191k after tax on",
-        "$919k pre-tax. A 10% leverage band trims turnover further and lifts that to",
-        "$205k. If the account is tax-sheltered, the monthly sleeve wins outright.",
+        "$919k pre-tax. A 10% leverage band plus HIFO lots lifts that to $259k",
+        "(that is the `tax` profile). HIFO helps when the book trades rarely; on the",
+        "monthly sleeve it makes things worse ($108k -> $87k) because the deferred lots",
+        "get sold again soon anyway. If the account is tax-sheltered, the monthly sleeve",
+        "wins outright.",
         "",
         "## Verdict",
         "",

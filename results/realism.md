@@ -57,14 +57,19 @@ change this materially; the model does not assume either.
 |---|---:|---:|---:|---:|---:|
 | monthly sleeve | $1,402,314 | **$107,889** | 13.8x | +0.246% / +0.165% | +1.183% / +0.781% |
 | semiannual sleeve | $945,963 | **$170,141** | 4.9x | +0.208% / +0.155% | +1.011% / +0.751% |
+| monthly sleeve, HIFO lots | $1,402,314 | **$87,295** | 13.8x | +0.246% / +0.160% | +1.183% / +0.761% |
 | core only | $918,668 | **$190,620** | 8.1x | +0.235% / +0.185% | +1.124% / +0.885% |
 | core + 10% band | $952,797 | **$204,573** | 7.4x | +0.240% / +0.192% | +1.143% / +0.916% |
+| core + 10% band + HIFO (tax profile) | $952,797 | **$258,648** | 7.4x | +0.240% / +0.198% | +1.143% / +0.949% |
 | core + 20% band | $1,085,819 | **$248,591** | 6.6x | +0.246% / +0.200% | +1.174% / +0.959% |
 
 The sleeve earns its keep before tax but not after: the monthly book makes
 $1.40M pre-tax and $108k after; dropping the sleeve keeps $191k after tax on
-$919k pre-tax. A 10% leverage band trims turnover further and lifts that to
-$205k. If the account is tax-sheltered, the monthly sleeve wins outright.
+$919k pre-tax. A 10% leverage band plus HIFO lots lifts that to $259k
+(that is the `tax` profile). HIFO helps when the book trades rarely; on the
+monthly sleeve it makes things worse ($108k -> $87k) because the deferred lots
+get sold again soon anyway. If the account is tax-sheltered, the monthly sleeve
+wins outright.
 
 ## Verdict
 

@@ -116,6 +116,12 @@ def main():
     assert r2.equity.iloc[-1] > 0, "2x wiped the book on a positive-drift panel"
     assert r2f.equity.iloc[-1] < r2.equity.iloc[-1], "financing is free"
 
+    # HIFO: sell the 200-basis lot before the 100-basis lot
+    lot_list = [[1.0, 100.0], [1.0, 200.0]]
+    gain = backtest.consume_lots(lot_list, 1.0, 250.0)
+    assert abs(gain - 50.0) < 1e-9, f"HIFO gain {gain} != 50"
+    assert lot_list == [[1.0, 100.0]], f"wrong lot left: {lot_list}"
+
     # realized-gains tax: with the same trades, a positive rate must reduce wealth
     tax0 = strategy.Config(
         start=str(dates[250].date()), top_n=5, rebalance_days=5, tax_rate=0.0

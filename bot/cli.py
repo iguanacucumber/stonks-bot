@@ -30,7 +30,7 @@ DEFAULT_TREND_SCALE = 0.5
 PROFILES = {
     "monthly": {},
     # taxable account: no stock sleeve, wider leverage band, fewer realized gains
-    "tax": {"core_mode": "always", "leverage_band": 0.10},
+    "tax": {"core_mode": "always", "leverage_band": 0.10, "tax_lots": "hifo"},
     "weekly": {"lookback": 20, "skip": 2, "rebalance_days": 5,
                "core_lookback": 20, "vol_window": 10},
     "daily": {"lookback": 10, "skip": 1, "rebalance_days": 1,

@@ -14,6 +14,21 @@ Selector = Callable[[Market, pd.Timestamp, list[str], set[str]], dict[str, float
 Overlay = Callable[[pd.Timestamp, dict[str, float], Market], dict[str, float]]
 
 
+def consume_lots(lots: list[list[float]], shares: float, price: float) -> float:
+    """Sell `shares` highest-basis-first, mutating `lots`; return realized gain."""
+    lots.sort(key=lambda lot: -lot[1])
+    remaining, gain = shares, 0.0
+    while remaining > 1e-12 and lots:
+        lot = lots[0]
+        take = min(lot[0], remaining)
+        gain += (price - lot[1]) * take
+        lot[0] -= take
+        remaining -= take
+        if lot[0] <= 1e-12:
+            lots.pop(0)
+    return gain
+
+
 @dataclass
 class Result:
     equity: pd.Series
@@ -109,6 +124,26 @@ def run(
         realized += gain
         after = max(0.0, realized)
         return max(0.0, after - before) * cfg.tax_rate
+
+    lots: dict[int, list[list[float]]] = {}
+
+    def _avg_basis(ci: int) -> float:
+        ls = lots.get(ci, [])
+        n = sum(l[0] for l in ls)
+        return sum(l[0] * l[1] for l in ls) / n if n > 0 else float("nan")
+
+    def _sell(ci: int, sh: float, p: float) -> float:
+        """Realize `sh` shares at price p; return the realized gain.
+
+        `avg` keeps one average basis. `hifo` consumes the highest-priced lots
+        first, which realizes the smallest gain (lot-level tax deferral).
+        """
+        if cfg.tax_lots != "hifo":
+            return 0.0 if np.isnan(entry[ci]) else (p - entry[ci]) * sh
+        ls = lots.setdefault(ci, [])
+        gain = consume_lots(ls, sh, p)
+        entry[ci] = _avg_basis(ci)
+        return gain
     stop_keep = 1.0 - cfg.stop
     protected_ci = np.array(
         [cols[t] for t in {cfg.core, *cfg.fallback_sectors} if t in cols], dtype=int
@@ -170,8 +205,9 @@ def run(
                         continue
                     notional = shares[ci] * p
                     cash += notional - notional * cost_rate
-                    if cfg.tax_rate and not np.isnan(entry[ci]):
-                        cash -= _tax((p - entry[ci]) * shares[ci])
+                    gain = _sell(ci, shares[ci], p)
+                    if cfg.tax_rate:
+                        cash -= _tax(gain)
                     trades.append(
                         (
                             d,
@@ -216,8 +252,10 @@ def run(
                                 sh = delta / p
                                 cost = delta * cost_rate
                     cash -= delta + cost
-                    if cfg.tax_rate and sh < 0 and not np.isnan(entry[ci]):
-                        cash -= _tax((p - entry[ci]) * (-sh))
+                    if sh < 0:
+                        gain = _sell(ci, -sh, p)
+                        if cfg.tax_rate:
+                            cash -= _tax(gain)
                     if shares[ci] == 0.0 and sh != 0.0:
                         held.append(ci)
                     old_sh = shares[ci]
@@ -234,11 +272,15 @@ def run(
                         )
                     )
                     if sh > 0:
-                        if old_sh <= 0 or np.isnan(entry[ci]):
+                        if cfg.tax_lots == "hifo":
+                            lots.setdefault(ci, []).append([sh, p])
+                            entry[ci] = _avg_basis(ci)
+                        elif old_sh <= 0 or np.isnan(entry[ci]):
                             entry[ci] = p
-                            peak[ci] = p
                         else:
                             entry[ci] = (entry[ci] * old_sh + p * sh) / (old_sh + sh)
+                        if old_sh <= 0 or np.isnan(peak[ci]):
+                            peak[ci] = p
                     elif shares[ci] <= 0:
                         entry[ci] = np.nan
                         peak[ci] = np.nan
@@ -273,8 +315,9 @@ def run(
                         continue
                     notional = sell_sh * p
                     cash += notional - notional * cost_rate
-                    if cfg.tax_rate and not np.isnan(entry[ci]):
-                        cash -= _tax((p - entry[ci]) * sell_sh)
+                    gain = _sell(ci, sell_sh, p)
+                    if cfg.tax_rate:
+                        cash -= _tax(gain)
                     shares[ci] -= sell_sh
                     trades.append(
                         (
