@@ -3,3 +3,4 @@ results/*.csv
 results/*.jsonl
 .venv/
 __pycache__/
+results/*.log

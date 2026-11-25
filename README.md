@@ -65,7 +65,8 @@ window. At 2.5x the drawdown reaches -60%, and 2022 is -32.8%.
 **Real life:** at 30 bps/side (close fill) the US book still makes **$928,859**; next-open
 fills lose at every cost level; a 20% tax on realized gains leaves **$374,527**, 37% leaves
 **$107,889** (22.2%/yr). The 1-day mean survives all three (+0.246% → +0.232% → +0.165%).
-Paper forward run on 2026-11-25 printed 125% gross because the 200-day cut was active.
+Paper forward run on 2026-11-25 printed 127% gross because the 200-day cut was active; a
+weekday job at 21:15 UTC now logs it automatically (`results/paper.md`).
 
 **Taxable account:** `--profile tax --tax-rate 0.37` drops the stock sleeve, widens the
 leverage band, and sells the highest-basis tax lots first. It makes less pre-tax ($953k vs
@@ -92,6 +93,8 @@ uv run python -m bot.cli backtest --profile tax --tax-rate 0.37
 uv run python -m bot.cli report
 uv run python -m bot.cli pnl --capital 10000    # 1h / 1d / 1w / 1m / 1y P&L
 uv run python -m bot.cli paper --interval 60 --iterations 10
+uv run python scripts/paper_daily.py --market TECH  # one forward paper row
+uv run python scripts/paper_daily.py --replay 5     # reconcile with the backtest
 # stock + LLM sleeve instead of the SOXX core:
 uv run python -m bot.cli backtest --core-weight 0
 uv run python -m bot.cli study --max-names 40
