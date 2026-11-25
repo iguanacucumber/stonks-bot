@@ -65,8 +65,12 @@ window. At 2.5x the drawdown reaches -60%, and 2022 is -32.8%.
 **Real life:** at 30 bps/side (close fill) the US book still makes **$928,859**; next-open
 fills lose at every cost level; a 20% tax on realized gains leaves **$374,527**, 37% leaves
 **$107,889** (22.2%/yr). The 1-day mean survives all three (+0.246% → +0.232% → +0.165%).
-Paper forward run on 2026-11-25 printed 125% gross because the 200-day cut was active:
-`results/realism.md`.
+Paper forward run on 2026-11-25 printed 125% gross because the 200-day cut was active.
+
+**Taxable account:** `--profile tax --tax-rate 0.37` drops the stock sleeve and widens the
+leverage band. It makes less pre-tax ($953k vs $1.40M) but keeps more after tax:
+**$204,573 vs $107,889**, at 7.4x turnover instead of 13.8x, 1-day mean +0.192% vs +0.165%.
+A tax-sheltered account should run the monthly book. `results/realism.md`.
 
 **Cross-market:** the same config on **39 markets** (9 stock-level including a 48-name
 NASDAQ tech book, 30 country/tech ETFs) is profitable in **39/39** and beats the local
@@ -82,6 +86,7 @@ stock alpha.
 uv sync
 uv run python -m bot.cli ingest                 # ~8 min, cached
 uv run python -m bot.cli backtest --random-seeds 50
+uv run python -m bot.cli backtest --profile tax --tax-rate 0.37
 uv run python -m bot.cli report
 uv run python -m bot.cli pnl --capital 10000    # 1h / 1d / 1w / 1m / 1y P&L
 uv run python -m bot.cli paper --interval 60 --iterations 10

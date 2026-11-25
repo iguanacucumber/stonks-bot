@@ -48,11 +48,21 @@ def one(panel, mem, **kw):
         dd=m["max_dd"],
         mean1d=r.mean(),
         mean5d=w.mean(),
+        turnover=m["turnover_ann"],
     )
 
 
+VARIANTS = {
+    "monthly sleeve": {},
+    "semiannual sleeve": {"rebalance_days": 126},
+    "core only": {"core_mode": "always"},
+    "core + 10% band": {"core_mode": "always", "leverage_band": 0.10},
+    "core + 20% band": {"core_mode": "always", "leverage_band": 0.20},
+}
+
+
 def main():
-    cost_rows, tax_rows = [], []
+    cost_rows, tax_rows, var_rows = [], [], []
     for name in ("US", "TECH"):
         panel, mem = markets.build(name)
         if name != "US":
@@ -63,8 +73,21 @@ def main():
         for tax in TAXES:
             r = one(panel, mem, exec_price="close", cost_bps=10.0, tax_rate=tax)
             tax_rows.append({"market": name, "tax": tax, **r})
+        if name == "US":
+            for label, kw in VARIANTS.items():
+                pre = one(panel, mem, exec_price="close", cost_bps=10.0, **kw)
+                post = one(
+                    panel, mem, exec_price="close", cost_bps=10.0, tax_rate=0.37, **kw
+                )
+                var_rows.append({
+                    "variant": label, "pre": pre["final"], "post": post["final"],
+                    "turnover": pre["turnover"], "dd": post["dd"],
+                    "m1": pre["mean1d"], "m5": pre["mean5d"],
+                    "pm1": post["mean1d"], "pm5": post["mean5d"],
+                })
     cost = pd.DataFrame(cost_rows)
     tax = pd.DataFrame(tax_rows)
+    var = pd.DataFrame(var_rows)
 
     ship = cost[(cost.exec == "close") & (cost.cost == 10.0)].set_index("market")
     assert (ship.final > 1_000_000).all(), "shipped numbers moved"
@@ -127,6 +150,23 @@ def main():
         "This is a high-turnover book (13.8x NAV/yr), so the drag is large: a 37% rate",
         "turns $1.40M into $108k. Retirement accounts or a lower-turnover variant would",
         "change this materially; the model does not assume either.",
+        "",
+        "## Tax-aware variants (US, close fill, 10 bps)",
+        "",
+        "| variant | pre-tax | after 37% | turnover | 1d pre/post | 5d pre/post |",
+        "|---|---:|---:|---:|---:|---:|",
+    ]
+    for _, r in var.iterrows():
+        lines.append(
+            f"| {r.variant} | ${r.pre:,.0f} | **${r.post:,.0f}** | {r.turnover:.1f}x | "
+            f"{r.m1:+.3%} / {r.pm1:+.3%} | {r.m5:+.3%} / {r.pm5:+.3%} |"
+        )
+    lines += [
+        "",
+        "The sleeve earns its keep before tax but not after: the monthly book makes",
+        "$1.40M pre-tax and $108k after; dropping the sleeve keeps $191k after tax on",
+        "$919k pre-tax. A 10% leverage band trims turnover further and lifts that to",
+        "$205k. If the account is tax-sheltered, the monthly sleeve wins outright.",
         "",
         "## Verdict",
         "",

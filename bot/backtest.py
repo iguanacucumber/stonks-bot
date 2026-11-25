@@ -197,7 +197,7 @@ def run(
                         continue
                     cur = shares[ci] * p
                     delta = w * equity_now - cur
-                    if abs(delta) < 1e-4 * equity_now:
+                    if abs(delta) < max(cfg.trade_band, 1e-4) * equity_now:
                         continue
                     sh = delta / p
                     cost = abs(delta) * cost_rate
@@ -261,7 +261,7 @@ def run(
             for _ in range(2):
                 gross_now = float((shares * prm).sum())
                 cap = cfg.leverage * equity
-                if gross_now <= cap * 1.000001:
+                if gross_now <= cap * (1.0 + cfg.leverage_band):
                     break
                 scale = cap / gross_now
                 for ci in list(held):

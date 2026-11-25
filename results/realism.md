@@ -51,6 +51,21 @@ This is a high-turnover book (13.8x NAV/yr), so the drag is large: a 37% rate
 turns $1.40M into $108k. Retirement accounts or a lower-turnover variant would
 change this materially; the model does not assume either.
 
+## Tax-aware variants (US, close fill, 10 bps)
+
+| variant | pre-tax | after 37% | turnover | 1d pre/post | 5d pre/post |
+|---|---:|---:|---:|---:|---:|
+| monthly sleeve | $1,402,314 | **$107,889** | 13.8x | +0.246% / +0.165% | +1.183% / +0.781% |
+| semiannual sleeve | $945,963 | **$170,141** | 4.9x | +0.208% / +0.155% | +1.011% / +0.751% |
+| core only | $918,668 | **$190,620** | 8.1x | +0.235% / +0.185% | +1.124% / +0.885% |
+| core + 10% band | $952,797 | **$204,573** | 7.4x | +0.240% / +0.192% | +1.143% / +0.916% |
+| core + 20% band | $1,085,819 | **$248,591** | 6.6x | +0.246% / +0.200% | +1.174% / +0.959% |
+
+The sleeve earns its keep before tax but not after: the monthly book makes
+$1.40M pre-tax and $108k after; dropping the sleeve keeps $191k after tax on
+$919k pre-tax. A 10% leverage band trims turnover further and lifts that to
+$205k. If the account is tax-sheltered, the monthly sleeve wins outright.
+
 ## Verdict
 
 - At 30 bps close fill the US book still makes **$928,859** (vs $1,402,314 at 10 bps). Costs are a haircut, not a wipeout.
