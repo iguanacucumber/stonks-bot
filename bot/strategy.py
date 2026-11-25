@@ -34,6 +34,7 @@ def _derived(panel: pd.DataFrame, cfg: Config) -> tuple:
         * np.sqrt(252),
         "mom": px.shift(cfg.skip) / px.shift(cfg.lookback) - 1.0,
         "dollar": (px * vol).rolling(20, min_periods=10).median(),
+        "extreme": (ret.abs() > 0.5).rolling(252, min_periods=20).sum(),
         "spy_ma": spy.rolling(cfg.regime_ma, min_periods=cfg.regime_ma).mean(),
     }
     if len(_DERIVED) > 4:
@@ -60,6 +61,7 @@ class Config:
     reentry_days: int = 20
     cost_bps: float = 10.0
     min_dollar_vol: float = 5e6
+    max_extreme: int = 2  # reject names with >N 50% days in 252 (data collisions)
     exec_price: str = "close"  # "close" or "open" (signal at close, fill next open)
     tax_rate: float = 0.0  # federal rate (fold NIIT in if desired) on realized gains
     state_tax_rate: float = 0.0  # state rate, deductible against federal up to salt_cap
@@ -128,6 +130,7 @@ class Market:
         self.sigma = d["sigma"]
         self.mom = d["mom"]
         self.dollar = d["dollar"]
+        self.extreme = d["extreme"]
         self.spy_ma = d["spy_ma"]
         core = cfg.core
         self.core_ma = (
@@ -214,10 +217,13 @@ def _eligible(mkt: Market, date: pd.Timestamp) -> pd.DataFrame:
             "sigma": mkt.sigma.loc[date, cols],
             "dollar": mkt.dollar.loc[date, cols],
             "price": mkt.raw_px.loc[date, cols],
+            "extreme": mkt.extreme.loc[date, cols].fillna(0),
         }
     )
     df = df.dropna(subset=["mom", "sigma", "dollar", "price"])
     df = df[(df["sigma"] > 0) & (df["price"] > 5) & (df["dollar"] > cfg.min_dollar_vol)]
+    if cfg.max_extreme >= 0:
+        df = df[df["extreme"] <= cfg.max_extreme]
     if df.empty:
         return df
     cut = df["dollar"].quantile(0.4)

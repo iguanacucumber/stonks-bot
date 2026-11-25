@@ -37,6 +37,10 @@ The S&P sleeve (used when SOXX lags) is:
 | GDELT DOC API | macro headlines | free, ~1 request/5s |
 | `fja05680/sp500` | point-in-time constituents | lags a few months; disclosed |
 
+Data guard: names with more than 2 daily moves over 50% in a year are excluded from
+selection (`max_extreme=2`). This filters Yahoo ticker collisions (old S&P symbols reused
+by penny stocks) without changing the shipped result.
+
 Known bias: ~18% of 2015–2026 index members have no Yahoo history (mostly acquired/delisted
 names). They are dropped. Results are survivor-biased; treat them as a sanity check, not a
 promise.
