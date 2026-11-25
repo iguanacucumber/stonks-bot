@@ -18,7 +18,8 @@ from the tuning; `y26$` is 2026 alone; `cost30$` is the full window at 30 bps/si
 | 09 | sleeve skip 21 → 10d | $193,620 | 28.4% | 0.92 | -39.5% | $44,090 | $12,593 | $165,368 | +$5,805 |
 | 10 | sleeve breadth 5 → 6 | **$212,063** | **29.4%** | **0.95** | -39.5% | **$44,884** | **$12,573** | **$181,466** | +$18,443 |
 
-Reproduce: `results/rounds10.csv`, or the config block in `bot/strategy.py`.
+Reproduce: `.venv/bin/python scripts/rounds10.py` (writes `results/rounds10.csv`, asserts
+that every row beats the one above).
 
 ## Final bot
 
