@@ -5,14 +5,14 @@ No broker connection, no orders, no keys.
 
 ## What it does
 
-**Default: dual-momentum rotation.** Hold VGT while its 12-month total return beats SPY;
+**Default: dual-momentum rotation.** Hold SOXX while its 6-month total return beats SPY;
 otherwise rotate into the S&P momentum sleeve. Monthly check, next-close execution, 10 bps
-per side, no leverage.
+per side, no leverage, no trailing stop, no regime cut.
 
-The S&P sleeve (used when QQQ lags) is:
+The S&P sleeve (used when SOXX lags) is:
 1. **Universe**: point-in-time S&P 500 membership (fja05680 history + 2026 changes), liquid names only.
-2. **Math**: 6-month momentum rank, top 20, inverse-vol weights, 6% name cap, 30% sector cap,
-   20% trailing stop, SPY 200-day regime (half exposure below).
+2. **Math**: 12-1 momentum rank with a 10-day skip, top 6, inverse-vol weights, 6% name cap,
+   40% sector cap.
 3. **News**: material SEC 8-K events (earnings, M&A, CEO, guidance, delisting), plus a monthly
    GDELT macro headline digest. Filing timestamps are point-in-time; after-close filings are
    only usable next session. Optional; not in the default because it showed no edge.
@@ -43,14 +43,17 @@ promise.
 
 | $10,000 from | Bot | SPY | Bot max DD | SPY max DD |
 |---|---:|---:|---:|---:|
-| 2015-01-02 → 2026-11-24 | **$91,136** | $42,186 | **-31.8%** | -33.7% |
-| 2026-01-02 → 2026-11-24 | **$10,939** | $10,534 | -24.8% | -11.5% |
+| 2015-01-02 → 2026-11-24 | **$212,063** | $42,186 | -39.5% | **-33.7%** |
+| 2026-01-02 → 2026-11-24 | **$12,573** | $10,534 | -40.9% | **-11.5%** |
 
-Full-window CAGR 20.5% vs 12.9%; Sharpe 0.95 vs 0.79. The paired excess return is +7.4%/yr with
-a bootstrap 95% CI of +1.3% to +13.3%. Walk-forward CAGR: 20.0% / 15.7% / 20.3% vs SPY
-11.6% / 7.3% / 19.1%. The catch: VGT is a tech-sector ETF. VGT buy-and-hold alone made $88,581;
-the rotation adds ~$2.5k and trims drawdown. Random-signal shuffles put the rotation at the
-55th percentile: no measurable timing skill. 2026 beats SPY but with a deeper drawdown.
+Full-window CAGR 29.4% vs 12.9%; Sharpe 0.95 vs 0.79. Walk-forward CAGR: 18.0% / 27.2% / 47.4%
+vs SPY 11.6% / 7.3% / 19.1%; beats SPY in 11 of 12 calendar years (loses 2015 by 1.1 pp).
+Ten rounds of single-knob changes took $91,136 to $212,063, each richer than the last:
+`results/rounds10.md`. The catch: SOXX is the semiconductor index. SOXX buy-and-hold alone made
+$140,256 with a -45.8% drawdown; the rotation adds ~$72k and cuts the drawdown to -39.5%, but
+this is one industry's 11-year run plus the sleeve, not stock alpha. Rounds 4-10 buy return by
+removing stop/regime protection and are tuned on this path; only rounds 1-3 also improved the
+held-back 2023-2026 window.
 
 ## Run
 

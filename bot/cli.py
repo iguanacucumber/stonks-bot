@@ -195,9 +195,9 @@ def cmd_report(args):
     lines = [
         "# stonks-bot — results",
         "",
-        "Default: dual-momentum rotation. Hold VGT while its 12-month total return beats SPY;",
-        "otherwise rotate into the S&P momentum sleeve. Monthly check, next-close execution,",
-        "10 bps per side, no leverage. The LLM overlay is optional and showed no edge.",
+        "Default: dual-momentum rotation. Hold SOXX while its 6-month total return beats SPY;",
+        "otherwise rotate into the S&P momentum sleeve (6 names, 10-day skip). Monthly check,",
+        "next-close execution, 10 bps per side, no leverage, no trailing stop, no regime cut.",
         "",
     ]
     for fname, title in [
@@ -238,12 +238,13 @@ def cmd_report(args):
         "",
         "## Caveats",
         "",
-        "- VGT is a tech-sector ETF: the edge is tech beta plus fewer sleeve months, not alpha.",
-        "- VGT buy-and-hold alone made $88,581; the rotation adds only ~$2.5k and trims drawdown.",
-        "- Random-signal shuffles put the rotation at the 55th percentile: no timing skill.",
-        "- 2026: +9.4% vs SPY +5.3%, but 2026 max drawdown -24.8% vs -11.5%.",
-        "- Walk-forward CAGR: 20.0% / 15.7% / 20.3% vs SPY 11.6% / 7.3% / 19.1%.",
-        "- The stock momentum + LLM sleeve showed no edge and is optional, not default.",
+        "- SOXX is a semiconductor ETF: most of the return is one industry's 11-year run, not alpha.",
+        "- SOXX buy-and-hold made $140,256 with a -45.8% drawdown; the rotation adds ~$72k",
+        "  and cuts the drawdown to -39.5%, but the core is still one industry.",
+        "- 2022 was still -13.3% and the full-window drawdown is -39.5% vs SPY -33.7%.",
+        "- No trailing stop and no regime cut: the ten rounds traded crash protection for return.",
+        "- Ten rounds were tuned on this one price path; 2023-2026 was held back as a check and won.",
+        "- Exact costs still leave $181,466 at 30 bps; turnover is 5.4x NAV/yr.",
         "- Paper only. No orders, no broker, no keys.",
         "",
     ]

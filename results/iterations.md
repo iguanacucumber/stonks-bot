@@ -1,5 +1,8 @@
 # Five improvement iterations
 
+> Superseded by `results/rounds10.md`, which runs ten more single-knob rounds from this
+> VGT baseline to $212,063. The default now holds SOXX with a 126-day signal.
+
 Starting point: QQQ/SPY 252-day rotation with an S&P momentum fallback. Monthly, next-close,
 10 bps/side, no leverage.
 

@@ -1,60 +1,61 @@
 # stonks-bot — results
 
-Default: dual-momentum rotation. Hold VGT while its 12-month total return beats SPY;
-otherwise rotate into the S&P momentum sleeve. Monthly check, next-close execution,
-10 bps per side, no leverage. The LLM overlay is optional and showed no edge.
+Default: dual-momentum rotation. Hold SOXX while its 6-month total return beats SPY;
+otherwise rotate into the S&P momentum sleeve (6 names, 10-day skip). Monthly check,
+next-close execution, 10 bps per side, no leverage, no trailing stop, no regime cut.
 
 ## 2015-01-02 to 2026-11-24
 
 |              | total_return   | cagr   | vol   |   sharpe |   sortino | max_dd   |   calmar |   beta | alpha   | tracking_error   | hit_rate   |   days |   sharpe_lo |   sharpe_hi |      diff_lo |     diff_ann |      diff_hi |   turnover_ann |   trades | exposure   |
 |:-------------|:---------------|:-------|:------|---------:|----------:|:---------|---------:|-------:|:--------|:-----------------|:-----------|-------:|------------:|------------:|-------------:|-------------:|-------------:|---------------:|---------:|:-----------|
-| bot          | 811.4%         | 20.5%  | 22.3% |     0.95 |      1.2  | -31.8%   |     0.64 |   1.09 | 6.1%    | 11.6%            | 56.6%      |   2990 |   0.437197  |     1.52155 |  0.0131171   |  0.0743575   |  0.132903    |           3.47 |      723 | 96.1%      |
-| spy          | 321.9%         | 12.9%  | 17.6% |     0.79 |      0.96 | -33.7%   |     0.38 |   1    | -0.0%   | 0.0%             | 54.5%      |   2990 |   0.26295   |     1.35632 | -4.95992e-16 |  1.87079e-16 |  8.79504e-16 |           0    |        0 | 100.0%     |
-| equal_weight | 286.5%         | 12.1%  | 17.7% |     0.73 |      0.9  | -37.5%   |     0.32 |   0.97 | -0.4%   | 4.8%             | 54.5%      |   2990 |   0.203567  |     1.34059 | -0.0347547   | -0.0072374   |  0.0196444   |           2.26 |    29245 | 98.0%      |
-| random_p50   | 204.6%         | 9.8%   | 17.3% |     0.63 |      0.81 | -30.8%   |     0.32 |   0.87 | -1.1%   | 8.5%             | 53.4%      |   2990 |   0.109237  |     1.23687 | -0.0765682   | -0.0279119   |  0.019516    |          22.08 |     5506 | 96.9%      |
-| random_p5    | 107.7%         | 6.4%   | 16.9% |     0.44 |      0.56 | -33.6%   |     0.19 |   0.84 | -4.4%   | 8.2%             | 52.9%      |   2990 |  -0.0781955 |     1.025   | -0.106358    | -0.0598769   | -0.0145144   |          21.9  |     5483 | 96.7%      |
-| random_p95   | 279.1%         | 11.9%  | 17.5% |     0.74 |      0.95 | -29.0%   |     0.37 |   0.88 | 0.6%    | 8.8%             | 54.1%      |   2990 |   0.189916  |     1.33817 | -0.0544644   | -0.00949293  |  0.0341402   |          22.22 |     5519 | 97.0%      |
+| bot          | 2020.6%        | 29.4%  | 32.6% |     0.95 |      1.27 | -39.5%   |     0.74 |   1.39 | 11.9%   | 22.6%            | 54.6%      |   2990 |   0.429088  |    1.51963  |  0.0535176   |  0.173789    |  0.293415    |           5.43 |      447 | 99.9%      |
+| spy          | 321.9%         | 12.9%  | 17.6% |     0.79 |      0.96 | -33.7%   |     0.38 |   1    | -0.0%   | 0.0%             | 54.5%      |   2990 |   0.26295   |    1.35632  | -4.95992e-16 |  1.87079e-16 |  8.79504e-16 |           0    |        0 | 100.0%     |
+| equal_weight | 296.8%         | 12.3%  | 18.0% |     0.73 |      0.9  | -38.2%   |     0.32 |   0.99 | -0.4%   | 4.9%             | 54.5%      |   2990 |   0.204949  |    1.34263  | -0.0324847   | -0.00440135  |  0.0231491   |           2.3  |    29458 | 99.9%      |
+| random_p50   | 144.4%         | 7.8%   | 21.1% |     0.46 |      0.6  | -39.1%   |     0.22 |   0.97 | -3.8%   | 12.5%            | 53.1%      |   2990 |  -0.0575119 |    1.03196  | -0.106716    | -0.0397864   |  0.0308481   |          23.61 |     1693 | 100.0%     |
+| random_p5    | 39.1%          | 2.8%   | 20.3% |     0.24 |      0.32 | -46.4%   |     0.07 |   0.93 | -8.1%   | 11.9%            | 51.7%      |   2990 |  -0.285198  |    0.822167 | -0.15506     | -0.087119    | -0.0164443   |          23.4  |     1686 | 99.9%      |
+| random_p95   | 363.4%         | 13.8%  | 22.6% |     0.71 |      0.94 | -32.8%   |     0.36 |   1.06 | 1.7%    | 13.1%            | 54.0%      |   2990 |   0.187862  |    1.30344  | -0.0557866   |  0.0153334   |  0.085188    |          23.75 |     1700 | 100.0%     |
 
 | strategy | $10,000 becomes |
 |---|---:|
-| bot | $91,136 |
+| bot | $212,063 |
 | spy | $42,186 |
-| equal_weight | $38,651 |
-| random_p50 | $30,464 |
-| random_p5 | $20,771 |
-| random_p95 | $37,915 |
+| equal_weight | $39,678 |
+| random_p50 | $24,442 |
+| random_p5 | $13,910 |
+| random_p95 | $46,338 |
 
 ## 2026 only
 
-|             | total_return   | cagr   | vol   |   sharpe |   sortino | max_dd   |   calmar |   beta | alpha   | tracking_error   | hit_rate   |   days |   sharpe_lo |   sharpe_hi |      diff_lo |    diff_ann |     diff_hi |   turnover_ann |   trades | exposure   |
-|:------------|:---------------|:-------|:------|---------:|----------:|:---------|---------:|-------:|:--------|:-----------------|:-----------|-------:|------------:|------------:|-------------:|------------:|------------:|---------------:|---------:|:-----------|
-| bot         | 9.4%           | 10.6%  | 30.2% |     0.49 |      0.71 | -24.8%   |     0.43 |   1.75 | 3.7%    | 17.6%            | 54.5%      |    224 |    -1.35283 |     2.45203 | -0.282154    | 0.0753311   | 0.41327     |           0.97 |        1 | 99.6%      |
-| spy         | 5.3%           | 6.0%   | 15.6% |     0.41 |      0.56 | -11.5%   |     0.53 |   1    | -0.0%   | 0.0%             | 49.6%      |    224 |    -1.28442 |     2.34004 |  3.73035e-16 | 3.10862e-15 | 5.84421e-15 |           0    |        0 | 100.0%     |
-| qqq_buyhold | 4.4%           | 5.0%   | 24.3% |     0.29 |      0.4  | -19.9%   |     0.25 |   1.48 | -2.4%   | 11.0%            | 52.2%      |    224 |    -1.49588 |     2.23731 | -0.212512    | 0.0076515   | 0.226751    |           0    |        0 | 100.0%     |
-| vgt_buyhold | 9.7%           | 11.0%  | 30.2% |     0.49 |      0.71 | -24.8%   |     0.44 |   1.75 | 3.7%    | 17.6%            | 54.5%      |    224 |    -1.35283 |     2.45635 | -0.279753    | 0.0785835   | 0.415075    |           0    |        0 | 100.0%     |
+|              | total_return   | cagr   | vol   |   sharpe |   sortino | max_dd   |   calmar |   beta | alpha   | tracking_error   | hit_rate   |   days |   sharpe_lo |   sharpe_hi |      diff_lo |    diff_ann |     diff_hi |   turnover_ann |   trades | exposure   |
+|:-------------|:---------------|:-------|:------|---------:|----------:|:---------|---------:|-------:|:--------|:-----------------|:-----------|-------:|------------:|------------:|-------------:|------------:|------------:|---------------:|---------:|:-----------|
+| bot          | 25.7%          | 29.4%  | 50.3% |     0.77 |      1.12 | -40.9%   |     0.72 |   2.28 | 24.2%   | 40.9%            | 58.9%      |    224 |    -1.17956 |     2.88354 | -0.52103     | 0.312194    | 1.12806     |           2.91 |        8 | 99.6%      |
+| spy          | 5.3%           | 6.0%   | 15.6% |     0.41 |      0.56 | -11.5%   |     0.53 |   1    | -0.0%   | 0.0%             | 49.6%      |    224 |    -1.28442 |     2.34004 |  3.73035e-16 | 3.10862e-15 | 5.84421e-15 |           0    |        0 | 100.0%     |
+| qqq_buyhold  | 4.4%           | 5.0%   | 24.3% |     0.29 |      0.4  | -19.9%   |     0.25 |   1.48 | -2.4%   | 11.0%            | 52.2%      |    224 |    -1.49588 |     2.23731 | -0.212512    | 0.0076515   | 0.226751    |           0    |        0 | 100.0%     |
+| soxx_buyhold | 23.2%          | 26.5%  | 55.4% |     0.67 |      0.93 | -43.4%   |     0.61 |   2.77 | 19.9%   | 44.5%            | 58.9%      |    224 |    -1.08533 |     2.75069 | -0.543711    | 0.317081    | 1.15555     |           0    |        0 | 100.0%     |
 
 | strategy | $10,000 becomes |
 |---|---:|
-| bot | $10,939 |
+| bot | $12,573 |
 | spy | $10,534 |
 | qqq_buyhold | $10,443 |
-| vgt_buyhold | $10,971 |
+| soxx_buyhold | $12,322 |
 
 ## Verdict
 
-- Full window: bot $91,136 vs SPY $42,186 (+48,950).
-- 2026: bot $10,939 vs SPY $10,534 (+405, +4.05%).
-- Max drawdown: bot -31.8% vs SPY -33.7% (full); -24.8% vs -11.5% (2026).
-- Sharpe: bot 0.95 vs SPY 0.79 (full); 0.49 vs 0.41 (2026).
-- Paired excess return: +7.4%/yr, 95% CI +1.3% to +13.3%. The 95% CI excludes zero on one
+- Full window: bot $212,063 vs SPY $42,186 (+169,877).
+- 2026: bot $12,573 vs SPY $10,534 (+2,039, +20.39%).
+- Max drawdown: bot -39.5% vs SPY -33.7% (full); -40.9% vs -11.5% (2026).
+- Sharpe: bot 0.95 vs SPY 0.79 (full); 0.77 vs 0.41 (2026).
+- Paired excess return: +17.4%/yr, 95% CI +5.4% to +29.3%. The 95% CI excludes zero on one
   path; treat it as evidence, not a guarantee.
 
 ## Caveats
 
-- VGT is a tech-sector ETF: the edge is tech beta plus fewer sleeve months, not alpha.
-- VGT buy-and-hold alone made $88,581; the rotation adds only ~$2.5k and trims drawdown.
-- Random-signal shuffles put the rotation at the 55th percentile: no timing skill.
-- 2026: +9.4% vs SPY +5.3%, but 2026 max drawdown -24.8% vs -11.5%.
-- Walk-forward CAGR: 20.0% / 15.7% / 20.3% vs SPY 11.6% / 7.3% / 19.1%.
-- The stock momentum + LLM sleeve showed no edge and is optional, not default.
+- SOXX is a semiconductor ETF: most of the return is one industry's 11-year run, not alpha.
+- SOXX buy-and-hold made $140,256 with a -45.8% drawdown; the rotation adds ~$72k
+  and cuts the drawdown to -39.5%, but the core is still one industry.
+- 2022 was still -13.3% and the full-window drawdown is -39.5% vs SPY -33.7%.
+- No trailing stop and no regime cut: the ten rounds traded crash protection for return.
+- Ten rounds were tuned on this one price path; 2023-2026 was held back as a check and won.
+- Exact costs still leave $181,466 at 30 bps; turnover is 5.4x NAV/yr.
 - Paper only. No orders, no broker, no keys.

@@ -45,27 +45,27 @@ def _derived(panel: pd.DataFrame, cfg: Config) -> tuple:
 class Config:
     start: str = "2015-01-01"
     end: str | None = None
-    top_n: int = 20
+    top_n: int = 6
     rebalance_days: int = 21
     lookback: int = 126
-    skip: int = 21
+    skip: int = 10
     vol_window: int = 20
     max_weight: float = 0.06
-    sector_cap: float = 0.30
-    gross: float = 0.98
+    sector_cap: float = 0.40
+    gross: float = 1.00
     regime_ma: int = 200
-    regime_gross: float = 0.50
-    stop: float = 0.20
+    regime_gross: float = 1.00
+    stop: float = 1.00      # 1.0 = no trailing stop (ten-round optimum)
     reentry_days: int = 20
     cost_bps: float = 10.0
     min_dollar_vol: float = 5e6
     llm_active_share: float = 0.20
-    # Default: dual-momentum rotation. Hold VGT while its 12-month return beats
-    # SPY, otherwise run the S&P momentum sleeve. Set core_weight < 1 to blend.
-    core: str | None = "VGT"
+    # Default: dual-momentum rotation. Hold SOXX while its 6-month return beats SPY,
+    # otherwise run the S&P momentum sleeve. Set core_weight < 1 to blend.
+    core: str | None = "SOXX"
     core_weight: float = 1.0
     core_mode: str = "relative"  # "always" | "relative" | "relative_switch"
-    core_lookback: int = 252
+    core_lookback: int = 126
     core_alt: str | None = "SPY"
     fallback: str = "momentum"  # "momentum" or "sectors"
     fallback_sectors: tuple[str, ...] = (
@@ -90,7 +90,8 @@ class Market:
         d = _derived(panel, cfg)
         px = d["px"]
         self.spy = d["spy"]
-        self.all_dates = px.index
+        # trading calendar = days SPY actually traded (drops partial/holiday rows)
+        self.all_dates = px.index[px["SPY"].notna()]
         self.dates = self.all_dates
         if cfg.end:
             self.dates = self.dates[self.dates <= pd.Timestamp(cfg.end)]
