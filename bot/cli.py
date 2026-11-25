@@ -19,8 +19,12 @@ RESULTS = ROOT / "results"
 RESULTS.mkdir(exist_ok=True)
 
 
-def _load(start: str = "2015-01-01", end: str | None = None,
-          core_weight: float | None = None, core_mode: str | None = None):
+def _load(
+    start: str = "2015-01-01",
+    end: str | None = None,
+    core_weight: float | None = None,
+    core_mode: str | None = None,
+):
     mem = universe.load_membership()
     panel = data.build_panel(mem)
     kw = {}
@@ -40,6 +44,20 @@ def cmd_ingest(args):
     print(panel.groupby("ticker").size().describe())
 
 
+def _seed_metrics(seed: int, mkt):
+    r = backtest.run(mkt, selector=backtest.random_selector(seed, mkt.cfg.top_n))
+    m, _ = backtest.summarize(r, mkt)
+    return m
+
+
+def _random_bench(mkt, seeds: int) -> pd.DataFrame:
+    """Serial: a warm run is ~0.2 s, and forking a large pandas process costs more
+    than the work it saves (measured: 20 seeds 3.8 s serial vs 7.7 s on 16 workers)."""
+    if seeds <= 0:
+        return pd.DataFrame()
+    return pd.DataFrame([_seed_metrics(s, mkt) for s in range(seeds)])
+
+
 def cmd_backtest(args):
     panel, mem, mkt, cfg = _load(args.start, args.end, args.core_weight, args.core_mode)
     print(
@@ -56,12 +74,7 @@ def cmd_backtest(args):
     res_eq = backtest.run(eq_mkt, selector=backtest.equal_weight_selector)
     m_eq, _ = backtest.summarize(res_eq, eq_mkt)
 
-    rand = []
-    for seed in range(args.random_seeds):
-        r = backtest.run(mkt, selector=backtest.random_selector(seed, cfg.top_n))
-        mm, _ = backtest.summarize(r, mkt)
-        rand.append(mm)
-    rnd = pd.DataFrame(rand)
+    rnd = _random_bench(mkt, args.random_seeds)
     print(
         f"random-20: Sharpe p50 {rnd['sharpe'].median():.2f}  p5 {rnd['sharpe'].quantile(0.05):.2f}  "
         f"p95 {rnd['sharpe'].quantile(0.95):.2f}  CAGR p50 {rnd['cagr'].median():.1%}"
@@ -99,12 +112,7 @@ def _bench_2026(panel, mem, cfg, res_llm, res_pl, judgments, cal, args):
         backtest.run(eq_mkt, selector=backtest.equal_weight_selector), eq_mkt
     )
 
-    rand = []
-    for seed in range(args.random_seeds):
-        r = backtest.run(mkt26, selector=backtest.random_selector(seed, cfg.top_n))
-        mm, _ = backtest.summarize(r, mkt26)
-        rand.append(mm)
-    rnd = pd.DataFrame(rand)
+    rnd = _random_bench(mkt26, args.random_seeds)
 
     table = pd.DataFrame(
         {
@@ -184,13 +192,18 @@ def cmd_study(args):
 
 
 def cmd_report(args):
-    lines = ["# stonks-bot — results", "",
-             "Default: dual-momentum rotation. Hold VGT while its 12-month total return beats SPY;",
-             "otherwise rotate into the S&P momentum sleeve. Monthly check, next-close execution,",
-             "10 bps per side, no leverage. The LLM overlay is optional and showed no edge.",
-             ""]
-    for fname, title in [("metrics.csv", "2015-01-02 to 2026-11-24"),
-                         ("metrics_2026.csv", "2026 only")]:
+    lines = [
+        "# stonks-bot — results",
+        "",
+        "Default: dual-momentum rotation. Hold VGT while its 12-month total return beats SPY;",
+        "otherwise rotate into the S&P momentum sleeve. Monthly check, next-close execution,",
+        "10 bps per side, no leverage. The LLM overlay is optional and showed no edge.",
+        "",
+    ]
+    for fname, title in [
+        ("metrics.csv", "2015-01-02 to 2026-11-24"),
+        ("metrics_2026.csv", "2026 only"),
+    ]:
         p = RESULTS / fname
         if p.exists():
             df = pd.read_csv(p, index_col=0)
@@ -205,30 +218,35 @@ def cmd_report(args):
     y26 = pd.read_csv(RESULTS / "metrics_2026.csv", index_col=0)
     b, s0 = full.loc["bot"], full.loc["spy"]
     b26, s26 = y26.loc["bot"], y26.loc["spy"]
-    lines += ["## Verdict", "",
-              f"- Full window: bot ${10000*(1+b['total_return']):,.0f} vs SPY "
-              f"${10000*(1+s0['total_return']):,.0f} "
-              f"({10000*(b['total_return']-s0['total_return']):+,.0f}).",
-              f"- 2026: bot ${10000*(1+b26['total_return']):,.0f} vs SPY "
-              f"${10000*(1+s26['total_return']):,.0f} "
-              f"({10000*(b26['total_return']-s26['total_return']):+,.0f}, "
-              f"{(b26['total_return']-s26['total_return']):+.2%}).",
-              f"- Max drawdown: bot {b['max_dd']:.1%} vs SPY {s0['max_dd']:.1%} (full); "
-              f"{b26['max_dd']:.1%} vs {s26['max_dd']:.1%} (2026).",
-              f"- Sharpe: bot {b['sharpe']:.2f} vs SPY {s0['sharpe']:.2f} (full); "
-              f"{b26['sharpe']:.2f} vs {s26['sharpe']:.2f} (2026).",
-              f"- Paired excess return: {b['diff_ann']:+.1%}/yr, 95% CI "
-              f"{b['diff_lo']:+.1%} to {b['diff_hi']:+.1%}. The 95% CI excludes zero on one",
-              "  path; treat it as evidence, not a guarantee.",
-              "",
-              "## Caveats", "",
-              "- VGT is a tech-sector ETF: the edge is tech beta plus fewer sleeve months, not alpha.",
-              "- VGT buy-and-hold alone made $88,581; the rotation adds only ~$2.5k and trims drawdown.",
-              "- Random-signal shuffles put the rotation at the 55th percentile: no timing skill.",
-              "- 2026: +9.4% vs SPY +5.3%, but 2026 max drawdown -24.8% vs -11.5%.",
-              "- Walk-forward CAGR: 20.0% / 15.7% / 20.3% vs SPY 11.6% / 7.3% / 19.1%.",
-              "- The stock momentum + LLM sleeve showed no edge and is optional, not default.",
-              "- Paper only. No orders, no broker, no keys.", ""]
+    lines += [
+        "## Verdict",
+        "",
+        f"- Full window: bot ${10000 * (1 + b['total_return']):,.0f} vs SPY "
+        f"${10000 * (1 + s0['total_return']):,.0f} "
+        f"({10000 * (b['total_return'] - s0['total_return']):+,.0f}).",
+        f"- 2026: bot ${10000 * (1 + b26['total_return']):,.0f} vs SPY "
+        f"${10000 * (1 + s26['total_return']):,.0f} "
+        f"({10000 * (b26['total_return'] - s26['total_return']):+,.0f}, "
+        f"{(b26['total_return'] - s26['total_return']):+.2%}).",
+        f"- Max drawdown: bot {b['max_dd']:.1%} vs SPY {s0['max_dd']:.1%} (full); "
+        f"{b26['max_dd']:.1%} vs {s26['max_dd']:.1%} (2026).",
+        f"- Sharpe: bot {b['sharpe']:.2f} vs SPY {s0['sharpe']:.2f} (full); "
+        f"{b26['sharpe']:.2f} vs {s26['sharpe']:.2f} (2026).",
+        f"- Paired excess return: {b['diff_ann']:+.1%}/yr, 95% CI "
+        f"{b['diff_lo']:+.1%} to {b['diff_hi']:+.1%}. The 95% CI excludes zero on one",
+        "  path; treat it as evidence, not a guarantee.",
+        "",
+        "## Caveats",
+        "",
+        "- VGT is a tech-sector ETF: the edge is tech beta plus fewer sleeve months, not alpha.",
+        "- VGT buy-and-hold alone made $88,581; the rotation adds only ~$2.5k and trims drawdown.",
+        "- Random-signal shuffles put the rotation at the 55th percentile: no timing skill.",
+        "- 2026: +9.4% vs SPY +5.3%, but 2026 max drawdown -24.8% vs -11.5%.",
+        "- Walk-forward CAGR: 20.0% / 15.7% / 20.3% vs SPY 11.6% / 7.3% / 19.1%.",
+        "- The stock momentum + LLM sleeve showed no edge and is optional, not default.",
+        "- Paper only. No orders, no broker, no keys.",
+        "",
+    ]
     (RESULTS / "summary.md").write_text("\n".join(lines))
     print(f"wrote {RESULTS}/summary.md")
 
@@ -247,29 +265,47 @@ def cmd_paper(args):
     path = RESULTS / "paper_ledger.csv"
     for it in range(args.iterations):
         prices = data.latest_prices(list(targets) + ["SPY"])
-        print(f"\n[{pd.Timestamp.now():%H:%M:%S}] signal {d.date()}  "
-              f"SPY {prices.get('SPY', float('nan')):.2f}  (paper, no orders)")
+        print(
+            f"\n[{pd.Timestamp.now():%H:%M:%S}] signal {d.date()}  "
+            f"SPY {prices.get('SPY', float('nan')):.2f}  (paper, no orders)"
+        )
         stops = {}
         for t in targets:
             p = prices.get(t)
             peak = mkt.px[t].loc[:d].tail(60).max() if t in mkt.px else float("nan")
             protected = {cfg.core, *cfg.fallback_sectors}
-            stops[t] = bool(p and pd.notna(peak) and p < peak * (1 - cfg.stop) and t not in protected)
+            stops[t] = bool(
+                p
+                and pd.notna(peak)
+                and p < peak * (1 - cfg.stop)
+                and t not in protected
+            )
         shown = {t: (0.0 if stops[t] else w) for t, w in targets.items()}
         for t, w in sorted(shown.items(), key=lambda x: -x[1]):
             p = prices.get(t)
-            chg = (p / last_close[t] - 1) if p and t in last_close and pd.notna(last_close[t]) else float("nan")
+            chg = (
+                (p / last_close[t] - 1)
+                if p and t in last_close and pd.notna(last_close[t])
+                else float("nan")
+            )
             flag = " STOP -> exit" if stops[t] else ""
             if p:
-                print(f"  {t:6s} target {w:6.2%}  last {p:9.2f}  vs close {chg:+6.2%}{flag}")
+                print(
+                    f"  {t:6s} target {w:6.2%}  last {p:9.2f}  vs close {chg:+6.2%}{flag}"
+                )
             else:
                 print(f"  {t:6s} target {w:6.2%}  no quote")
-        print(f"  CASH   {1-sum(shown.values()):6.2%}")
-        row = {"time": str(pd.Timestamp.now()), "signal_date": str(d.date()),
-               "targets": json.dumps({k: round(v, 6) for k, v in shown.items()}),
-               "prices": json.dumps({k: round(v, 4) for k, v in prices.items()}),
-               "stops": json.dumps(stops)}
-        pd.DataFrame([row]).to_csv(path, mode="a", header=not path.exists(), index=False)
+        print(f"  CASH   {1 - sum(shown.values()):6.2%}")
+        row = {
+            "time": str(pd.Timestamp.now()),
+            "signal_date": str(d.date()),
+            "targets": json.dumps({k: round(v, 6) for k, v in shown.items()}),
+            "prices": json.dumps({k: round(v, 4) for k, v in prices.items()}),
+            "stops": json.dumps(stops),
+        }
+        pd.DataFrame([row]).to_csv(
+            path, mode="a", header=not path.exists(), index=False
+        )
         if it < args.iterations - 1:
             time.sleep(args.interval)
     print(f"\nappended {path}")

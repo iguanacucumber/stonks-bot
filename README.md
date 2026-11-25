@@ -69,6 +69,11 @@ uv sync
 `results/paper_ledger.csv`. It never sends an order. The strategy itself rebalances monthly;
 intraday polling only changes what you see, not the signals.
 
+Timing with a warm cache (16-core laptop): `backtest --random-seeds 20` ~11 s, bot-vs-SPY
+only ~2 s, `paper` ~3 s (network-bound), `ingest` ~8 min (downloads ~780 Yahoo series).
+The engine is numpy-first: membership and price lookups are matrix operations, per-date
+signals are cached, and panel pivots are shared across configs.
+
 Tests:
 
 ```bash

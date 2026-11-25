@@ -34,7 +34,7 @@ def _sector_fallback(mkt: Market, date: pd.Timestamp) -> dict[str, float]:
             scores[t] = float(v)
     if not scores:
         return {}
-    top = sorted(scores, key=scores.get, reverse=True)[:cfg.sector_top]
+    top = sorted(scores, key=scores.get, reverse=True)[: cfg.sector_top]
     return {t: cfg.gross / len(top) for t in top}
 
 
@@ -85,124 +85,155 @@ def _select_excluding(mkt: Market, date: pd.Timestamp, banned: set[str]) -> list
 def run(
     mkt: Market, selector: Selector | None = None, overlay: Overlay | None = None
 ) -> Result:
+    """Daily accounting. Holdings live in numpy arrays so the per-day mark-to-market
+    and stop check are vector ops; only rebalances touch per-name Python."""
     cfg = mkt.cfg
     selector = selector or _default_selector
     dates = list(mkt.dates)
     n = len(dates)
-    px = mkt.px
+    names = list(mkt.px.columns)
+    nc = len(names)
+    cols = mkt._px_col
+    rows = mkt._px_row
+    arr = mkt._px_arr
+    cost_rate = cfg.cost_bps / 1e4
+    stop_keep = 1.0 - cfg.stop
+    protected_ci = np.array(
+        [cols[t] for t in {cfg.core, *cfg.fallback_sectors} if t in cols], dtype=int
+    )
 
     cash = 1.0
-    pos: dict[str, float] = {}
-    entry: dict[str, float] = {}
-    peak: dict[str, float] = {}
-    banned_until: dict[str, int] = {}
+    shares = np.zeros(nc)
+    entry = np.full(nc, np.nan)
+    peak = np.full(nc, np.nan)
+    banned = np.full(nc, -1, dtype=int)
+    held: list[int] = []  # column indices, insertion order
     pending_target: dict[str, float] | None = None
-    pending_exit: set[str] = set()
-    pending_reason: dict[str, str] = {}
+    pending_exit: set[int] = set()
+    pending_reason: dict[int, str] = {}
 
-    eqs, cashs, wrows, trades = [], [], [], []
-
-    def price(t: str, d: pd.Timestamp) -> float | None:
-        v = px.at[d, t] if (d in px.index and t in px.columns) else np.nan
-        return float(v) if pd.notna(v) and v > 0 else None
+    trades: list[tuple] = []
+    eqs = np.zeros(n)
+    cashs = np.zeros(n)
+    wmat = np.zeros((n, nc))
 
     for i, d in enumerate(dates):
+        ri = rows.get(d)
+        row = arr[ri] if ri is not None else np.full(nc, np.nan)
+        # prices usable for trading: missing/non-positive -> 0.0 (skipped)
+        pr = np.where(np.isnan(row) | (row <= 0), 0.0, row)
+
         # 1. execute orders decided at the previous close, at today's close
         if pending_target is not None or pending_exit:
             has_target = pending_target is not None
-            target = {t: w for t, w in (pending_target or {}).items() if w > 1e-9}
-            for t in pending_exit:
-                target.pop(t, None)
-            equity_now = cash + sum(sh * (price(t, d) or 0.0) for t, sh in pos.items())
+            tgt: list[tuple[int, float]] = []
+            keep: set[int] = set()
+            if has_target:
+                for t, w in pending_target.items():
+                    ci = cols.get(t)
+                    if ci is not None and w > 1e-9:
+                        tgt.append((ci, w))
+                        keep.add(ci)
+            for ci in pending_exit:
+                keep.discard(ci)
+            equity_now = cash + float(shares @ pr)
             # sell exits first
-            for t in list(pos):
-                if t in pending_exit or (has_target and t not in target):
-                    p = price(t, d)
-                    if p is None:
+            for ci in list(held):
+                if ci in pending_exit or (has_target and ci not in keep):
+                    p = pr[ci]
+                    if p == 0.0:
                         continue
-                    notional = pos[t] * p
-                    cash += notional - notional * cfg.cost_bps / 1e4
+                    notional = shares[ci] * p
+                    cash += notional - notional * cost_rate
                     trades.append(
                         (
                             d,
-                            t,
+                            names[ci],
                             "SELL",
-                            pos[t],
-                            p,
+                            shares[ci],
+                            float(p),
                             notional,
-                            pending_reason.get(t, "rebalance"),
+                            pending_reason.get(ci, "rebalance"),
                         )
                     )
-                    del pos[t]
-                    entry.pop(t, None)
-                    peak.pop(t, None)
-            if target:
-                equity_now = cash + sum(
-                    sh * (price(t, d) or 0.0) for t, sh in pos.items()
-                )
-                for t, w in target.items():
-                    p = price(t, d)
-                    if p is None:
+                    shares[ci] = 0.0
+                    entry[ci] = np.nan
+                    peak[ci] = np.nan
+                    held.remove(ci)
+            if tgt:
+                equity_now = cash + float(shares @ pr)
+                if pending_exit:
+                    tgt = [(ci, w) for ci, w in tgt if ci not in pending_exit]
+                for ci, w in tgt:
+                    p = pr[ci]
+                    if p == 0.0:
                         continue
-                    cur = pos.get(t, 0.0) * p
+                    cur = shares[ci] * p
                     delta = w * equity_now - cur
                     if abs(delta) < 1e-4 * equity_now:
                         continue
                     sh = delta / p
-                    cost = abs(delta) * cfg.cost_bps / 1e4
+                    cost = abs(delta) * cost_rate
                     if delta > 0 and cash < delta + cost:
                         delta = max(0.0, cash - cost)
                         sh = delta / p
-                        cost = delta * cfg.cost_bps / 1e4
+                        cost = delta * cost_rate
                     cash -= delta + cost
-                    pos[t] = pos.get(t, 0.0) + sh
-                    side = "BUY" if sh > 0 else "SELL"
+                    if shares[ci] == 0.0 and sh != 0.0:
+                        held.append(ci)
+                    shares[ci] += sh
                     trades.append(
                         (
                             d,
-                            t,
-                            side,
+                            names[ci],
+                            "BUY" if sh > 0 else "SELL",
                             abs(sh),
-                            p,
+                            float(p),
                             abs(delta),
-                            pending_reason.get(t, "rebalance"),
+                            pending_reason.get(ci, "rebalance"),
                         )
                     )
-                    if t not in entry and pos.get(t, 0) > 0:
-                        entry[t] = p
-                        peak[t] = p
+                    if np.isnan(entry[ci]) and shares[ci] > 0:
+                        entry[ci] = p
+                        peak[ci] = p
             pending_target, pending_exit, pending_reason = None, set(), {}
 
         # 2. mark to market and check trailing stops
-        vals = {}
-        for t, sh in pos.items():
-            p = price(t, d)
-            if p is None:
-                p = entry.get(t, 0.0)
-            vals[t] = sh * p
-            protected = {cfg.core, *cfg.fallback_sectors}
-            if t in peak and p > 0 and t not in protected:
-                peak[t] = max(peak[t], p)
-                if p < peak[t] * (1.0 - cfg.stop):
-                    pending_exit.add(t)
-                    pending_reason[t] = "stop"
-                    banned_until[t] = i + cfg.reentry_days
-        equity = cash + sum(vals.values())
-        eqs.append(equity)
-        cashs.append(cash)
-        wrows.append({t: v / equity for t, v in vals.items()} | {"CASH": cash / equity})
+        prm = pr
+        missing = prm == 0.0
+        if missing.any():
+            fill = np.where(np.isnan(entry), 0.0, entry)
+            prm = np.where(missing, fill, prm)
+        vals = shares * prm
+        equity = cash + float(vals.sum())
+        eqs[i] = equity
+        cashs[i] = cash
+        wmat[i] = vals / equity
+
+        if held:
+            hi = np.array(held, dtype=int)
+            live = (pr[hi] > 0) & ~np.isin(hi, protected_ci)
+            if live.any():
+                li = hi[live]
+                peak[li] = np.maximum(peak[li], pr[li])
+                stopped = li[pr[li] < peak[li] * stop_keep]
+                for ci in stopped:
+                    pending_exit.add(int(ci))
+                    pending_reason[int(ci)] = "stop"
+                    banned[ci] = i + cfg.reentry_days
 
         # 3. decide next close's trades
-        banned = {t for t, until in banned_until.items() if until > i}
         if i % cfg.rebalance_days == 0 and i + 1 < n:
-            held = list(pos)
-            base = selector(mkt, d, held, banned)
+            banned_names = (
+                {names[ci] for ci in np.flatnonzero(banned > i)}
+                if (banned > i).any()
+                else set()
+            )
+            base = selector(mkt, d, [names[ci] for ci in held], banned_names)
             if overlay is not None:
                 base = overlay(d, base, mkt)
             pending_target = base
-            pending_reason = {t: "rebalance" for t in base}
-        # stops also queue their own exit
-        # (pending_target is merged at execution; stopped names are removed)
+            pending_reason = {cols[t]: "rebalance" for t in base if t in cols}
 
     equity = pd.Series(eqs, index=dates, name="equity")
     cash_s = pd.Series(cashs, index=dates, name="cash")
@@ -210,7 +241,8 @@ def run(
         trades,
         columns=["date", "ticker", "side", "shares", "price", "notional", "reason"],
     )
-    wdf = pd.DataFrame(wrows, index=dates).fillna(0.0)
+    wdf = pd.DataFrame(wmat, index=dates, columns=names)
+    wdf["CASH"] = cash_s / equity
     nav = pd.DataFrame({"equity": equity, "cash": cash_s})
     return Result(equity=equity, cash=cash_s, trades=tr, weights=wdf, nav=nav)
 

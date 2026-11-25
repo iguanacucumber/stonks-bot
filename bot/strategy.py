@@ -9,6 +9,37 @@ import pandas as pd
 
 from . import universe
 
+# Rebuilding the pivots and rolling signals is the single most expensive step and
+# does not depend on start/end/stop/etc. Cache per panel object, keeping a strong
+# reference so the id() cannot be reused while the entry is alive.
+_DERIVED: dict[tuple, tuple] = {}
+_MEMBERS: dict[tuple, tuple] = {}
+
+
+def _derived(panel: pd.DataFrame, cfg: Config) -> tuple:
+    key = (id(panel), cfg.vol_window, cfg.lookback, cfg.skip, cfg.regime_ma)
+    hit = _DERIVED.get(key)
+    if hit is not None and hit[0] is panel:
+        return hit[1]
+    px = panel.pivot(index="date", columns="ticker", values="adjclose").sort_index()
+    vol = panel.pivot(index="date", columns="ticker", values="volume").sort_index()
+    spy = px["SPY"].dropna()
+    ret = px.pct_change(fill_method=None)
+    out = {
+        "px": px,
+        "vol": vol,
+        "spy": spy,
+        "ret": ret,
+        "sigma": ret.rolling(cfg.vol_window, min_periods=10).std() * np.sqrt(252),
+        "mom": px.shift(cfg.skip) / px.shift(cfg.lookback) - 1.0,
+        "dollar": (px * vol).rolling(20, min_periods=10).median(),
+        "spy_ma": spy.rolling(cfg.regime_ma, min_periods=cfg.regime_ma).mean(),
+    }
+    if len(_DERIVED) > 4:
+        _DERIVED.clear()
+    _DERIVED[key] = (panel, out)
+    return out
+
 
 @dataclass(frozen=True)
 class Config:
@@ -33,11 +64,21 @@ class Config:
     # SPY, otherwise run the S&P momentum sleeve. Set core_weight < 1 to blend.
     core: str | None = "VGT"
     core_weight: float = 1.0
-    core_mode: str = "relative"        # "always" | "relative" | "relative_switch"
+    core_mode: str = "relative"  # "always" | "relative" | "relative_switch"
     core_lookback: int = 252
     core_alt: str | None = "SPY"
-    fallback: str = "momentum"         # "momentum" or "sectors"
-    fallback_sectors: tuple[str, ...] = ("XLK", "XLF", "XLE", "XLV", "XLI", "XLP", "XLU", "XLB", "XLY")
+    fallback: str = "momentum"  # "momentum" or "sectors"
+    fallback_sectors: tuple[str, ...] = (
+        "XLK",
+        "XLF",
+        "XLE",
+        "XLV",
+        "XLI",
+        "XLP",
+        "XLU",
+        "XLB",
+        "XLY",
+    )
     sector_top: int = 3
 
 
@@ -46,9 +87,9 @@ class Market:
 
     def __init__(self, panel: pd.DataFrame, membership: pd.DataFrame, cfg: Config):
         self.cfg = cfg
-        px = panel.pivot(index="date", columns="ticker", values="adjclose").sort_index()
-        vol = panel.pivot(index="date", columns="ticker", values="volume").sort_index()
-        self.spy = px["SPY"].dropna()
+        d = _derived(panel, cfg)
+        px = d["px"]
+        self.spy = d["spy"]
         self.all_dates = px.index
         self.dates = self.all_dates
         if cfg.end:
@@ -56,29 +97,52 @@ class Market:
         self.dates = self.dates[self.dates >= pd.Timestamp(cfg.start)]
         self.px = px
         self.raw_px = px
-        self.vol = vol
-        self.ret = self.px.pct_change(fill_method=None)
-        self.sigma = self.ret.rolling(cfg.vol_window, min_periods=10).std() * np.sqrt(
-            252
-        )
-        self.mom = self.px.shift(cfg.skip) / self.px.shift(cfg.lookback) - 1.0
-        self.dollar = (self.px * self.vol).rolling(20, min_periods=10).median()
-        self.spy_ma = self.spy.rolling(cfg.regime_ma, min_periods=cfg.regime_ma).mean()
+        self.vol = d["vol"]
+        self.ret = d["ret"]
+        self.sigma = d["sigma"]
+        self.mom = d["mom"]
+        self.dollar = d["dollar"]
+        self.spy_ma = d["spy_ma"]
         self.regime = self.spy > self.spy_ma
-        self.members = self._membership(membership)
+        self.members = self._membership(membership, panel)
         self.sectors = universe.sector_map()
         self.member_dates = membership["date"].sort_values().unique()
+        self._elig: dict[pd.Timestamp, pd.DataFrame] = {}
+        # numpy view for the inner accounting loop; date -> row
+        self._px_arr = px.to_numpy(dtype=float, copy=False)
+        self._px_row = {d: i for i, d in enumerate(px.index)}
+        self._px_col = {t: i for i, t in enumerate(px.columns)}
 
-    def _membership(self, membership: pd.DataFrame) -> pd.DataFrame:
-        m = membership.copy()
-        m["ticker"] = m["ticker"].map(universe.canonical)
-        groups = m.groupby("date")["ticker"].apply(lambda s: sorted(set(s)))
-        tickers = sorted(set(m["ticker"]))
-        mat = pd.DataFrame(False, index=pd.DatetimeIndex(groups.index), columns=tickers)
-        for d, names in groups.items():
-            mat.loc[d, names] = True
-        all_dates = mat.index.union(self.all_dates).sort_values()
-        mat = mat.reindex(all_dates).ffill().reindex(self.all_dates).fillna(False)
+    def _membership(
+        self, membership: pd.DataFrame, panel: pd.DataFrame
+    ) -> pd.DataFrame:
+        key = (id(membership), id(panel))
+        hit = _MEMBERS.get(key)
+        if hit is not None and hit[0] is membership and hit[1] is panel:
+            return hit[2]
+        if membership.empty:
+            return pd.DataFrame(False, index=self.all_dates, columns=[])
+        # numpy, not pivot: the long frame has >1M (date, ticker) rows.
+        # pandas factorize, not np.unique: sorting 1M strings dominates the build.
+        dcode, dvals = pd.factorize(membership["date"], sort=True)
+        tcode, tvals = pd.factorize(membership["ticker"])
+        canon = np.array([universe.canonical(t) for t in tvals])
+        cinv, cuniq = pd.factorize(canon)
+        arr = np.zeros((len(dvals), len(cuniq)), dtype=bool)
+        arr[dcode, cinv[tcode]] = True
+        # every snapshot row is a complete constituent list, so no accumulation:
+        # each panel date takes the latest snapshot on or before it
+        pos = (
+            np.searchsorted(np.asarray(dvals), self.all_dates.to_numpy(), side="right")
+            - 1
+        )
+        out = np.zeros((len(self.all_dates), cuniq.size), dtype=bool)
+        ok = pos >= 0
+        out[ok] = arr[pos[ok]]
+        mat = pd.DataFrame(out, index=self.all_dates, columns=cuniq)
+        if len(_MEMBERS) > 4:
+            _MEMBERS.clear()
+        _MEMBERS[key] = (membership, panel, mat)
         return mat
 
     def members_at(self, date: pd.Timestamp) -> set[str]:
@@ -88,6 +152,17 @@ class Market:
 
 
 def eligible(mkt: Market, date: pd.Timestamp) -> pd.DataFrame:
+    """Point-in-time eligible names, ranked by momentum. Cached per date: treat as read-only."""
+    cache = getattr(mkt, "_elig", None)
+    if cache is not None and date in cache:
+        return cache[date]
+    out = _eligible(mkt, date)
+    if cache is not None:
+        cache[date] = out
+    return out
+
+
+def _eligible(mkt: Market, date: pd.Timestamp) -> pd.DataFrame:
     cfg = mkt.cfg
     members = mkt.members_at(date)
     cols = [c for c in mkt.px.columns if c in members and c != "SPY"]

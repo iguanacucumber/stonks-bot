@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import hashlib
+from functools import lru_cache
 from pathlib import Path
 
 import pandas as pd
@@ -76,24 +78,39 @@ def _download(url: str, path: Path) -> Path:
 def load_membership() -> pd.DataFrame:
     """Long frame: one row per (date, ticker), the index as of that date."""
     path = _download(HIST_URL, CACHE / "sp500_history.csv")
+    pq = CACHE / "membership.parquet"
+    stamp = CACHE / "membership.stamp"
+    want = (
+        f"{path.stat().st_mtime_ns}:"
+        f"{hashlib.md5(repr(RECENT_CHANGES).encode()).hexdigest()[:8]}"
+    )
+    if pq.exists() and stamp.exists() and stamp.read_text().strip() == want:
+        return pd.read_parquet(pq)  # parsing 1.3M rows costs ~0.8 s
     df = pd.read_csv(path)
     df["date"] = pd.to_datetime(df["date"])
-    rows = []
-    for d, tickers in zip(df["date"], df["tickers"]):
-        for t in str(tickers).split(","):
-            t = t.strip()
-            if t:
-                rows.append((d, t))
-    out = pd.DataFrame(rows, columns=["date", "ticker"])
+    out = (
+        df[["date", "tickers"]]
+        .assign(ticker=df["tickers"].astype(str).str.split(","))
+        .explode("ticker")
+    )
+    out["ticker"] = out["ticker"].str.strip()
+    out = out[out["ticker"] != ""][["date", "ticker"]]
     # apply changes that post-date the snapshot
     current = set(out.loc[out["date"] == out["date"].max(), "ticker"])
+    rows = []
     for day, adds, removes in RECENT_CHANGES:
         current = (current - set(removes)) | set(adds)
         d = pd.Timestamp(day)
         for t in sorted(current):
             rows.append((d, t))
-    out = pd.DataFrame(rows, columns=["date", "ticker"])
-    return out.drop_duplicates().sort_values(["date", "ticker"]).reset_index(drop=True)
+    if rows:
+        out = pd.concat(
+            [out, pd.DataFrame(rows, columns=["date", "ticker"])], ignore_index=True
+        )
+    out = out.drop_duplicates().sort_values(["date", "ticker"]).reset_index(drop=True)
+    out.to_parquet(pq, index=False)
+    stamp.write_text(want)
+    return out
 
 
 def members_on(membership: pd.DataFrame, date: pd.Timestamp) -> list[str]:
@@ -113,13 +130,18 @@ def current_meta() -> pd.DataFrame:
 
 
 def sector_map() -> dict[str, str]:
+    return dict(_sector_map())
+
+
+@lru_cache(maxsize=1)
+def _sector_map() -> tuple[tuple[str, str], ...]:
     meta = current_meta()
     out = {str(t): str(s) for t, s in zip(meta["ticker"], meta["sector"])}
     # carry a sector across renames so old symbols don't become "Unknown"
     for old, new in ALIASES.items():
         if new in out and old not in out:
             out[old] = out[new]
-    return out
+    return tuple(sorted(out.items()))
 
 
 def yahoo_symbol(ticker: str) -> str:
