@@ -224,6 +224,7 @@ def cmd_report(args):
               "## Caveats", "",
               "- VGT is a tech-sector ETF: the edge is tech beta plus fewer sleeve months, not alpha.",
               "- VGT buy-and-hold alone made $88,581; the rotation adds only ~$2.5k and trims drawdown.",
+              "- Random-signal shuffles put the rotation at the 55th percentile: no timing skill.",
               "- 2026: +9.4% vs SPY +5.3%, but 2026 max drawdown -24.8% vs -11.5%.",
               "- Walk-forward CAGR: 20.0% / 15.7% / 20.3% vs SPY 11.6% / 7.3% / 19.1%.",
               "- The stock momentum + LLM sleeve showed no edge and is optional, not default.",

@@ -49,7 +49,8 @@ promise.
 Full-window CAGR 20.5% vs 12.9%; Sharpe 0.95 vs 0.79. The paired excess return is +7.4%/yr with
 a bootstrap 95% CI of +1.3% to +13.3%. Walk-forward CAGR: 20.0% / 15.7% / 20.3% vs SPY
 11.6% / 7.3% / 19.1%. The catch: VGT is a tech-sector ETF. VGT buy-and-hold alone made $88,581;
-the rotation adds ~$2.5k and trims drawdown. 2026 beats SPY but with a deeper drawdown.
+the rotation adds ~$2.5k and trims drawdown. Random-signal shuffles put the rotation at the
+55th percentile: no measurable timing skill. 2026 beats SPY but with a deeper drawdown.
 
 ## Run
 
