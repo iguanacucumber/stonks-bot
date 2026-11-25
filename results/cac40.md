@@ -4,7 +4,7 @@ Same engine, same rules, same costs. Only the market changed: 54 large French na
 total-return benchmark, EXV3.DE (STOXX Europe 600 Technology) as the core because France has
 no SOXX equivalent with a 2015 history. Window 2015-01-02 → 2026-11-24, $10k, 10 bps/side.
 
-Reproduce: `.venv/bin/python scripts/cac40.py`
+Reproduce: `uv run python scripts/cac40.py`
 
 ## Result: it loses to the index
 

@@ -10,14 +10,11 @@ FX pair: EURUSD/GBPUSD quote USD per unit (divide), USDCHF quotes CHF per USD (m
 
 from __future__ import annotations
 
-import sys
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+import pandas as pd
 
-import pandas as pd  # noqa: E402
-
-from bot import data  # noqa: E402
+from . import data
 
 ROOT = Path(__file__).resolve().parent.parent
 START = "2014-01-01"  # membership snapshot before the 2015 backtest start
@@ -62,6 +59,10 @@ UNIVERSES: dict[str, list[str]] = {
         AUTO.L IHG.L WTB.L CCH.L OCDO.L MNDI.L SMDS.L KGF.L TW.L BLND.L LAND.L
         SGRO.L MRO.L RMV.L III.L BRBY.L ENT.L FLTR.L PSON.L SVT.L UU.L JMAT.L
         DCC.L BNZL.L ITRK.L DPLM.L GAW.L PHNX.L ABDN.L""".split(),
+    "TECH": """AAPL MSFT NVDA AMZN GOOGL META AVGO TSLA COST NFLX AMD PEP ADBE
+        CSCO TMUS INTU QCOM TXN AMAT MU LRCX KLAC ADI PANW SNPS CDNS CRWD MRVL
+        FTNT ANET ASML ARM MELI PYPL SBUX BKNG ISRG VRTX REGN AMGN GILD MDLZ
+        CTSH WDAY TEAM DDOG ZS OKTA""".split(),
     "CH": """NESN.SW ROG.SW NOVN.SW UBSG.SW ZURN.SW ABBN.SW CFR.SW HOLN.SW SIKA.SW
         GIVN.SW LONN.SW ALC.SW SREN.SW SCMN.SW GEBN.SW LOGN.SW ADEN.SW TEMN.SW
         STMN.SW BUCN.SW BALN.SW HELN.SW EMSN.SW KNIN.SW SOON.SW BCVN.SW VACN.SW
@@ -78,6 +79,7 @@ MARKETS: dict[str, dict] = {
     "NL": {"bench": "EWN", "fx": "EUR", "label": "AEX (EWN)"},
     "GB": {"bench": "EWU", "fx": "GBP", "label": "FTSE 100 (EWU)"},
     "CH": {"bench": "EWL", "fx": "CHF", "label": "SMI (EWL)"},
+    "TECH": {"bench": "QQQ", "fx": "USD", "label": "NASDAQ tech"},
 }
 
 # Tier 2: one USD-listed ETF per market, no stock picking, no FX.
@@ -111,6 +113,7 @@ COUNTRY_ETFS: dict[str, str] = {
     "ZA": "EZA",
     "TR": "TUR",
     "EU": "FEZ",
+    "TECH": "QQQ",
 }
 ETF_NAMES = {
     "VOO": "United States",
@@ -142,6 +145,7 @@ ETF_NAMES = {
     "EZA": "South Africa",
     "TUR": "Turkey",
     "FEZ": "Eurozone",
+    "QQQ": "US tech (Nasdaq 100)",
 }
 
 

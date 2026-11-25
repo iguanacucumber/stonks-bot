@@ -30,7 +30,8 @@ def _derived(panel: pd.DataFrame, cfg: Config) -> tuple:
         "vol": vol,
         "spy": spy,
         "ret": ret,
-        "sigma": ret.rolling(cfg.vol_window, min_periods=10).std() * np.sqrt(252),
+        "sigma": ret.rolling(cfg.vol_window, min_periods=min(10, cfg.vol_window)).std()
+        * np.sqrt(252),
         "mom": px.shift(cfg.skip) / px.shift(cfg.lookback) - 1.0,
         "dollar": (px * vol).rolling(20, min_periods=10).median(),
         "spy_ma": spy.rolling(cfg.regime_ma, min_periods=cfg.regime_ma).mean(),

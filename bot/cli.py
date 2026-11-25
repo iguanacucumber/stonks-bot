@@ -12,7 +12,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-from . import backtest, data, llm, overlay, report, strategy, universe
+from . import backtest, data, llm, markets, overlay, report, strategy, universe
 
 ROOT = Path(__file__).resolve().parent.parent
 CACHE = ROOT / "cache"
@@ -21,6 +21,15 @@ RESULTS.mkdir(exist_ok=True)
 # Shipped default: 2x gross, financed at 5%/yr. `--leverage 1` reverts.
 DEFAULT_LEVERAGE = 2.0
 DEFAULT_FINANCING_BPS = 500.0
+# `monthly` is the researched default. Faster rebalancing is available, but it pays
+# far more in costs than it earns: see results/short.md.
+PROFILES = {
+    "monthly": {},
+    "weekly": {"lookback": 20, "skip": 2, "rebalance_days": 5,
+               "core_lookback": 20, "vol_window": 10},
+    "daily": {"lookback": 10, "skip": 1, "rebalance_days": 1,
+              "core_lookback": 10, "vol_window": 5},
+}
 
 
 def _load(
@@ -30,10 +39,14 @@ def _load(
     core_mode: str | None = None,
     leverage: float | None = None,
     financing_bps: float | None = None,
+    market: str = "US",
+    profile: str = "monthly",
 ):
-    mem = universe.load_membership()
-    panel = data.build_panel(mem)
-    kw = {}
+    panel, mem = markets.build(market)
+    if market != "US":
+        # Yahoo Europe/Asia keep the "." in symbols; the S&P alias map does not.
+        universe.canonical = lambda t: t
+    kw = dict(PROFILES[profile])
     if core_weight is not None:
         kw["core_weight"] = core_weight
     if core_mode:
@@ -76,6 +89,8 @@ def cmd_backtest(args):
         args.core_mode,
         args.leverage,
         args.financing_bps,
+        args.market,
+        args.profile,
     )
     print(
         f"dates {mkt.dates[0].date()} -> {mkt.dates[-1].date()}  tickers {mkt.px.shape[1]}"
@@ -110,11 +125,13 @@ def cmd_backtest(args):
         }
     ).T
     print(table.round(4).to_string())
-    table.to_csv(RESULTS / "metrics.csv")
-    res.equity.to_frame("equity").to_csv(RESULTS / "equity.csv")
-    res.trades.to_csv(RESULTS / "trades.csv", index=False)
-    res.weights.to_csv(RESULTS / "weights.csv")
-    print(f"\nwrote {RESULTS}/metrics.csv equity.csv trades.csv weights.csv")
+    # the report is US-only, so a non-US run must not overwrite its inputs
+    suffix = "" if args.market == "US" else f"_{args.market.lower()}"
+    table.to_csv(RESULTS / f"metrics{suffix}.csv")
+    res.equity.to_frame("equity").to_csv(RESULTS / f"equity{suffix}.csv")
+    res.trades.to_csv(RESULTS / f"trades{suffix}.csv", index=False)
+    res.weights.to_csv(RESULTS / f"weights{suffix}.csv")
+    print(f"\nwrote {RESULTS}/metrics{suffix}.csv equity{suffix}.csv trades{suffix}.csv weights{suffix}.csv")
 
 
 def _bench_2026(panel, mem, cfg, res_llm, res_pl, judgments, cal, args):
@@ -369,7 +386,8 @@ def _pnl_box(rows: list[tuple[str, float | None]], capital: float, head: list[st
 
 def cmd_pnl(args):
     panel, mem, mkt, cfg = _load(
-        "2015-01-01", None, None, None, args.leverage, args.financing_bps
+        "2015-01-01", None, None, None, args.leverage, args.financing_bps,
+        args.market, args.profile,
     )
     res = backtest.run(mkt)
     d = mkt.dates[-1]
@@ -387,8 +405,9 @@ def cmd_pnl(args):
     ]
     stamp = last_ts.strftime("%Y-%m-%d %H:%M ET") if last_ts is not None else "no quote"
     head = [
-        "STONKS-BOT  ·  paper P&L",
-        f"${args.capital:,.0f}  ·  {cfg.leverage:.1f}x gross  ·  signal {d.date()}  ·  {stamp}",
+        f"STONKS-BOT  ·  {markets.MARKETS[args.market]['label']}  ·  paper P&L",
+        f"${args.capital:,.0f}  ·  {cfg.leverage:.1f}x  ·  {args.profile}  ·  "
+        f"signal {d.date()}  ·  {stamp}",
     ]
     print(_pnl_box(rows, args.capital, head))
     book = "  ".join(
@@ -406,6 +425,8 @@ def cmd_paper(args):
         args.core_mode,
         args.leverage,
         args.financing_bps,
+        args.market,
+        args.profile,
     )
     d = mkt.dates[-1]
     res = backtest.run(mkt)
@@ -481,6 +502,8 @@ def main(argv=None):
     pb.add_argument("--random-seeds", type=int, default=100)
     pb.add_argument("--core-weight", type=float, default=None)
     pb.add_argument("--core-mode", default=None)
+    pb.add_argument("--market", choices=sorted(markets.MARKETS), default="US")
+    pb.add_argument("--profile", choices=sorted(PROFILES), default="monthly")
     pb.add_argument("--leverage", type=float, default=DEFAULT_LEVERAGE)
     pb.add_argument("--financing-bps", type=float, default=DEFAULT_FINANCING_BPS)
     pb.set_defaults(func=cmd_backtest)
@@ -497,6 +520,8 @@ def main(argv=None):
 
     pn = sub.add_parser("pnl")
     pn.add_argument("--capital", type=float, default=10000.0)
+    pn.add_argument("--market", choices=sorted(markets.MARKETS), default="US")
+    pn.add_argument("--profile", choices=sorted(PROFILES), default="monthly")
     pn.add_argument("--leverage", type=float, default=DEFAULT_LEVERAGE)
     pn.add_argument("--financing-bps", type=float, default=DEFAULT_FINANCING_BPS)
     pn.set_defaults(func=cmd_pnl)
@@ -507,6 +532,8 @@ def main(argv=None):
     pp.add_argument("--llm", action="store_true")
     pp.add_argument("--core-weight", type=float, default=None)
     pp.add_argument("--core-mode", default=None)
+    pp.add_argument("--market", choices=sorted(markets.MARKETS), default="US")
+    pp.add_argument("--profile", choices=sorted(PROFILES), default="monthly")
     pp.add_argument("--leverage", type=float, default=DEFAULT_LEVERAGE)
     pp.add_argument("--financing-bps", type=float, default=DEFAULT_FINANCING_BPS)
     pp.set_defaults(func=cmd_paper)
