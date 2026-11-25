@@ -5,8 +5,11 @@ unattended: a weekday job at **21:15 UTC** (after the US close) appends a row to
 `results/paper_ledger.csv` and `results/paper_daily.csv`, with a log in
 `results/paper_daily.log`.
 
-- Automation: `aut_2142f26b200154AVO0Cg0vsQQ4`, cron `15 21 * * 1-5`.
-- Command: `uv run python scripts/paper_daily.py --market TECH`
+- Automation: `aut_21435414b001hyZ0E5xugHgtvy`, cron `15 21 * * 1-5`.
+- Command: `uv run python scripts/paper_daily.py --market TECH --refresh`, then
+  `uv run python scripts/paper_report.py --market TECH` into `results/paper_daily.log`.
+- `--refresh` force-fetches the 54 TECH/ETF symbols. Without it the panel never advances:
+  `fetch_one` serves the cached CSV forever.
 - It records **actual holdings** from the backtest (post-trade weights), not a fresh
   hypothetical target: the book only changes at rebalances and risk exits.
 
@@ -25,6 +28,20 @@ not a fill mismatch.
 | 2026-11-20 | 2026-11-23 | 2026-11-24 | 1.27 | 50% | -0.88% | -0.89% | +0.53 bp |
 
 Mean |difference|: **0.5 bps/day**. The forward accounting matches the backtest.
+
+## Live vs shadow
+
+`uv run python scripts/paper_report.py --market TECH` reads the live rows, compounds the
+recorded day moves, and compares each day with the backtest's close-to-close return for the
+same date. It skips rows whose date has no completed daily bar yet. Current state:
+
+```
+no comparable rows yet (1 waiting for a completed close)
+```
+
+That is correct at 19:40 UTC: the 2026-11-25 row was taken intraday and the panel's last
+completed daily bar is 2026-11-24. The 21:15 UTC run sees the finished bar and the row
+becomes comparable.
 
 ## 21-session reconciliation
 
@@ -69,7 +86,8 @@ intraday mark with the official close.
   equity, holdings JSON, prices JSON.
 - `paper_replay.csv`: the five-session reconciliation above.
 
-Forward status: **one live row so far** (header + 1 data row in `paper_daily.csv`).
+Forward status: **one distinct live date so far** (2026-11-25; duplicate intraday runs are
+deduped by quote date in the report).
 One day is not a track record. The job adds one row per weekday, so five weekday rows
 appear after five sessions; re-run the replay then to compare the forward week with the
 backtest. Nothing here is fabricated: the 21-session table above is a replay on panel

@@ -32,6 +32,13 @@ DAILY = ROOT / "results" / "paper_daily.csv"
 REPLAY = ROOT / "results" / "paper_replay.csv"
 
 
+def refresh(market: str) -> None:
+    """Force-refresh the small ETF/stock set so the panel advances daily."""
+    spec = markets.MARKETS[market]
+    syms = markets.UNIVERSES[market] + [spec["bench"]] + list(markets.CORE_SYMBOLS)
+    data.fetch_all(syms, force=True)
+
+
 def load(market: str, leverage: float, trend_ma: int, trend_scale: float):
     panel, mem = markets.build(market)
     if market != "US":
@@ -100,6 +107,7 @@ def main():
     ap.add_argument("--trend-scale", type=float, default=0.5)
     ap.add_argument("--capital", type=float, default=10000.0)
     ap.add_argument("--replay", type=int, default=0)
+    ap.add_argument("--refresh", action="store_true")
     args = ap.parse_args()
 
     panel, mkt, res, cfg = load(

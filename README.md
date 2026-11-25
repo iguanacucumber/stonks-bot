@@ -98,6 +98,8 @@ uv run python -m bot.cli pnl --capital 10000    # 1h / 1d / 1w / 1m / 1y P&L
 uv run python -m bot.cli paper --interval 60 --iterations 10
 uv run python scripts/paper_daily.py --market TECH  # one forward paper row
 uv run python scripts/paper_daily.py --replay 5     # reconcile with the backtest
+uv run python scripts/paper_daily.py --market TECH --refresh
+uv run python scripts/paper_report.py --market TECH  # live rows vs shadow
 # stock + LLM sleeve instead of the SOXX core:
 uv run python -m bot.cli backtest --core-weight 0
 uv run python -m bot.cli study --max-names 40
