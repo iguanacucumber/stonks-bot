@@ -79,9 +79,11 @@ Walk-forward: 2015-2019 +20.0% vs +11.6%; 2020-2022 +15.7% vs +7.3%; 2023-2026 +
 Costs 0/10/20/30 bps: $95,160 / $91,136 / $87,279 / $83,582. Paired excess +7.4%/yr, 95% CI
 +1.3% to +13.3%. 2026 drawdown is worse (-24.8% vs -11.5%) because VGT is a tech book.
 
-Robustness: random-signal shuffles of the rotation put the real schedule at the 55th percentile
-(QQQ-era test). Timing adds no detectable skill; the wealth is VGT beta, and VGT buy-and-hold
-alone made $88,581. The rotation is a small drawdown overlay, not the source of the return.
+Robustness: random-signal shuffles of the QQQ-era rotation put the real schedule at the 55th
+percentile; that version lost 2015-19 and 2023-26. The VGT switch is why the final rule wins all
+three blocks. Timing still adds little: VGT buy-and-hold $88,581; static 80/20 VGT/momentum
+$89,726; final rotation $91,136. The rotation is a small drawdown overlay, not the source of the
+return.
 
 **Decision:** freeze. Paper only. The stock momentum + LLM sleeve remains optional and showed
 no edge; the default is VGT plus the momentum fallback.
