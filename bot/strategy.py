@@ -36,6 +36,9 @@ class Config:
     core_mode: str = "relative"        # "always" | "relative" | "relative_switch"
     core_lookback: int = 252
     core_alt: str | None = "SPY"
+    fallback: str = "sectors"          # "sectors" or "momentum"
+    fallback_sectors: tuple[str, ...] = ("XLK", "XLF", "XLE", "XLV", "XLI", "XLP", "XLU", "XLB", "XLY")
+    sector_top: int = 3
 
 
 class Market:

@@ -23,11 +23,26 @@ class Result:
     nav: pd.DataFrame
 
 
+def _sector_fallback(mkt: Market, date: pd.Timestamp) -> dict[str, float]:
+    cfg = mkt.cfg
+    names = [t for t in cfg.fallback_sectors if t in mkt.px.columns]
+    scores = {}
+    for t in names:
+        c = mkt.px[t]
+        v = c.shift(21).loc[date] / c.shift(273).loc[date] - 1
+        if pd.notna(v):
+            scores[t] = float(v)
+    if not scores:
+        return {}
+    top = sorted(scores, key=scores.get, reverse=True)[:cfg.sector_top]
+    return {t: cfg.gross / len(top) for t in top}
+
+
 def _default_selector(
     mkt: Market, date: pd.Timestamp, held: list[str], banned: set[str]
 ) -> dict[str, float]:
     cfg = mkt.cfg
-    core = cfg.core if cfg.core in mkt.px.columns else None
+    core = cfg.core if (cfg.core in mkt.px.columns and cfg.core_weight > 0) else None
     core_on = True
     if core and cfg.core_mode in ("relative", "relative_switch"):
         c = mkt.px[core]
@@ -36,13 +51,14 @@ def _default_selector(
         core_on = bool(pd.notna(q) and pd.notna(s) and q > s)
         if core and cfg.core_mode == "relative_switch" and not core_on:
             core = cfg.core_alt if cfg.core_alt in mkt.px.columns else None
-    core_w = cfg.core_weight if core and (core_on or cfg.core_mode == "relative_switch") else 0.0
+    if core and core_on:
+        return {core: cfg.core_weight}
+    if core and cfg.fallback == "sectors":
+        return _sector_fallback(mkt, date)
     picks = [t for t in _select_excluding(mkt, date, banned) if t != core]
-    w = inverse_vol_weights(mkt, date, picks, gross=max(0.0, cfg.gross - core_w))
+    w = inverse_vol_weights(mkt, date, picks)
     if not bool(mkt.regime.loc[date]):
         w = {t: x * cfg.regime_gross for t, x in w.items()}
-    if core:
-        w[core] = w.get(core, 0.0) + core_w
     return w
 
 
@@ -94,7 +110,7 @@ def run(
         # 1. execute orders decided at the previous close, at today's close
         if pending_target is not None or pending_exit:
             has_target = pending_target is not None
-            target = dict(pending_target or {})
+            target = {t: w for t, w in (pending_target or {}).items() if w > 1e-9}
             for t in pending_exit:
                 target.pop(t, None)
             equity_now = cash + sum(sh * (price(t, d) or 0.0) for t, sh in pos.items())
@@ -164,7 +180,8 @@ def run(
             if p is None:
                 p = entry.get(t, 0.0)
             vals[t] = sh * p
-            if t in peak and p > 0 and t != cfg.core:
+            protected = {cfg.core, *cfg.fallback_sectors}
+            if t in peak and p > 0 and t not in protected:
                 peak[t] = max(peak[t], p)
                 if p < peak[t] * (1.0 - cfg.stop):
                     pending_exit.add(t)

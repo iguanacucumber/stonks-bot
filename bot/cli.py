@@ -201,20 +201,30 @@ def cmd_report(args):
                 lines.append(f"| {name} | ${val:,.0f} |")
             lines.append("")
 
+    full = pd.read_csv(RESULTS / "metrics.csv", index_col=0)
+    y26 = pd.read_csv(RESULTS / "metrics_2026.csv", index_col=0)
+    b, s0 = full.loc["bot"], full.loc["spy"]
+    b26, s26 = y26.loc["bot"], y26.loc["spy"]
     lines += ["## Verdict", "",
-              "- Full window: bot $45,417 vs SPY $42,186 (+$3,231, +7.7%).",
-              "- 2026: bot $11,212 vs SPY $10,534 (+$678, +6.4%).",
-              "- Max drawdown: bot -28.6% vs SPY -33.7% (full), -11.7% vs -11.5% (2026).",
-              "- Sharpe: bot 0.76 vs SPY 0.79 (full), 0.74 vs 0.41 (2026).",
-              "- The full-window paired excess return is +0.9%/yr with a bootstrap 95% CI of",
-              "  -5.0% to +6.8%. It wins on terminal wealth, but the edge is not statistically",
-              "  significant. The source is Nasdaq-100 beta, not stock-picking alpha.",
+              f"- Full window: bot ${10000*(1+b['total_return']):,.0f} vs SPY "
+              f"${10000*(1+s0['total_return']):,.0f} "
+              f"({10000*(b['total_return']-s0['total_return']):+,.0f}).",
+              f"- 2026: bot ${10000*(1+b26['total_return']):,.0f} vs SPY "
+              f"${10000*(1+s26['total_return']):,.0f} "
+              f"({10000*(b26['total_return']-s26['total_return']):+,.0f}) — a tie.",
+              f"- Max drawdown: bot {b['max_dd']:.1%} vs SPY {s0['max_dd']:.1%} (full); "
+              f"{b26['max_dd']:.1%} vs {s26['max_dd']:.1%} (2026).",
+              f"- Sharpe: bot {b['sharpe']:.2f} vs SPY {s0['sharpe']:.2f} (full); "
+              f"{b26['sharpe']:.2f} vs {s26['sharpe']:.2f} (2026).",
+              f"- Paired excess return: {b['diff_ann']:+.1%}/yr, 95% CI "
+              f"{b['diff_lo']:+.1%} to {b['diff_hi']:+.1%}. Terminal wealth wins, statistical",
+              "  significance does not.",
               "",
               "## Caveats", "",
-              "- One path, 11.9 years. One November 2026 switch out of QQQ drives most of the 2026 edge.",
-              "- QQQ concentration: top holdings dominate; a tech bear market hits this harder than SPY.",
-              "- The stock momentum sleeve has ~0.1-0.3 pp/yr survivorship inflation and the LLM overlay",
-              "  showed no evidence of adding money, so neither is in the default.",
+              "- The edge is QQQ beta plus the sector-9 fallback in lag periods, not stock alpha.",
+              "- 2023-2026 lags SPY (15.6% vs 19.1% CAGR); the full win is carried by 2020-2022.",
+              "- The 2026 result is a tie (-$8). Do not read it as an annual edge.",
+              "- The stock momentum + LLM sleeve showed no edge and is optional, not default.",
               "- Paper only. No orders, no broker, no keys.", ""]
     (RESULTS / "summary.md").write_text("\n".join(lines))
     print(f"wrote {RESULTS}/summary.md")
@@ -240,7 +250,8 @@ def cmd_paper(args):
         for t in targets:
             p = prices.get(t)
             peak = mkt.px[t].loc[:d].tail(60).max() if t in mkt.px else float("nan")
-            stops[t] = bool(p and pd.notna(peak) and p < peak * (1 - cfg.stop) and t != cfg.core)
+            protected = {cfg.core, *cfg.fallback_sectors}
+            stops[t] = bool(p and pd.notna(peak) and p < peak * (1 - cfg.stop) and t not in protected)
         shown = {t: (0.0 if stops[t] else w) for t, w in targets.items()}
         for t, w in sorted(shown.items(), key=lambda x: -x[1]):
             p = prices.get(t)
