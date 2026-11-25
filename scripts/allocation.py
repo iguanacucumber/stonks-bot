@@ -22,6 +22,8 @@ from bot import backtest, markets, strategy  # noqa: E402
 def main():
     panel, mem = markets.build("US")
     cfg = strategy.Config(
+        rebalance_mode="calendar",
+        exec_price="open",
         leverage=2.5, financing_bps=500.0, trend_ma=200, trend_scale=0.5
     )
     mkt = strategy.Market(panel, mem, cfg)

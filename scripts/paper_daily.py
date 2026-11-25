@@ -46,6 +46,8 @@ def load(market: str, leverage: float, trend_ma: int, trend_scale: float):
         universe.canonical = lambda t: t
     cfg = strategy.Config(
         start="2015-01-01",
+        rebalance_mode="calendar",
+        exec_price="open",
         leverage=leverage,
         financing_bps=500.0,
         trend_ma=trend_ma,

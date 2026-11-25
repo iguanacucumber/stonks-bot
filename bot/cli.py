@@ -20,6 +20,9 @@ RESULTS = ROOT / "results"
 RESULTS.mkdir(exist_ok=True)
 # Shipped default: 2x gross, financed at 5%/yr. `--leverage 1` reverts.
 DEFAULT_LEVERAGE = 2.5
+DEFAULT_REBALANCE = "calendar"
+DEFAULT_EXEC = "open"
+DEFAULT_EXEC = "open"
 DEFAULT_FINANCING_BPS = 500.0
 # Daily risk cut: below the core's 200-day MA, hold half size. It is checked every
 # day, not at the monthly rebalance; the monthly version did not work (results/rejected.md).
@@ -31,10 +34,20 @@ PROFILES = {
     "monthly": {},
     # taxable account: no stock sleeve, wider leverage band, fewer realized gains
     "tax": {"core_mode": "always", "leverage_band": 0.30, "tax_lots": "hifo"},
-    "weekly": {"lookback": 20, "skip": 2, "rebalance_days": 5,
-               "core_lookback": 20, "vol_window": 10},
-    "daily": {"lookback": 10, "skip": 1, "rebalance_days": 1,
-              "core_lookback": 10, "vol_window": 5},
+    "weekly": {
+        "lookback": 20,
+        "skip": 2,
+        "rebalance_days": 5,
+        "core_lookback": 20,
+        "vol_window": 10,
+    },
+    "daily": {
+        "lookback": 10,
+        "skip": 1,
+        "rebalance_days": 1,
+        "core_lookback": 10,
+        "vol_window": 5,
+    },
 }
 
 
@@ -56,6 +69,8 @@ def _load(
     salt_cap: float | None = None,
     wash_sale_days: int | None = None,
     leverage_band: float | None = None,
+    rebalance_mode: str | None = None,
+    exec_price: str | None = None,
 ):
     panel, mem = markets.build(market)
     if market != "US":
@@ -77,15 +92,17 @@ def _load(
     if leverage_band is not None:
         kw["leverage_band"] = leverage_band
     kw["trend_ma"] = DEFAULT_TREND_MA if trend_ma is None else trend_ma
-    kw["trend_scale"] = (
-        DEFAULT_TREND_SCALE if trend_scale is None else trend_scale
-    )
+    kw["trend_scale"] = DEFAULT_TREND_SCALE if trend_scale is None else trend_scale
     if core_weight is not None:
         kw["core_weight"] = core_weight
     if core_mode:
         kw["core_mode"] = core_mode
     if leverage is not None:
         kw["leverage"] = leverage
+    kw["rebalance_mode"] = (
+        DEFAULT_REBALANCE if rebalance_mode is None else rebalance_mode
+    )
+    kw["exec_price"] = DEFAULT_EXEC if exec_price is None else exec_price
     if financing_bps is not None:
         kw["financing_bps"] = financing_bps
     cfg = strategy.Config(start=start, end=end, **kw)
@@ -133,6 +150,8 @@ def cmd_backtest(args):
         args.salt_cap,
         args.wash_sale_days,
         args.leverage_band,
+        args.rebalance_mode,
+        args.exec,
     )
     print(
         f"dates {mkt.dates[0].date()} -> {mkt.dates[-1].date()}  tickers {mkt.px.shape[1]}"
@@ -173,7 +192,9 @@ def cmd_backtest(args):
     res.equity.to_frame("equity").to_csv(RESULTS / f"equity{suffix}.csv")
     res.trades.to_csv(RESULTS / f"trades{suffix}.csv", index=False)
     res.weights.to_csv(RESULTS / f"weights{suffix}.csv")
-    print(f"\nwrote {RESULTS}/metrics{suffix}.csv equity{suffix}.csv trades{suffix}.csv weights{suffix}.csv")
+    print(
+        f"\nwrote {RESULTS}/metrics{suffix}.csv equity{suffix}.csv trades{suffix}.csv weights{suffix}.csv"
+    )
 
 
 def _bench_2026(panel, mem, cfg, res_llm, res_pl, judgments, cal, args):
@@ -280,6 +301,8 @@ def _metrics_2026() -> pd.DataFrame:
         financing_bps=DEFAULT_FINANCING_BPS,
         trend_ma=DEFAULT_TREND_MA,
         trend_scale=DEFAULT_TREND_SCALE,
+        rebalance_mode=DEFAULT_REBALANCE,
+        exec_price=DEFAULT_EXEC,
     )
     mkt = strategy.Market(panel, mem, cfg)
     m_bot, _ = backtest.summarize(backtest.run(mkt), mkt)
@@ -295,10 +318,10 @@ def cmd_report(args):
         "# stonks-bot — results",
         "",
         "Default: dual-momentum rotation. Hold SMH while its 6-month total return beats SPY;",
-        "otherwise rotate into the S&P momentum sleeve (6 names, 10-day skip). Monthly check,",
-        "next-close execution, 10 bps per side, 2.5x gross with 5%/yr margin interest,",
+        "otherwise rotate into the S&P momentum sleeve (6 names, 10-day skip). Month-end check,",
+        "next-open execution, 10 bps per side, 2.5x gross with 5%/yr margin interest,",
         "half size when the core is below its 200-day MA (`--trend-ma 0` disables),",
-        "no trailing stop, no monthly regime cut.",
+        "no trailing stop.",
         "",
     ]
     for fname, title in [
@@ -339,16 +362,17 @@ def cmd_report(args):
         "",
         "## Caveats",
         "",
-        "- SOXX is a semiconductor ETF: most of the return is one industry's 11-year run, not alpha.",
+        "- SMH is a semiconductor ETF: most of the return is one industry's 11-year run, not alpha.",
         f"- Leverage: {DEFAULT_LEVERAGE:.1f}x gross at {DEFAULT_FINANCING_BPS / 100:.1f}%/yr.",
         f"  The full-window drawdown is {b['max_dd']:.1%} vs {s0['max_dd']:.1%} for SPY;",
         "  leverage multiplies the losses as well as the wins.",
         "- Daily de-leveraging when gross drifts above target adds turnover:",
         f"  {b['turnover_ann']:.1f}x NAV/yr, which is why costs matter.",
-        "- No trailing stop and no regime cut: the ten rounds traded crash protection for return.",
+        "- A daily 200-day core cut halves exposure below the MA; there is no trailing stop.",
+        "  2018 was -34.5% and 2022 -39.3% (SPY -5.2% and -18.6%).",
         "- Ten rounds were tuned on this one price path; 2023-2026 was held back as a check and won.",
         "- Taxes are not in the headline (0% rate). At 37% on realized gains the",
-        "  book makes $107,889, still 22.2%/yr: results/realism.md.",
+        "  book makes $164,988, still 26.7%/yr: results/realism.md.",
         "- Paper only. No orders, no broker, no keys.",
         "",
     ]
@@ -442,11 +466,25 @@ def _risk_scale(mkt, date, cfg) -> float:
 
 def cmd_pnl(args):
     panel, mem, mkt, cfg = _load(
-        "2015-01-01", None, None, None, args.leverage, args.financing_bps,
-        args.market, args.profile, args.core, args.dd_stop,
-        args.trend_ma, args.trend_scale, args.tax_rate,
-        args.state_tax_rate, args.salt_cap, args.wash_sale_days,
+        "2015-01-01",
+        None,
+        None,
+        None,
+        args.leverage,
+        args.financing_bps,
+        args.market,
+        args.profile,
+        args.core,
+        args.dd_stop,
+        args.trend_ma,
+        args.trend_scale,
+        args.tax_rate,
+        args.state_tax_rate,
+        args.salt_cap,
+        args.wash_sale_days,
         args.leverage_band,
+        args.rebalance_mode,
+        args.exec,
     )
     res = backtest.run(mkt)
     d = mkt.dates[-1]
@@ -498,6 +536,8 @@ def cmd_paper(args):
         args.salt_cap,
         args.wash_sale_days,
         args.leverage_band,
+        args.rebalance_mode,
+        args.exec,
     )
     d = mkt.dates[-1]
     res = backtest.run(mkt)
@@ -587,6 +627,8 @@ def main(argv=None):
     pb.add_argument("--salt-cap", type=float, default=10000.0)
     pb.add_argument("--wash-sale-days", type=int, default=30)
     pb.add_argument("--leverage-band", type=float, default=None)
+    pb.add_argument("--rebalance-mode", choices=["days", "calendar"], default=DEFAULT_REBALANCE)
+    pb.add_argument("--exec", choices=["close", "open"], default=DEFAULT_EXEC)
     pb.add_argument("--profile", choices=sorted(PROFILES), default="monthly")
     pb.add_argument("--leverage", type=float, default=DEFAULT_LEVERAGE)
     pb.add_argument("--financing-bps", type=float, default=DEFAULT_FINANCING_BPS)
@@ -614,6 +656,8 @@ def main(argv=None):
     pn.add_argument("--salt-cap", type=float, default=10000.0)
     pn.add_argument("--wash-sale-days", type=int, default=30)
     pn.add_argument("--leverage-band", type=float, default=None)
+    pn.add_argument("--rebalance-mode", choices=["days", "calendar"], default=DEFAULT_REBALANCE)
+    pn.add_argument("--exec", choices=["close", "open"], default=DEFAULT_EXEC)
     pn.add_argument("--profile", choices=sorted(PROFILES), default="monthly")
     pn.add_argument("--leverage", type=float, default=DEFAULT_LEVERAGE)
     pn.add_argument("--financing-bps", type=float, default=DEFAULT_FINANCING_BPS)
@@ -635,6 +679,8 @@ def main(argv=None):
     pp.add_argument("--salt-cap", type=float, default=10000.0)
     pp.add_argument("--wash-sale-days", type=int, default=30)
     pp.add_argument("--leverage-band", type=float, default=None)
+    pp.add_argument("--rebalance-mode", choices=["days", "calendar"], default=DEFAULT_REBALANCE)
+    pp.add_argument("--exec", choices=["close", "open"], default=DEFAULT_EXEC)
     pp.add_argument("--profile", choices=sorted(PROFILES), default="monthly")
     pp.add_argument("--leverage", type=float, default=DEFAULT_LEVERAGE)
     pp.add_argument("--financing-bps", type=float, default=DEFAULT_FINANCING_BPS)

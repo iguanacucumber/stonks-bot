@@ -198,6 +198,11 @@ def run(
     risk_off = False
     risk_reason = ""
 
+    calendar_set: set[pd.Timestamp] = set()
+    if cfg.rebalance_mode == "calendar":
+        ds = pd.Series(dates)
+        calendar_set = set(ds.groupby([ds.dt.year, ds.dt.month]).max())
+
     trades: list[tuple] = []
     eqs = np.zeros(n)
     cashs = np.zeros(n)
@@ -421,7 +426,12 @@ def run(
                     risk_off = False
 
         # 3. decide next close's trades
-        if i % cfg.rebalance_days == 0 and i + 1 < n:
+        due = (
+            d in calendar_set
+            if cfg.rebalance_mode == "calendar"
+            else i % cfg.rebalance_days == 0
+        )
+        if due and i + 1 < n:
             banned_names = (
                 {names[ci] for ci in np.flatnonzero(banned > i)}
                 if (banned > i).any()

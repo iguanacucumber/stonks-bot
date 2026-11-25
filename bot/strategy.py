@@ -49,6 +49,7 @@ class Config:
     end: str | None = None
     top_n: int = 6
     rebalance_days: int = 21
+    rebalance_mode: str = "days"  # "days" (every N) or "calendar" (last trading day)
     lookback: int = 126
     skip: int = 10
     vol_window: int = 20

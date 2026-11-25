@@ -26,6 +26,8 @@ from bot import backtest, data, markets, strategy, universe  # noqa: E402
 START = "2015-01-01"
 END_2022 = "2022-12-30"
 CFG = dict(
+    rebalance_mode="calendar",
+    exec_price="open",
     top_n=6,
     lookback=126,
     skip=10,

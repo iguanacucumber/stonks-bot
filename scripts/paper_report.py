@@ -56,6 +56,8 @@ def main():
     if args.market != "US":
         universe.canonical = lambda t: t
     cfg = strategy.Config(
+        rebalance_mode="calendar",
+        exec_price="open",
         start="2015-01-01",
         leverage=2.5,
         financing_bps=500.0,

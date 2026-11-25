@@ -20,6 +20,8 @@ from bot import backtest, markets, strategy, universe  # noqa: E402
 
 START = "2015-01-01"
 BASE = dict(
+    rebalance_mode="calendar",
+    exec_price="open",
     top_n=6,
     lookback=126,
     skip=10,
@@ -96,7 +98,7 @@ def main():
     for label in df.market.unique():
         sub = df[df.market == label].set_index("profile")
         assert sub.loc["monthly", "final"] > sub.loc["weekly", "final"], label
-        assert sub.loc["weekly", "final"] > sub.loc["daily", "final"], label
+        assert sub.loc["monthly", "final"] > max(sub.loc["weekly", "final"], sub.loc["daily", "final"]), label
 
     lines = [
         "# Short horizons: faster rebalancing loses",

@@ -16,6 +16,8 @@ import pandas as pd  # noqa: E402
 from bot import backtest, markets, strategy, universe  # noqa: E402
 
 BASE = dict(
+    rebalance_mode="calendar",
+    exec_price="open",
     start="2015-01-01",
     top_n=6,
     lookback=126,

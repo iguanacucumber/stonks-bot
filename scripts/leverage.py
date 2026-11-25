@@ -35,6 +35,8 @@ def us_ladder(mem, panel) -> pd.DataFrame:
     rows = []
     for lev, fin, trend in LADDER:
         cfg = strategy.Config(
+        rebalance_mode="calendar",
+        exec_price="open",
             start="2015-01-01",
             leverage=lev,
             financing_bps=fin,

@@ -19,6 +19,7 @@ import pandas as pd  # noqa: E402
 from bot import backtest, data, strategy, universe  # noqa: E402
 
 BASE = dict(
+    rebalance_mode="days",
     core="VGT",
     fallback="momentum",
     core_weight=1.0,

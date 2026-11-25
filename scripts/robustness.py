@@ -20,6 +20,8 @@ import pandas as pd  # noqa: E402
 from bot import backtest, markets, strategy  # noqa: E402
 
 BASE = dict(
+    rebalance_mode="calendar",
+    exec_price="open",
     leverage=2.5,
     financing_bps=500.0,
     trend_ma=200,

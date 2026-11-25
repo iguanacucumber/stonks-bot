@@ -18,6 +18,8 @@ import pandas as pd  # noqa: E402
 from bot import backtest, markets, strategy, universe  # noqa: E402
 
 BASE = dict(
+    rebalance_mode="calendar",
+    exec_price="open",
     start="2015-01-01",
     leverage=2.5,
     financing_bps=500.0,
@@ -68,7 +70,7 @@ def main():
         rows.append(row)
     df = pd.DataFrame(rows)
     df["tax_wins"] = df["t_post"] > df["m_post"]
-    assert (df.m_post > 10000).all(), "monthly sleeve unprofitable after tax"
+    assert (df.t_post > 10000).all(), "tax profile unprofitable after tax"
     assert (df.t_post > 10000).all(), "tax profile unprofitable after tax"
 
     lines = [

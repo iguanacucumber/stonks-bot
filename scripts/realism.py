@@ -16,6 +16,7 @@ import pandas as pd  # noqa: E402
 from bot import backtest, markets, strategy, universe  # noqa: E402
 
 BASE = dict(
+    rebalance_mode="calendar",
     start="2015-01-01",
     leverage=2.5,
     financing_bps=500.0,
@@ -92,19 +93,19 @@ def main():
             r = one(panel, mem, exec_price=exec_price, cost_bps=cost)
             cost_rows.append({"market": name, "exec": exec_price, "cost": cost, **r})
         for tax in TAXES:
-            r = one(panel, mem, exec_price="close", cost_bps=10.0, tax_rate=tax)
+            r = one(panel, mem, exec_price="open", cost_bps=10.0, tax_rate=tax)
             tax_rows.append({"market": name, "tax": tax, **r})
         if name == "US":
             for sname, skw in SALT_SCENARIOS:
                 for pname, pkw in PROFILE_KW.items():
-                    r = one(panel, mem, exec_price="close", cost_bps=10.0, **skw, **pkw)
+                    r = one(panel, mem, exec_price="open", cost_bps=10.0, **skw, **pkw)
                     salt_rows.append({
                         "scenario": sname, "profile": pname, "final": r["final"],
                     })
             for sname, rate in TAX_SCENARIOS:
                 for pname, pkw in PROFILE_KW.items():
                     r = one(
-                        panel, mem, exec_price="close", cost_bps=10.0,
+                        panel, mem, exec_price="open", cost_bps=10.0,
                         tax_rate=rate, **pkw,
                     )
                     scen_rows.append({
@@ -112,9 +113,9 @@ def main():
                         "tax": rate, "final": r["final"], "cagr": r["cagr"],
                     })
             for label, kw in VARIANTS.items():
-                pre = one(panel, mem, exec_price="close", cost_bps=10.0, **kw)
+                pre = one(panel, mem, exec_price="open", cost_bps=10.0, **kw)
                 post = one(
-                    panel, mem, exec_price="close", cost_bps=10.0, tax_rate=0.37, **kw
+                    panel, mem, exec_price="open", cost_bps=10.0, tax_rate=0.37, **kw
                 )
                 var_rows.append({
                     "variant": label, "pre": pre["final"], "post": post["final"],

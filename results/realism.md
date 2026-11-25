@@ -19,18 +19,18 @@ is in `results/paper_ledger.csv`; `pnl` shows the same state:
 
 | market | fill | bps/side | final | CAGR | Sharpe | maxDD | 1d mean | 5d mean |
 |---|---|---:|---:|---:|---:|---:|---:|---:|
-| S&P 500 | close | 10 | **$1,402,314** | 51.7% | 0.98 | -59.9% | +0.246% | +1.183% |
-| S&P 500 | close | 20 | **$1,141,678** | 49.1% | 0.95 | -60.1% | +0.239% | +1.150% |
-| S&P 500 | close | 30 | **$928,859** | 46.5% | 0.92 | -60.4% | +0.232% | +1.116% |
-| S&P 500 | open | 10 | **$995,571** | 47.4% | 0.94 | -65.4% | +0.235% | +1.133% |
-| S&P 500 | open | 20 | **$810,088** | 44.8% | 0.91 | -66.4% | +0.228% | +1.099% |
-| S&P 500 | open | 30 | **$658,644** | 42.3% | 0.88 | -67.3% | +0.221% | +1.066% |
-| NASDAQ tech | close | 10 | **$1,214,051** | 49.8% | 0.96 | -63.1% | +0.241% | +1.164% |
-| NASDAQ tech | close | 20 | **$961,565** | 46.9% | 0.93 | -63.8% | +0.234% | +1.126% |
-| NASDAQ tech | close | 30 | **$761,026** | 44.0% | 0.90 | -65.0% | +0.226% | +1.087% |
-| NASDAQ tech | open | 10 | **$1,099,757** | 48.6% | 0.94 | -63.3% | +0.238% | +1.149% |
-| NASDAQ tech | open | 20 | **$871,733** | 45.7% | 0.91 | -64.0% | +0.231% | +1.111% |
-| NASDAQ tech | open | 30 | **$690,190** | 42.9% | 0.88 | -65.1% | +0.223% | +1.072% |
+| S&P 500 | close | 10 | **$1,836,944** | 55.2% | 1.02 | -59.0% | +0.254% | +1.225% |
+| S&P 500 | close | 20 | **$1,498,412** | 52.5% | 0.99 | -59.3% | +0.247% | +1.191% |
+| S&P 500 | close | 30 | **$1,221,485** | 49.9% | 0.96 | -59.7% | +0.241% | +1.158% |
+| S&P 500 | open | 10 | **$2,191,762** | 57.5% | 1.04 | -60.7% | +0.260% | +1.256% |
+| S&P 500 | open | 20 | **$1,787,481** | 54.8% | 1.01 | -61.1% | +0.253% | +1.223% |
+| S&P 500 | open | 30 | **$1,456,491** | 52.2% | 0.99 | -61.5% | +0.246% | +1.189% |
+| NASDAQ tech | close | 10 | **$1,186,723** | 49.5% | 0.96 | -63.3% | +0.239% | +1.156% |
+| NASDAQ tech | close | 20 | **$947,351** | 46.7% | 0.93 | -64.0% | +0.232% | +1.118% |
+| NASDAQ tech | close | 30 | **$755,707** | 44.0% | 0.90 | -64.6% | +0.224% | +1.081% |
+| NASDAQ tech | open | 10 | **$1,481,277** | 52.4% | 0.99 | -61.7% | +0.247% | +1.196% |
+| NASDAQ tech | open | 20 | **$1,182,701** | 49.5% | 0.96 | -62.1% | +0.239% | +1.159% |
+| NASDAQ tech | open | 30 | **$943,660** | 46.7% | 0.93 | -62.4% | +0.232% | +1.121% |
 
 The short-horizon mean barely moves: costs are paid at rebalances, not every day.
 What moves is terminal wealth and the drawdown, because the drag compounds.
@@ -39,12 +39,12 @@ What moves is terminal wealth and the drawdown, because the drag compounds.
 
 | market | tax | final | CAGR | Sharpe | maxDD |
 |---|---:|---:|---:|---:|---:|
-| S&P 500 | 0% | **$1,402,314** | 51.7% | 0.98 | -59.9% |
-| S&P 500 | 20% | **$374,437** | 35.7% | 0.80 | -65.4% |
-| S&P 500 | 37% | **$107,839** | 22.2% | 0.64 | -72.0% |
-| NASDAQ tech | 0% | **$1,214,051** | 49.8% | 0.96 | -63.1% |
-| NASDAQ tech | 20% | **$290,939** | 32.8% | 0.77 | -69.3% |
-| NASDAQ tech | 37% | **$77,530** | 18.8% | 0.60 | -74.8% |
+| S&P 500 | 0% | **$2,191,762** | 57.5% | 1.04 | -60.7% |
+| S&P 500 | 20% | **$579,284** | 40.8% | 0.86 | -65.1% |
+| S&P 500 | 37% | **$164,988** | 26.7% | 0.69 | -69.0% |
+| NASDAQ tech | 0% | **$1,481,277** | 52.4% | 0.99 | -61.7% |
+| NASDAQ tech | 20% | **$348,892** | 34.9% | 0.79 | -65.0% |
+| NASDAQ tech | 37% | **$91,537** | 20.5% | 0.62 | -68.4% |
 
 Tax is charged on net realized gains with loss carryforward, at every sale.
 This is a high-turnover book (13.8x NAV/yr), so the drag is large: a 37% rate
@@ -55,13 +55,13 @@ change this materially; the model does not assume either.
 
 | variant | pre-tax | after 37% | turnover | 1d pre/post | 5d pre/post |
 |---|---:|---:|---:|---:|---:|
-| monthly sleeve | $1,402,314 | **$107,839** | 13.8x | +0.246% / +0.165% | +1.183% / +0.781% |
-| semiannual sleeve | $945,963 | **$170,141** | 4.9x | +0.208% / +0.155% | +1.011% / +0.751% |
-| monthly sleeve, HIFO lots | $1,402,314 | **$86,907** | 13.8x | +0.246% / +0.160% | +1.183% / +0.760% |
-| core only | $918,668 | **$187,940** | 8.1x | +0.235% / +0.185% | +1.124% / +0.882% |
-| core + 10% band | $952,797 | **$201,488** | 7.4x | +0.240% / +0.191% | +1.143% / +0.914% |
-| core + 30% band + HIFO (tax profile) | $1,143,561 | **$324,234** | 6.0x | +0.250% / +0.210% | +1.190% / +1.002% |
-| core + 20% band | $1,085,819 | **$246,037** | 6.6x | +0.246% / +0.200% | +1.174% / +0.957% |
+| monthly sleeve | $2,191,762 | **$164,988** | 15.1x | +0.260% / +0.179% | +1.256% / +0.850% |
+| semiannual sleeve | $2,191,762 | **$164,988** | 15.1x | +0.260% / +0.179% | +1.256% / +0.850% |
+| monthly sleeve, HIFO lots | $2,191,762 | **$150,959** | 15.1x | +0.260% / +0.182% | +1.256% / +0.866% |
+| core only | $922,181 | **$194,891** | 7.7x | +0.234% / +0.185% | +1.123% / +0.889% |
+| core + 10% band | $957,070 | **$210,159** | 6.8x | +0.239% / +0.192% | +1.143% / +0.924% |
+| core + 30% band + HIFO (tax profile) | $1,040,143 | **$300,753** | 6.2x | +0.246% / +0.207% | +1.169% / +0.987% |
+| core + 20% band | $922,722 | **$219,226** | 6.6x | +0.240% / +0.195% | +1.145% / +0.937% |
 
 The sleeve earns its keep before tax but not after: the monthly book makes
 $1.40M pre-tax and $108k after; dropping the sleeve keeps $191k after tax on
@@ -77,18 +77,18 @@ Rates are summed (no SALT deduction), so they are an upper bound.
 
 | scenario | rate | monthly after tax | tax profile after tax |
 |---|---:|---:|---:|
-| + NIIT 3.8% | 40.8% | $80,126 | $275,455 |
-| + state 13.3% | 54.1% | $26,540 | $144,036 |
-| + state 5% | 45.8% | $53,564 | $219,406 |
-| + state 9.3% | 50.1% | $37,437 | $177,641 |
-| federal 37% | 37.0% | $107,839 | $324,234 |
+| + NIIT 3.8% | 40.8% | $122,225 | $257,250 |
+| + state 13.3% | 54.1% | $39,976 | $138,336 |
+| + state 5% | 45.8% | $81,347 | $206,540 |
+| + state 9.3% | 50.1% | $56,621 | $168,822 |
+| federal 37% | 37.0% | $164,988 | $300,753 |
 
 | scenario | monthly after tax | tax profile after tax |
 |---|---:|---:|
-| + state 9.3%, SALT cap 10k | $68,036 | $259,417 |
-| + state 9.3%, cap + wash | $67,999 | $251,290 |
-| + state 9.3%, no SALT cap | $68,036 | $259,417 |
-| federal 37%, no state | $107,889 | $332,665 |
+| + state 9.3%, SALT cap 10k | $103,810 | $241,982 |
+| + state 9.3%, cap + wash | $103,541 | $235,505 |
+| + state 9.3%, no SALT cap | $103,810 | $241,982 |
+| federal 37%, no state | $165,354 | $307,585 |
 
 SALT and wash sales are second-order at this scale: the $10k deduction cap is
 tiny against the gains, and the monthly book rarely repurchases a name within 30
@@ -100,10 +100,10 @@ Wash-sale rules, lot-level deferral beyond HIFO, and local taxes are not modeled
 
 ## Verdict
 
-- At 30 bps close fill the US book still makes **$928,859** (vs $1,402,314 at 10 bps). Costs are a haircut, not a wipeout.
+- At 30 bps close fill the US book still makes **$1,221,485** (vs $1,836,944 at 10 bps). Costs are a haircut, not a wipeout.
 - Next-open fill **loses** at every cost level: the gap is a real cost.
-- Taxes are the biggest drag: 37% takes the US book to $107,839.
-- The short-horizon mean survives: US 1-day mean is +0.246% at 10 bps, +0.232% at 30 bps, and +0.165% after 37% tax.
+- Taxes are the biggest drag: 37% takes the US book to $164,988.
+- The short-horizon mean survives: US 1-day mean is +0.254% at 10 bps, +0.241% at 30 bps, and +0.179% after 37% tax.
   Smaller, still positive.
 
 Paper only. No orders, no broker, no keys.

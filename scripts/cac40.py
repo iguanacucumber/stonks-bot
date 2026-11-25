@@ -81,6 +81,7 @@ BENCH = "CAC.PA"
 START, END = "2015-01-01", "2026-11-24"
 # same config as the US default, only the market changed
 CFG = dict(
+    rebalance_mode="days",
     core="EXV3.DE",
     core_lookback=126,
     top_n=6,
