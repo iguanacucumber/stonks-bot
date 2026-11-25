@@ -61,7 +61,10 @@ class Config:
     cost_bps: float = 10.0
     min_dollar_vol: float = 5e6
     exec_price: str = "close"  # "close" or "open" (signal at close, fill next open)
-    tax_rate: float = 0.0  # tax on net realized gains, with loss carryforward
+    tax_rate: float = 0.0  # federal rate (fold NIIT in if desired) on realized gains
+    state_tax_rate: float = 0.0  # state rate, deductible against federal up to salt_cap
+    salt_cap: float = 10000.0  # annual SALT deduction cap
+    wash_sale_days: int = 30  # disallow a loss if the name is repurchased within N days
     tax_lots: str = "avg"  # "avg" cost basis or "hifo" (highest basis sold first)
     trade_band: float = 0.0  # skip rebalancing a name if target drift is below this
     leverage_band: float = 0.0  # only trim gross when it exceeds target by this much

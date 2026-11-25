@@ -116,6 +116,13 @@ def main():
     assert r2.equity.iloc[-1] > 0, "2x wiped the book on a positive-drift panel"
     assert r2f.equity.iloc[-1] < r2.equity.iloc[-1], "financing is free"
 
+    # SALT: state tax is deductible against federal up to the cap
+    t1, d1 = backtest.tax_on_gain(1000, 0.37, 0.10, 10000, 10000)
+    assert abs(t1 - 433.0) < 1e-9 and abs(d1 - 100.0) < 1e-9, (t1, d1)
+    t2, d2 = backtest.tax_on_gain(1000, 0.37, 0.10, 40, 10000)
+    assert abs(t2 - 455.2) < 1e-9 and abs(d2 - 40.0) < 1e-9, (t2, d2)
+    assert backtest.tax_on_gain(0, 0.37, 0.10, 10000, 10000) == (0.0, 0.0)
+
     # HIFO: sell the 200-basis lot before the 100-basis lot
     lot_list = [[1.0, 100.0], [1.0, 200.0]]
     gain = backtest.consume_lots(lot_list, 1.0, 250.0)
@@ -132,6 +139,14 @@ def main():
     w0 = backtest.run(strategy.Market(panel, mem, tax0)).equity.iloc[-1]
     w1 = backtest.run(strategy.Market(panel, mem, tax1)).equity.iloc[-1]
     assert w1 < w0, f"tax did not bite: {w1:.3f} vs {w0:.3f}"
+
+    # wash sales can only add tax, never remove it
+    wash_cfg = strategy.Config(
+        start=str(dates[250].date()), top_n=5, rebalance_days=5, tax_rate=0.5,
+        wash_sale_days=30,
+    )
+    w_wash = backtest.run(strategy.Market(panel, mem, wash_cfg)).equity.iloc[-1]
+    assert w_wash <= w0 + 1e-9, f"wash sale credited money: {w_wash:.3f} vs {w0:.3f}"
 
     # next-open execution fills at the next day's open, not its close
     n2 = 300

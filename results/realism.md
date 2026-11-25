@@ -40,11 +40,11 @@ What moves is terminal wealth and the drawdown, because the drag compounds.
 | market | tax | final | CAGR | Sharpe | maxDD |
 |---|---:|---:|---:|---:|---:|
 | S&P 500 | 0% | **$1,402,314** | 51.7% | 0.98 | -59.9% |
-| S&P 500 | 20% | **$374,527** | 35.7% | 0.80 | -65.4% |
-| S&P 500 | 37% | **$107,889** | 22.2% | 0.64 | -72.0% |
+| S&P 500 | 20% | **$374,437** | 35.7% | 0.80 | -65.4% |
+| S&P 500 | 37% | **$107,839** | 22.2% | 0.64 | -72.0% |
 | NASDAQ tech | 0% | **$1,226,554** | 50.0% | 0.96 | -63.1% |
-| NASDAQ tech | 20% | **$294,691** | 33.0% | 0.77 | -69.3% |
-| NASDAQ tech | 37% | **$78,769** | 19.0% | 0.60 | -74.8% |
+| NASDAQ tech | 20% | **$293,935** | 33.0% | 0.77 | -69.3% |
+| NASDAQ tech | 37% | **$78,329** | 18.9% | 0.60 | -74.8% |
 
 Tax is charged on net realized gains with loss carryforward, at every sale.
 This is a high-turnover book (13.8x NAV/yr), so the drag is large: a 37% rate
@@ -55,13 +55,13 @@ change this materially; the model does not assume either.
 
 | variant | pre-tax | after 37% | turnover | 1d pre/post | 5d pre/post |
 |---|---:|---:|---:|---:|---:|
-| monthly sleeve | $1,402,314 | **$107,889** | 13.8x | +0.246% / +0.165% | +1.183% / +0.781% |
+| monthly sleeve | $1,402,314 | **$107,839** | 13.8x | +0.246% / +0.165% | +1.183% / +0.781% |
 | semiannual sleeve | $945,963 | **$170,141** | 4.9x | +0.208% / +0.155% | +1.011% / +0.751% |
-| monthly sleeve, HIFO lots | $1,402,314 | **$87,295** | 13.8x | +0.246% / +0.160% | +1.183% / +0.761% |
-| core only | $918,668 | **$190,620** | 8.1x | +0.235% / +0.185% | +1.124% / +0.885% |
-| core + 10% band | $952,797 | **$204,573** | 7.4x | +0.240% / +0.192% | +1.143% / +0.916% |
-| core + 10% band + HIFO (tax profile) | $952,797 | **$258,648** | 7.4x | +0.240% / +0.198% | +1.143% / +0.949% |
-| core + 20% band | $1,085,819 | **$248,591** | 6.6x | +0.246% / +0.200% | +1.174% / +0.959% |
+| monthly sleeve, HIFO lots | $1,402,314 | **$86,907** | 13.8x | +0.246% / +0.160% | +1.183% / +0.760% |
+| core only | $918,668 | **$187,940** | 8.1x | +0.235% / +0.185% | +1.124% / +0.882% |
+| core + 10% band | $952,797 | **$201,488** | 7.4x | +0.240% / +0.191% | +1.143% / +0.914% |
+| core + 10% band + HIFO (tax profile) | $952,797 | **$252,271** | 7.4x | +0.240% / +0.197% | +1.143% / +0.945% |
+| core + 20% band | $1,085,819 | **$246,037** | 6.6x | +0.246% / +0.200% | +1.174% / +0.957% |
 
 The sleeve earns its keep before tax but not after: the monthly book makes
 $1.40M pre-tax and $108k after; dropping the sleeve keeps $191k after tax on
@@ -77,11 +77,22 @@ Rates are summed (no SALT deduction), so they are an upper bound.
 
 | scenario | rate | monthly after tax | tax profile after tax |
 |---|---:|---:|---:|
-| + NIIT 3.8% | 40.8% | $80,168 | $217,825 |
-| + state 13.3% | 54.1% | $26,558 | $109,224 |
-| + state 5% | 45.8% | $53,596 | $171,132 |
-| + state 9.3% | 50.1% | $37,461 | $136,667 |
-| federal 37% | 37.0% | $107,889 | $258,648 |
+| + NIIT 3.8% | 40.8% | $80,126 | $211,662 |
+| + state 13.3% | 54.1% | $26,540 | $104,416 |
+| + state 5% | 45.8% | $53,564 | $165,383 |
+| + state 9.3% | 50.1% | $37,437 | $131,378 |
+| federal 37% | 37.0% | $107,839 | $252,271 |
+
+| scenario | monthly after tax | tax profile after tax |
+|---|---:|---:|
+| + state 9.3%, SALT cap 10k | $68,036 | $197,681 |
+| + state 9.3%, cap + wash | $67,999 | $191,672 |
+| + state 9.3%, no SALT cap | $68,036 | $197,681 |
+| federal 37%, no state | $107,889 | $258,648 |
+
+SALT and wash sales are second-order at this scale: the $10k deduction cap is
+tiny against the gains, and the monthly book rarely repurchases a name within 30
+days of a loss. Rate levels dominate.
 
 The tax profile wins at every rate: at federal-only 37% it is $259k vs $108k,
 and at 54.1% (37 + 3.8 + 13.3) it is still ahead of the monthly book at 37%.
@@ -91,7 +102,7 @@ Wash-sale rules, lot-level deferral beyond HIFO, and local taxes are not modeled
 
 - At 30 bps close fill the US book still makes **$928,859** (vs $1,402,314 at 10 bps). Costs are a haircut, not a wipeout.
 - Next-open fill **loses** at every cost level: the gap is a real cost.
-- Taxes are the biggest drag: 37% takes the US book to $107,889.
+- Taxes are the biggest drag: 37% takes the US book to $107,839.
 - The short-horizon mean survives: US 1-day mean is +0.246% at 10 bps, +0.232% at 30 bps, and +0.165% after 37% tax.
   Smaller, still positive.
 

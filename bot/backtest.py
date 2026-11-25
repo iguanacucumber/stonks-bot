@@ -14,6 +14,20 @@ Selector = Callable[[Market, pd.Timestamp, list[str], set[str]], dict[str, float
 Overlay = Callable[[pd.Timestamp, dict[str, float], Market], dict[str, float]]
 
 
+def tax_on_gain(
+    taxable: float, federal: float, state: float, salt_left: float, salt_cap: float
+) -> tuple[float, float]:
+    """Federal + state tax on a gain; state tax is SALT-deductible up to the cap.
+
+    Returns (tax, salt_deduction_used). Federal rate should include NIIT if desired.
+    """
+    if taxable <= 0:
+        return 0.0, 0.0
+    state_tax = taxable * state
+    deductible = min(state_tax, max(0.0, salt_left)) if state and salt_cap > 0 else 0.0
+    return (taxable - deductible) * federal + state_tax, deductible
+
+
 def consume_lots(lots: list[list[float]], shares: float, price: float) -> float:
     """Sell `shares` highest-basis-first, mutating `lots`; return realized gain."""
     lots.sort(key=lambda lot: -lot[1])
@@ -116,14 +130,28 @@ def run(
     cost_rate = cfg.cost_bps / 1e4
     borrow_rate = cfg.financing_bps / 1e4 / 252.0
     realized = 0.0
+    salt_used = 0.0
+    salt_year = 0
+    wash: dict[int, tuple[pd.Timestamp, float]] = {}
 
-    def _tax(gain: float) -> float:
+    def _tax(gain: float, date: pd.Timestamp) -> float:
         """Tax net realized gains; losses carry forward, never refund."""
-        nonlocal realized
+        nonlocal realized, salt_used, salt_year
+        if date.year != salt_year:
+            salt_year = date.year
+            salt_used = 0.0
         before = max(0.0, realized)
         realized += gain
         after = max(0.0, realized)
-        return max(0.0, after - before) * cfg.tax_rate
+        taxable = max(0.0, after - before)
+        if taxable <= 0:
+            return 0.0
+        tax, used = tax_on_gain(
+            taxable, cfg.tax_rate, cfg.state_tax_rate,
+            cfg.salt_cap - salt_used, cfg.salt_cap,
+        )
+        salt_used += used
+        return tax
 
     lots: dict[int, list[list[float]]] = {}
 
@@ -132,17 +160,22 @@ def run(
         n = sum(l[0] for l in ls)
         return sum(l[0] * l[1] for l in ls) / n if n > 0 else float("nan")
 
-    def _sell(ci: int, sh: float, p: float) -> float:
+    def _sell(ci: int, sh: float, p: float, date: pd.Timestamp) -> float:
         """Realize `sh` shares at price p; return the realized gain.
 
         `avg` keeps one average basis. `hifo` consumes the highest-priced lots
         first, which realizes the smallest gain (lot-level tax deferral).
         """
         if cfg.tax_lots != "hifo":
-            return 0.0 if np.isnan(entry[ci]) else (p - entry[ci]) * sh
+            gain = 0.0 if np.isnan(entry[ci]) else (p - entry[ci]) * sh
+            if cfg.wash_sale_days and gain < 0:
+                wash[ci] = (date, -gain)
+            return gain
         ls = lots.setdefault(ci, [])
         gain = consume_lots(ls, sh, p)
         entry[ci] = _avg_basis(ci)
+        if cfg.wash_sale_days and gain < 0:
+            wash[ci] = (date, -gain)
         return gain
     stop_keep = 1.0 - cfg.stop
     protected_ci = np.array(
@@ -205,9 +238,9 @@ def run(
                         continue
                     notional = shares[ci] * p
                     cash += notional - notional * cost_rate
-                    gain = _sell(ci, shares[ci], p)
-                    if cfg.tax_rate:
-                        cash -= _tax(gain)
+                    gain = _sell(ci, shares[ci], p, d)
+                    if cfg.tax_rate or cfg.state_tax_rate:
+                        cash -= _tax(gain, d)
                     trades.append(
                         (
                             d,
@@ -253,9 +286,9 @@ def run(
                                 cost = delta * cost_rate
                     cash -= delta + cost
                     if sh < 0:
-                        gain = _sell(ci, -sh, p)
-                        if cfg.tax_rate:
-                            cash -= _tax(gain)
+                        gain = _sell(ci, -sh, p, d)
+                        if cfg.tax_rate or cfg.state_tax_rate:
+                            cash -= _tax(gain, d)
                     if shares[ci] == 0.0 and sh != 0.0:
                         held.append(ci)
                     old_sh = shares[ci]
@@ -272,6 +305,10 @@ def run(
                         )
                     )
                     if sh > 0:
+                        if cfg.wash_sale_days and ci in wash:
+                            wd, loss = wash.pop(ci)
+                            if (d - wd).days <= cfg.wash_sale_days:
+                                realized += loss  # disallowed loss, added back
                         if cfg.tax_lots == "hifo":
                             lots.setdefault(ci, []).append([sh, p])
                             entry[ci] = _avg_basis(ci)
@@ -315,9 +352,9 @@ def run(
                         continue
                     notional = sell_sh * p
                     cash += notional - notional * cost_rate
-                    gain = _sell(ci, sell_sh, p)
-                    if cfg.tax_rate:
-                        cash -= _tax(gain)
+                    gain = _sell(ci, sell_sh, p, d)
+                    if cfg.tax_rate or cfg.state_tax_rate:
+                        cash -= _tax(gain, d)
                     shares[ci] -= sell_sh
                     trades.append(
                         (

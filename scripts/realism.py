@@ -38,6 +38,12 @@ TAX_SCENARIOS = [
     ("+ state 9.3%", 0.501),
     ("+ state 13.3%", 0.541),
 ]
+SALT_SCENARIOS = [
+    ("federal 37%, no state", dict(tax_rate=0.37, wash_sale_days=0)),
+    ("+ state 9.3%, SALT cap 10k", dict(tax_rate=0.37, state_tax_rate=0.093, salt_cap=10000, wash_sale_days=0)),
+    ("+ state 9.3%, no SALT cap", dict(tax_rate=0.37, state_tax_rate=0.093, salt_cap=1e12, wash_sale_days=0)),
+    ("+ state 9.3%, cap + wash", dict(tax_rate=0.37, state_tax_rate=0.093, salt_cap=10000, wash_sale_days=30)),
+]
 PROFILE_KW = {
     "monthly sleeve": {},
     "tax profile": {"core_mode": "always", "leverage_band": 0.10, "tax_lots": "hifo"},
@@ -77,7 +83,7 @@ VARIANTS = {
 
 
 def main():
-    cost_rows, tax_rows, var_rows, scen_rows = [], [], [], []
+    cost_rows, tax_rows, var_rows, scen_rows, salt_rows = [], [], [], [], []
     for name in ("US", "TECH"):
         panel, mem = markets.build(name)
         if name != "US":
@@ -89,6 +95,12 @@ def main():
             r = one(panel, mem, exec_price="close", cost_bps=10.0, tax_rate=tax)
             tax_rows.append({"market": name, "tax": tax, **r})
         if name == "US":
+            for sname, skw in SALT_SCENARIOS:
+                for pname, pkw in PROFILE_KW.items():
+                    r = one(panel, mem, exec_price="close", cost_bps=10.0, **skw, **pkw)
+                    salt_rows.append({
+                        "scenario": sname, "profile": pname, "final": r["final"],
+                    })
             for sname, rate in TAX_SCENARIOS:
                 for pname, pkw in PROFILE_KW.items():
                     r = one(
@@ -114,6 +126,7 @@ def main():
     tax = pd.DataFrame(tax_rows)
     var = pd.DataFrame(var_rows)
     scen = pd.DataFrame(scen_rows)
+    salt = pd.DataFrame(salt_rows)
 
     ship = cost[(cost.exec == "close") & (cost.cost == 10.0)].set_index("market")
     assert (ship.final > 1_000_000).all(), "shipped numbers moved"
@@ -210,6 +223,19 @@ def main():
             f"${r['tax profile']:,.0f} |"
         )
     lines += [
+        "",
+        "| scenario | monthly after tax | tax profile after tax |",
+        "|---|---:|---:|",
+    ]
+    for _, r in salt.pivot(index="scenario", columns="profile", values="final").reset_index().iterrows():
+        lines.append(
+            f"| {r['scenario']} | ${r['monthly sleeve']:,.0f} | ${r['tax profile']:,.0f} |"
+        )
+    lines += [
+        "",
+        "SALT and wash sales are second-order at this scale: the $10k deduction cap is",
+        "tiny against the gains, and the monthly book rarely repurchases a name within 30",
+        "days of a loss. Rate levels dominate.",
         "",
         "The tax profile wins at every rate: at federal-only 37% it is $259k vs $108k,",
         "and at 54.1% (37 + 3.8 + 13.3) it is still ahead of the monthly book at 37%.",

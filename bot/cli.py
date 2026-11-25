@@ -52,6 +52,9 @@ def _load(
     trend_ma: int | None = None,
     trend_scale: float | None = None,
     tax_rate: float | None = None,
+    state_tax_rate: float | None = None,
+    salt_cap: float | None = None,
+    wash_sale_days: int | None = None,
 ):
     panel, mem = markets.build(market)
     if market != "US":
@@ -64,6 +67,12 @@ def _load(
         kw["dd_stop"] = dd_stop
     if tax_rate:
         kw["tax_rate"] = tax_rate
+    if state_tax_rate:
+        kw["state_tax_rate"] = state_tax_rate
+    if salt_cap is not None:
+        kw["salt_cap"] = salt_cap
+    if wash_sale_days is not None:
+        kw["wash_sale_days"] = wash_sale_days
     kw["trend_ma"] = DEFAULT_TREND_MA if trend_ma is None else trend_ma
     kw["trend_scale"] = (
         DEFAULT_TREND_SCALE if trend_scale is None else trend_scale
@@ -117,6 +126,9 @@ def cmd_backtest(args):
         args.trend_ma,
         args.trend_scale,
         args.tax_rate,
+        args.state_tax_rate,
+        args.salt_cap,
+        args.wash_sale_days,
     )
     print(
         f"dates {mkt.dates[0].date()} -> {mkt.dates[-1].date()}  tickers {mkt.px.shape[1]}"
@@ -429,6 +441,7 @@ def cmd_pnl(args):
         "2015-01-01", None, None, None, args.leverage, args.financing_bps,
         args.market, args.profile, args.core, args.dd_stop,
         args.trend_ma, args.trend_scale, args.tax_rate,
+        args.state_tax_rate, args.salt_cap, args.wash_sale_days,
     )
     res = backtest.run(mkt)
     d = mkt.dates[-1]
@@ -476,6 +489,9 @@ def cmd_paper(args):
         args.trend_ma,
         args.trend_scale,
         args.tax_rate,
+        args.state_tax_rate,
+        args.salt_cap,
+        args.wash_sale_days,
     )
     d = mkt.dates[-1]
     res = backtest.run(mkt)
@@ -561,6 +577,9 @@ def main(argv=None):
     pb.add_argument("--trend-ma", type=int, default=DEFAULT_TREND_MA)
     pb.add_argument("--trend-scale", type=float, default=DEFAULT_TREND_SCALE)
     pb.add_argument("--tax-rate", type=float, default=0.0)
+    pb.add_argument("--state-tax-rate", type=float, default=0.0)
+    pb.add_argument("--salt-cap", type=float, default=10000.0)
+    pb.add_argument("--wash-sale-days", type=int, default=30)
     pb.add_argument("--profile", choices=sorted(PROFILES), default="monthly")
     pb.add_argument("--leverage", type=float, default=DEFAULT_LEVERAGE)
     pb.add_argument("--financing-bps", type=float, default=DEFAULT_FINANCING_BPS)
@@ -584,6 +603,9 @@ def main(argv=None):
     pn.add_argument("--trend-ma", type=int, default=DEFAULT_TREND_MA)
     pn.add_argument("--trend-scale", type=float, default=DEFAULT_TREND_SCALE)
     pn.add_argument("--tax-rate", type=float, default=0.0)
+    pn.add_argument("--state-tax-rate", type=float, default=0.0)
+    pn.add_argument("--salt-cap", type=float, default=10000.0)
+    pn.add_argument("--wash-sale-days", type=int, default=30)
     pn.add_argument("--profile", choices=sorted(PROFILES), default="monthly")
     pn.add_argument("--leverage", type=float, default=DEFAULT_LEVERAGE)
     pn.add_argument("--financing-bps", type=float, default=DEFAULT_FINANCING_BPS)
@@ -601,6 +623,9 @@ def main(argv=None):
     pp.add_argument("--trend-ma", type=int, default=DEFAULT_TREND_MA)
     pp.add_argument("--trend-scale", type=float, default=DEFAULT_TREND_SCALE)
     pp.add_argument("--tax-rate", type=float, default=0.0)
+    pp.add_argument("--state-tax-rate", type=float, default=0.0)
+    pp.add_argument("--salt-cap", type=float, default=10000.0)
+    pp.add_argument("--wash-sale-days", type=int, default=30)
     pp.add_argument("--profile", choices=sorted(PROFILES), default="monthly")
     pp.add_argument("--leverage", type=float, default=DEFAULT_LEVERAGE)
     pp.add_argument("--financing-bps", type=float, default=DEFAULT_FINANCING_BPS)
