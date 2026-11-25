@@ -100,6 +100,15 @@ def run(
     exec_open = cfg.exec_price == "open"
     cost_rate = cfg.cost_bps / 1e4
     borrow_rate = cfg.financing_bps / 1e4 / 252.0
+    realized = 0.0
+
+    def _tax(gain: float) -> float:
+        """Tax net realized gains; losses carry forward, never refund."""
+        nonlocal realized
+        before = max(0.0, realized)
+        realized += gain
+        after = max(0.0, realized)
+        return max(0.0, after - before) * cfg.tax_rate
     stop_keep = 1.0 - cfg.stop
     protected_ci = np.array(
         [cols[t] for t in {cfg.core, *cfg.fallback_sectors} if t in cols], dtype=int
@@ -161,6 +170,8 @@ def run(
                         continue
                     notional = shares[ci] * p
                     cash += notional - notional * cost_rate
+                    if cfg.tax_rate and not np.isnan(entry[ci]):
+                        cash -= _tax((p - entry[ci]) * shares[ci])
                     trades.append(
                         (
                             d,
@@ -205,8 +216,11 @@ def run(
                                 sh = delta / p
                                 cost = delta * cost_rate
                     cash -= delta + cost
+                    if cfg.tax_rate and sh < 0 and not np.isnan(entry[ci]):
+                        cash -= _tax((p - entry[ci]) * (-sh))
                     if shares[ci] == 0.0 and sh != 0.0:
                         held.append(ci)
+                    old_sh = shares[ci]
                     shares[ci] += sh
                     trades.append(
                         (
@@ -219,9 +233,15 @@ def run(
                             pending_reason.get(ci, "rebalance"),
                         )
                     )
-                    if np.isnan(entry[ci]) and shares[ci] > 0:
-                        entry[ci] = p
-                        peak[ci] = p
+                    if sh > 0:
+                        if old_sh <= 0 or np.isnan(entry[ci]):
+                            entry[ci] = p
+                            peak[ci] = p
+                        else:
+                            entry[ci] = (entry[ci] * old_sh + p * sh) / (old_sh + sh)
+                    elif shares[ci] <= 0:
+                        entry[ci] = np.nan
+                        peak[ci] = np.nan
             pending_target, pending_exit, pending_reason = None, set(), {}
 
         # 2. mark to market and check trailing stops
@@ -253,6 +273,8 @@ def run(
                         continue
                     notional = sell_sh * p
                     cash += notional - notional * cost_rate
+                    if cfg.tax_rate and not np.isnan(entry[ci]):
+                        cash -= _tax((p - entry[ci]) * sell_sh)
                     shares[ci] -= sell_sh
                     trades.append(
                         (

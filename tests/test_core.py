@@ -116,6 +116,17 @@ def main():
     assert r2.equity.iloc[-1] > 0, "2x wiped the book on a positive-drift panel"
     assert r2f.equity.iloc[-1] < r2.equity.iloc[-1], "financing is free"
 
+    # realized-gains tax: with the same trades, a positive rate must reduce wealth
+    tax0 = strategy.Config(
+        start=str(dates[250].date()), top_n=5, rebalance_days=5, tax_rate=0.0
+    )
+    tax1 = strategy.Config(
+        start=str(dates[250].date()), top_n=5, rebalance_days=5, tax_rate=0.5
+    )
+    w0 = backtest.run(strategy.Market(panel, mem, tax0)).equity.iloc[-1]
+    w1 = backtest.run(strategy.Market(panel, mem, tax1)).equity.iloc[-1]
+    assert w1 < w0, f"tax did not bite: {w1:.3f} vs {w0:.3f}"
+
     # next-open execution fills at the next day's open, not its close
     n2 = 300
     dts2 = pd.bdate_range("2020-01-01", periods=n2)

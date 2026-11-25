@@ -61,6 +61,7 @@ class Config:
     cost_bps: float = 10.0
     min_dollar_vol: float = 5e6
     exec_price: str = "close"  # "close" or "open" (signal at close, fill next open)
+    tax_rate: float = 0.0  # tax on net realized gains, with loss carryforward
     llm_active_share: float = 0.20
     # Margin: leverage 1.0 = no borrowing. Above 1.0 target weights are scaled and
     # negative cash pays `financing_bps` a year, accrued daily.

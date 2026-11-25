@@ -49,6 +49,7 @@ def _load(
     dd_stop: float | None = None,
     trend_ma: int | None = None,
     trend_scale: float | None = None,
+    tax_rate: float | None = None,
 ):
     panel, mem = markets.build(market)
     if market != "US":
@@ -59,6 +60,8 @@ def _load(
         kw["core"] = core
     if dd_stop:
         kw["dd_stop"] = dd_stop
+    if tax_rate:
+        kw["tax_rate"] = tax_rate
     kw["trend_ma"] = DEFAULT_TREND_MA if trend_ma is None else trend_ma
     kw["trend_scale"] = (
         DEFAULT_TREND_SCALE if trend_scale is None else trend_scale
@@ -111,6 +114,7 @@ def cmd_backtest(args):
         args.dd_stop,
         args.trend_ma,
         args.trend_scale,
+        args.tax_rate,
     )
     print(
         f"dates {mkt.dates[0].date()} -> {mkt.dates[-1].date()}  tickers {mkt.px.shape[1]}"
@@ -325,6 +329,8 @@ def cmd_report(args):
         f"  {b['turnover_ann']:.1f}x NAV/yr, which is why costs matter.",
         "- No trailing stop and no regime cut: the ten rounds traded crash protection for return.",
         "- Ten rounds were tuned on this one price path; 2023-2026 was held back as a check and won.",
+        "- Taxes are not in the headline (0% rate). At 37% on realized gains the",
+        "  book makes $107,889, still 22.2%/yr: results/realism.md.",
         "- Paper only. No orders, no broker, no keys.",
         "",
     ]
@@ -420,12 +426,13 @@ def cmd_pnl(args):
     panel, mem, mkt, cfg = _load(
         "2015-01-01", None, None, None, args.leverage, args.financing_bps,
         args.market, args.profile, args.core, args.dd_stop,
-        args.trend_ma, args.trend_scale,
+        args.trend_ma, args.trend_scale, args.tax_rate,
     )
     res = backtest.run(mkt)
     d = mkt.dates[-1]
     targets = backtest._default_selector(mkt, d, overlay.held_names(res, d), set())
-    targets = {t: w * cfg.leverage * _risk_scale(mkt, d, cfg) for t, w in targets.items()}
+    scale = _risk_scale(mkt, d, cfg)
+    targets = {t: w * cfg.leverage * scale for t, w in targets.items()}
     hour_pct, day_pct, last_ts, quoted = _live_moves(targets, mkt, d)
     live = 1.0 + day_pct if last_ts is not None and last_ts.date() > d.date() else 1.0
     daily = backtest.horizon_returns(res.equity, live)
@@ -447,6 +454,8 @@ def cmd_pnl(args):
         f"{t} {w:.0%}" for t, w in sorted(targets.items(), key=lambda x: -x[1])
     )
     print(f"  book: {book or 'cash'}")
+    if scale != 1.0:
+        print(f"  risk: half size (core below its {cfg.trend_ma}d MA)")
     print(f"  hour quotes: {quoted}/{len(targets)} names")
 
 
@@ -464,6 +473,7 @@ def cmd_paper(args):
         args.dd_stop,
         args.trend_ma,
         args.trend_scale,
+        args.tax_rate,
     )
     d = mkt.dates[-1]
     res = backtest.run(mkt)
@@ -478,6 +488,7 @@ def cmd_paper(args):
     scale = _risk_scale(mkt, d, cfg)
     if scale != 1.0:
         targets = {t: w * scale for t, w in targets.items()}
+        print(f"paper: risk cut to {scale:.0%} (core below its {cfg.trend_ma}d MA)")
     last_close = mkt.px.loc[d]
     path = RESULTS / "paper_ledger.csv"
     for it in range(args.iterations):
@@ -547,6 +558,7 @@ def main(argv=None):
     pb.add_argument("--dd-stop", type=float, default=0.0, help="drawdown stop, 0=off")
     pb.add_argument("--trend-ma", type=int, default=DEFAULT_TREND_MA)
     pb.add_argument("--trend-scale", type=float, default=DEFAULT_TREND_SCALE)
+    pb.add_argument("--tax-rate", type=float, default=0.0)
     pb.add_argument("--profile", choices=sorted(PROFILES), default="monthly")
     pb.add_argument("--leverage", type=float, default=DEFAULT_LEVERAGE)
     pb.add_argument("--financing-bps", type=float, default=DEFAULT_FINANCING_BPS)
@@ -569,6 +581,7 @@ def main(argv=None):
     pn.add_argument("--dd-stop", type=float, default=0.0, help="drawdown stop, 0=off")
     pn.add_argument("--trend-ma", type=int, default=DEFAULT_TREND_MA)
     pn.add_argument("--trend-scale", type=float, default=DEFAULT_TREND_SCALE)
+    pn.add_argument("--tax-rate", type=float, default=0.0)
     pn.add_argument("--profile", choices=sorted(PROFILES), default="monthly")
     pn.add_argument("--leverage", type=float, default=DEFAULT_LEVERAGE)
     pn.add_argument("--financing-bps", type=float, default=DEFAULT_FINANCING_BPS)
@@ -585,6 +598,7 @@ def main(argv=None):
     pp.add_argument("--dd-stop", type=float, default=0.0, help="drawdown stop, 0=off")
     pp.add_argument("--trend-ma", type=int, default=DEFAULT_TREND_MA)
     pp.add_argument("--trend-scale", type=float, default=DEFAULT_TREND_SCALE)
+    pp.add_argument("--tax-rate", type=float, default=0.0)
     pp.add_argument("--profile", choices=sorted(PROFILES), default="monthly")
     pp.add_argument("--leverage", type=float, default=DEFAULT_LEVERAGE)
     pp.add_argument("--financing-bps", type=float, default=DEFAULT_FINANCING_BPS)

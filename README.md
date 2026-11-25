@@ -62,6 +62,12 @@ on the US and tech books (`results/core.md`). Rounds 4-10 buy return by removing
 protection and are tuned on this path; only rounds 1-3 also improved the held-back 2023-2026
 window. At 2.5x the drawdown reaches -60%, and 2022 is -32.8%.
 
+**Real life:** at 30 bps/side (close fill) the US book still makes **$928,859**; next-open
+fills lose at every cost level; a 20% tax on realized gains leaves **$374,527**, 37% leaves
+**$107,889** (22.2%/yr). The 1-day mean survives all three (+0.246% → +0.232% → +0.165%).
+Paper forward run on 2026-11-25 printed 125% gross because the 200-day cut was active:
+`results/realism.md`.
+
 **Cross-market:** the same config on **39 markets** (9 stock-level including a 48-name
 NASDAQ tech book, 30 country/tech ETFs) is profitable in **39/39** and beats the local
 index in **39/39** over 2015-2026, at 1x and at the shipped 2.5x + trend, at 10 bps and at 30 bps:
