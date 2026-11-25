@@ -28,6 +28,7 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--market", default="TECH")
     ap.add_argument("--capital", type=float, default=10000.0)
+    ap.add_argument("--min-rows", type=int, default=5)
     args = ap.parse_args()
 
     if not DAILY.exists():
@@ -96,8 +97,12 @@ def main():
     )
     if pending:
         print(f"{pending} row(s) waiting for the completed daily bar")
-    if len(df) < 5:
-        print("fewer than 5 rows: not a track record yet")
+    gate = len(df) >= args.min_rows
+    print(
+        f"GATE: {'PASS' if gate else 'WAIT'} {len(df)}/{args.min_rows} distinct dates"
+    )
+    if not gate:
+        print("not a track record yet; do not draw conclusions from this table")
 
 
 if __name__ == "__main__":

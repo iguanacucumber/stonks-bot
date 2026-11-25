@@ -50,6 +50,9 @@ but today's trades fill at today's close, so the day's P&L belongs to **yesterda
 holdings. It now records `held_from` and uses the prior book. Without this, the first live
 row was +0.57% versus the shadow's -1.02% — a fake +159 bp.
 
+The report now has a hard gate: `GATE: WAIT 1/5 distinct dates` until five rows exist.
+It prints the table for inspection but refuses to call it a track record.
+
 ## 21-session reconciliation
 
 `uv run python scripts/paper_daily.py --replay 21` over 2026-10-14 → 2026-11-24:
