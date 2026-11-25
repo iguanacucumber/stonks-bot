@@ -64,6 +64,11 @@ on the US and tech books (`results/core.md`). Rounds 4-10 buy return by removing
 protection and are tuned on this path; only rounds 1-3 also improved the held-back 2023-2026
 window. At 2.5x the drawdown reaches -60%, and 2022 is -32.8%.
 
+**Allocation:** the bot correlates only **0.66** with SPY (vol 63% vs 18%). A 50/50 blend
+rebalanced daily makes 35.7%/yr with Sharpe **0.99** and a **-41.8%** drawdown, versus 51.7%
+and -59.9% for the bot alone. 100% bot is the max-money choice; 50/50 is the risk-adjusted
+one. `results/allocation.md`.
+
 **Robustness:** 84 five-year windows (every month start 2015-2021): the bot beats SPY in
 **100%**, median **+889%** vs +94%, worst window +147% vs +32%. A 10-day block bootstrap
 (2000 paths) gives median 139x, p5 5.6x, P(beat SPY) 95%, but median max drawdown -71% and
