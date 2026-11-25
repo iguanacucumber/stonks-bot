@@ -28,6 +28,9 @@ ETF, whichever has the higher 126-day return. Same lookback, same monthly clock,
 same costs. No stock picking and no survivorship, because ETFs do not delist out
 of the sample.
 
+Every table uses the `max_extreme=2` data guard (no name trips it in these
+markets; results are unchanged).
+
 Every table here is **1x** so the market comparison is clean. The shipped bot runs
 2.5x with 5%/yr margin and a daily 200-day core cut; that result is in
 `results/leverage.md`.
@@ -38,13 +41,13 @@ Every table here is **1x** so the market comparison is clean. The shipped bot ru
 |---|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
 | S&P 500 | USD | 782 | 80% | **$179,033** | $42,186 | $178,675 | $77,877 | 27.5% | 0.92 | -36.5% | 74% | -43.4% | -18.6% |
 | DAX (EWG) | EUR | 51 | 92% | **$145,993** | $19,295 | $194,121 | $36,944 | 25.3% | 0.90 | -37.7% | 76% | -34.1% | -23.2% |
-| CAC 40 | EUR | 55 | 96% | **$59,892** | $26,553 | $194,121 | $17,207 | 16.0% | 0.64 | -45.3% | 77% | -22.3% | -7.5% |
+| CAC 40 | EUR | 55 | 96% | **$59,892** | $26,474 | $194,121 | $17,207 | 16.0% | 0.64 | -45.3% | 77% | -22.3% | -7.5% |
 | IBEX 35 (EWP) | EUR | 47 | 89% | **$86,242** | $23,299 | $194,121 | $41,560 | 19.9% | 0.77 | -44.4% | 76% | -41.0% | -6.2% |
 | FTSE MIB (EWI) | EUR | 38 | 82% | **$78,432** | $29,023 | $194,121 | $38,118 | 18.9% | 0.72 | -37.2% | 75% | -27.5% | -15.5% |
 | AEX (EWN) | EUR | 29 | 83% | **$73,866** | $31,926 | $194,121 | $61,085 | 18.4% | 0.71 | -37.5% | 73% | -29.0% | -24.9% |
 | FTSE 100 (EWU) | GBP | 72 | 97% | **$94,952** | $20,041 | $207,879 | $25,337 | 20.9% | 0.80 | -38.8% | 74% | -24.5% | -5.5% |
 | SMI (EWL) | CHF | 33 | 91% | **$75,086** | $25,990 | $147,280 | $32,528 | 18.5% | 0.73 | -36.7% | 68% | -33.8% | -19.2% |
-| NASDAQ tech | USD | 50 | 84% | **$198,766** | $67,550 | $178,675 | $228,972 | 28.7% | 0.95 | -45.3% | 67% | -39.7% | -33.2% |
+| NASDAQ tech | USD | 50 | 84% | **$198,766** | $67,030 | $178,675 | $228,972 | 28.6% | 0.95 | -45.3% | 67% | -39.7% | -33.2% |
 
 Full history = share of requested names with bars at both ends of the window.
 For the US that is index churn (point-in-time membership); outside the US it is
@@ -56,7 +59,7 @@ Yahoo coverage of a static survivor list.
 |---|---|---:|---:|---:|---:|---:|---:|
 | Mexico | EWW | **$179,461** | $16,848 | +965% | 27.5% | -33.6% | 77% |
 | Spain | EWP | **$143,564** | $23,299 | +516% | 25.2% | -45.7% | 75% |
-| US tech (Nasdaq 100) | QQQ | **$141,986** | $67,550 | +110% | 25.1% | -41.9% | 67% |
+| US tech (Nasdaq 100) | QQQ | **$140,893** | $67,030 | +110% | 25.0% | -41.9% | 67% |
 | United States | VOO | **$136,134** | $41,649 | +227% | 24.6% | -34.0% | 74% |
 | Japan | EWJ | **$118,490** | $23,940 | +395% | 23.2% | -40.5% | 84% |
 | Canada | EWC | **$107,393** | $24,905 | +331% | 22.1% | -33.6% | 75% |
@@ -94,7 +97,7 @@ so tier 2 is measured against the harder bar of beating the index, not just >$10
 
 - **Core exposure.** 73% of days in tier 1 and 76% in tier 2 are spent in SOXX, not in local stocks.
 - **Core only beats the index in 9/9 markets.** The dual-momentum switch trims the drawdown; it does not create the return.
-- **The sleeve is not the edge.** Sleeve-only beats the index in 8/9 markets and lands at a median of $38,118 versus $26,553 for the indices.
+- **The sleeve is not the edge.** Sleeve-only beats the index in 8/9 markets and lands at a median of $38,118 versus $26,474 for the indices.
 - **2022: 0/9 markets profitable**, average -32.8% versus -17.1% for the indices. The
   wrapper adds return by holding more semis, so it loses more when semis fall.
 - **One global book is worse.** Rotating the same 29 ETFs + SOXX, top 3 monthly,
