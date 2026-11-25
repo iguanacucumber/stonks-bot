@@ -68,6 +68,9 @@ on the US and tech books (`results/core.md`). Rounds 4-10 buy return by removing
 protection and are tuned on this path; only rounds 1-3 also improved the held-back 2023-2026
 window. At 2.5x the drawdown reaches -60%, and 2022 is -32.8%.
 
+**Financing:** at 3%/5%/8%/10% margin the US book makes $1.82M / $1.40M / $945k / $726k;
+even 10% borrowing cost leaves 43.5% CAGR. The edge is not a financing-rate artifact.
+
 **Allocation:** the bot correlates only **0.66** with SPY (vol 63% vs 18%). A 50/50 blend
 rebalanced daily makes 35.7%/yr with Sharpe **0.99** and a **-41.8%** drawdown, versus 51.7%
 and -59.9% for the bot alone. 100% bot is the max-money choice; 50/50 is the risk-adjusted
