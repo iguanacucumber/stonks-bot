@@ -36,10 +36,19 @@ def main():
         return
     live = pd.read_csv(DAILY)
     live = live[live.market == args.market].copy()
-    if live.empty:
-        print(f"no paper rows for {args.market}")
-        return
     live["quote_date"] = pd.to_datetime(live["quote_date"])
+    if "close_valid" in live.columns:
+        live["close_valid"] = (
+            live["close_valid"].astype(str).str.lower().isin(["true", "1"])
+        )
+    else:
+        live["close_valid"] = False
+    skipped = int((~live["close_valid"]).sum())
+    live = live[live["close_valid"]]
+    if live.empty:
+        print(f"no close-valid paper rows for {args.market} ({skipped} intraday skipped)")
+        print(f"GATE: WAIT 0/{args.min_rows} distinct dates")
+        return
     live = live.sort_values("time").drop_duplicates("quote_date", keep="last")
     live = live.set_index("quote_date").sort_index()
 
@@ -90,8 +99,9 @@ def main():
         print(f"no comparable rows yet ({pending} waiting for a completed close)")
         return
     print(df.round(4).to_string(index=False))
+    print(f"\n{skipped} intraday row(s) skipped (not close-valid)")
     print(
-        f"\n{len(df)} live rows; live ${df.live_equity.iloc[-1]:,.0f} vs "
+        f"{len(df)} close-valid live rows; live ${df.live_equity.iloc[-1]:,.0f} vs "
         f"shadow ${df.shadow_equity.iloc[-1]:,.0f}; "
         f"mean |diff| {df.diff_bps.abs().mean():.1f} bps"
     )

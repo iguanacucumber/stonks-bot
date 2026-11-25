@@ -17,8 +17,9 @@ from __future__ import annotations
 import argparse
 import json
 import sys
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
+from zoneinfo import ZoneInfo
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
@@ -127,8 +128,11 @@ def main():
         print(f"wrote {REPLAY}")
         return
 
-    now = datetime.now()
-    quote_date = pd.Timestamp(now.date())
+    # the box runs at UTC+4; use UTC/ET explicitly or the quote date rolls over
+    now = datetime.now(timezone.utc)
+    et = now.astimezone(ZoneInfo("America/New_York"))
+    quote_date = pd.Timestamp(et.date())
+    close_valid = et.hour >= 16
     # the P&L of the day belongs to yesterday's holdings: today's trades execute
     # at today's close, so only the prior book was exposed to today's move
     if quote_date >= mkt.dates[-1] and len(mkt.dates) > 1:
@@ -155,6 +159,7 @@ def main():
         "market": args.market,
         "signal_date": str(d.date()),
         "quote_date": str(quote_date.date()),
+        "close_valid": close_valid,
         "gross": sum(w.values()),
         "risk_scale": scale,
         "day_move": move,
@@ -162,9 +167,13 @@ def main():
         "targets": json.dumps({k: round(v, 6) for k, v in w.items()}),
         "prices": json.dumps({k: round(v, 4) for k, v in px.items()}),
     }
-    pd.DataFrame([daily]).to_csv(
-        DAILY, mode="a", header=not DAILY.exists(), index=False
-    )
+    if DAILY.exists():
+        old = pd.read_csv(DAILY)
+        pd.concat([old, pd.DataFrame([daily])], ignore_index=True).to_csv(
+            DAILY, index=False
+        )
+    else:
+        pd.DataFrame([daily]).to_csv(DAILY, index=False)
     row = {
         "time": str(now),
         "signal_date": str(d.date()),
