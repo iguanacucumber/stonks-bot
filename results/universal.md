@@ -8,7 +8,7 @@ last common close, 10 bps per side, monthly, long only, no leverage, one config.
 - **39 markets, profitable in all of them.**
 - Beats the local benchmark in **9/9** stock-level markets and
   **30/30** ETF markets, at 10 bps *and* at 30 bps.
-- The engine is the core, not the stock picking: 71% of days
+- The engine is the core, not the stock picking: 73% of days
   in SOXX (tier 1), and the core alone beats the benchmark in
   9/9 markets.
 - It is still one industry. 2022 was negative in every market.
@@ -35,15 +35,15 @@ Every table here is **1x** so the market comparison is clean. The shipped bot ru
 
 | market | ccy | names | full history | bot $ | index $ | core only | sleeve only | CAGR | Sharpe | maxDD | core days | 2022 bot | 2022 index |
 |---|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
-| S&P 500 | USD | 805 | 80% | **$168,735** | $42,186 | $142,809 | $77,496 | 26.9% | 0.89 | -39.5% | 69% | -40.7% | -18.6% |
-| DAX (EWG) | EUR | 50 | 92% | **$170,742** | $19,295 | $143,852 | $36,944 | 27.0% | 0.92 | -43.0% | 75% | -31.8% | -23.2% |
-| CAC 40 | EUR | 54 | 96% | **$63,295** | $26,553 | $143,852 | $17,207 | 16.5% | 0.65 | -43.3% | 74% | -21.7% | -7.5% |
-| IBEX 35 (EWP) | EUR | 46 | 89% | **$89,328** | $23,299 | $143,852 | $41,560 | 20.3% | 0.77 | -44.2% | 72% | -41.6% | -6.2% |
-| FTSE MIB (EWI) | EUR | 37 | 81% | **$99,333** | $29,023 | $143,852 | $38,118 | 21.3% | 0.78 | -39.2% | 73% | -31.3% | -15.5% |
-| AEX (EWN) | EUR | 28 | 82% | **$82,568** | $31,926 | $143,852 | $61,085 | 19.5% | 0.73 | -40.0% | 70% | -30.7% | -24.9% |
-| FTSE 100 (EWU) | GBP | 71 | 97% | **$101,403** | $20,041 | $154,046 | $25,337 | 21.6% | 0.80 | -41.7% | 71% | -27.7% | -5.5% |
-| SMI (EWL) | CHF | 32 | 91% | **$74,641** | $25,990 | $109,140 | $32,528 | 18.5% | 0.72 | -37.5% | 66% | -34.1% | -19.2% |
-| NASDAQ tech | USD | 49 | 84% | **$186,493** | $67,550 | $142,809 | $228,972 | 28.0% | 0.92 | -42.6% | 67% | -40.7% | -33.2% |
+| S&P 500 | USD | 805 | 80% | **$179,938** | $42,186 | $178,675 | $77,496 | 27.6% | 0.92 | -36.5% | 74% | -43.4% | -18.6% |
+| DAX (EWG) | EUR | 51 | 92% | **$145,993** | $19,295 | $194,121 | $36,944 | 25.3% | 0.90 | -37.7% | 76% | -34.1% | -23.2% |
+| CAC 40 | EUR | 55 | 96% | **$59,892** | $26,553 | $194,121 | $17,207 | 16.0% | 0.64 | -45.3% | 77% | -22.3% | -7.5% |
+| IBEX 35 (EWP) | EUR | 47 | 89% | **$86,242** | $23,299 | $194,121 | $41,560 | 19.9% | 0.77 | -44.4% | 76% | -41.0% | -6.2% |
+| FTSE MIB (EWI) | EUR | 38 | 82% | **$78,432** | $29,023 | $194,121 | $38,118 | 18.9% | 0.72 | -37.2% | 75% | -27.5% | -15.5% |
+| AEX (EWN) | EUR | 29 | 83% | **$73,866** | $31,926 | $194,121 | $61,085 | 18.4% | 0.71 | -37.5% | 73% | -29.0% | -24.9% |
+| FTSE 100 (EWU) | GBP | 72 | 97% | **$94,952** | $20,041 | $207,879 | $25,337 | 20.9% | 0.80 | -38.8% | 74% | -24.5% | -5.5% |
+| SMI (EWL) | CHF | 33 | 91% | **$75,086** | $25,990 | $147,280 | $32,528 | 18.5% | 0.73 | -36.7% | 68% | -33.8% | -19.2% |
+| NASDAQ tech | USD | 50 | 84% | **$198,766** | $67,550 | $178,675 | $228,972 | 28.7% | 0.95 | -45.3% | 67% | -39.7% | -33.2% |
 
 Full history = share of requested names with bars at both ends of the window.
 For the US that is index churn (point-in-time membership); outside the US it is
@@ -53,48 +53,48 @@ Yahoo coverage of a static survivor list.
 
 | market | ETF | bot $ | index $ | margin | CAGR | maxDD | core days |
 |---|---|---:|---:|---:|---:|---:|---:|
-| Mexico | EWW | **$160,916** | $16,848 | +855% | 26.4% | -39.5% | 76% |
-| US tech (Nasdaq 100) | QQQ | **$127,335** | $67,550 | +89% | 23.9% | -42.9% | 67% |
-| United Kingdom | EWU | **$126,649** | $20,041 | +532% | 23.9% | -39.5% | 75% |
-| Japan | EWJ | **$113,189** | $23,940 | +373% | 22.7% | -39.5% | 81% |
-| United States | VOO | **$112,822** | $41,649 | +171% | 22.6% | -39.5% | 69% |
-| China | MCHI | **$111,805** | $11,318 | +888% | 22.6% | -54.9% | 73% |
-| Canada | EWC | **$110,362** | $24,905 | +343% | 22.4% | -39.5% | 73% |
-| Germany | EWG | **$103,937** | $19,295 | +439% | 21.8% | -53.0% | 80% |
-| Eurozone | FEZ | **$98,137** | $23,657 | +315% | 21.2% | -43.6% | 76% |
-| Austria | EWO | **$92,118** | $35,527 | +159% | 20.6% | -58.4% | 69% |
-| France | EWQ | **$92,045** | $23,107 | +298% | 20.6% | -43.4% | 76% |
-| Belgium | EWK | **$91,607** | $21,396 | +328% | 20.5% | -51.7% | 74% |
-| Switzerland | EWL | **$88,805** | $25,990 | +242% | 20.2% | -39.5% | 74% |
-| Italy | EWI | **$83,935** | $29,023 | +189% | 19.6% | -51.5% | 72% |
-| Poland | EPOL | **$83,132** | $22,931 | +263% | 19.5% | -52.7% | 72% |
-| Ireland | EIRL | **$81,784** | $26,810 | +205% | 19.4% | -46.1% | 73% |
-| Australia | EWA | **$80,519** | $19,832 | +306% | 19.2% | -42.4% | 78% |
-| Netherlands | EWN | **$80,344** | $31,926 | +152% | 19.2% | -43.1% | 74% |
-| Sweden | EWD | **$76,357** | $23,420 | +226% | 18.7% | -50.4% | 75% |
-| Spain | EWP | **$73,544** | $23,299 | +216% | 18.3% | -45.4% | 72% |
-| South Africa | EZA | **$73,130** | $15,810 | +363% | 18.3% | -44.6% | 73% |
-| Taiwan | EWT | **$70,378** | $46,785 | +50% | 17.9% | -52.4% | 76% |
-| Norway | ENOR | **$66,569** | $22,142 | +201% | 17.3% | -46.3% | 76% |
-| Finland | EFNL | **$66,467** | $21,798 | +205% | 17.3% | -44.3% | 75% |
-| Greece | GREK | **$66,339** | $24,231 | +174% | 17.3% | -51.4% | 70% |
-| Denmark | EDEN | **$64,677** | $28,735 | +125% | 17.0% | -48.3% | 72% |
-| South Korea | EWY | **$49,121** | $28,500 | +72% | 14.4% | -50.6% | 78% |
-| Brazil | EWZ | **$36,640** | $14,748 | +148% | 11.6% | -49.1% | 73% |
-| India | INDA | **$34,556** | $19,838 | +74% | 11.0% | -49.3% | 73% |
-| Turkey | TUR | **$26,013** | $7,422 | +251% | 8.4% | -56.9% | 74% |
+| Mexico | EWW | **$179,461** | $16,848 | +965% | 27.5% | -33.6% | 77% |
+| Spain | EWP | **$143,564** | $23,299 | +516% | 25.2% | -45.7% | 75% |
+| US tech (Nasdaq 100) | QQQ | **$141,986** | $67,550 | +110% | 25.1% | -41.9% | 67% |
+| United States | VOO | **$136,134** | $41,649 | +227% | 24.6% | -34.0% | 74% |
+| Japan | EWJ | **$118,490** | $23,940 | +395% | 23.2% | -40.5% | 84% |
+| Canada | EWC | **$107,393** | $24,905 | +331% | 22.1% | -33.6% | 75% |
+| Germany | EWG | **$107,187** | $19,295 | +456% | 22.1% | -52.7% | 81% |
+| United Kingdom | EWU | **$106,806** | $20,041 | +433% | 22.1% | -38.8% | 77% |
+| Denmark | EDEN | **$103,491** | $28,735 | +260% | 21.8% | -45.9% | 72% |
+| France | EWQ | **$100,179** | $23,107 | +334% | 21.4% | -42.1% | 76% |
+| China | MCHI | **$99,013** | $11,318 | +775% | 21.3% | -54.7% | 75% |
+| Australia | EWA | **$96,088** | $19,832 | +385% | 21.0% | -45.2% | 82% |
+| Italy | EWI | **$95,740** | $29,023 | +230% | 21.0% | -50.9% | 71% |
+| Sweden | EWD | **$94,053** | $23,420 | +302% | 20.8% | -50.1% | 81% |
+| Switzerland | EWL | **$92,527** | $25,990 | +256% | 20.6% | -43.7% | 76% |
+| Eurozone | FEZ | **$89,599** | $23,657 | +279% | 20.3% | -43.5% | 77% |
+| Belgium | EWK | **$89,057** | $21,396 | +316% | 20.2% | -51.9% | 78% |
+| Netherlands | EWN | **$87,317** | $31,926 | +173% | 20.0% | -43.0% | 76% |
+| Taiwan | EWT | **$87,039** | $46,785 | +86% | 20.0% | -52.9% | 79% |
+| Poland | EPOL | **$82,779** | $22,931 | +261% | 19.5% | -45.3% | 75% |
+| Ireland | EIRL | **$82,722** | $26,810 | +209% | 19.5% | -47.8% | 74% |
+| Finland | EFNL | **$80,779** | $21,798 | +271% | 19.2% | -44.1% | 78% |
+| South Korea | EWY | **$75,784** | $28,500 | +166% | 18.6% | -51.8% | 77% |
+| Brazil | EWZ | **$72,501** | $14,748 | +392% | 18.2% | -42.3% | 75% |
+| Austria | EWO | **$67,726** | $35,527 | +91% | 17.5% | -57.9% | 69% |
+| Norway | ENOR | **$64,943** | $22,142 | +193% | 17.1% | -47.3% | 78% |
+| South Africa | EZA | **$63,598** | $15,810 | +302% | 16.9% | -44.8% | 74% |
+| Greece | GREK | **$51,854** | $24,231 | +114% | 14.9% | -52.8% | 70% |
+| India | INDA | **$47,245** | $19,838 | +138% | 14.0% | -50.3% | 77% |
+| Turkey | TUR | **$43,677** | $7,422 | +489% | 13.2% | -49.0% | 78% |
 
-Median margin over the local index: **+221%**.
-Worst market: TR at $26,013 vs $7,422 for its index.
+Median margin over the local index: **+275%**.
+Worst market: TR at $43,677 vs $7,422 for its index.
 Only 1/30 country ETFs were unprofitable on their own,
 so tier 2 is measured against the harder bar of beating the index, not just >$10k.
 
 ## What is actually doing the work
 
-- **Core exposure.** 71% of days in tier 1 and 74% in tier 2 are spent in SOXX, not in local stocks.
+- **Core exposure.** 73% of days in tier 1 and 76% in tier 2 are spent in SOXX, not in local stocks.
 - **Core only beats the index in 9/9 markets.** The dual-momentum switch trims the drawdown; it does not create the return.
 - **The sleeve is not the edge.** Sleeve-only beats the index in 8/9 markets and lands at a median of $38,118 versus $26,553 for the indices.
-- **2022: 0/9 markets profitable**, average -33.4% versus -17.1% for the indices. The
+- **2022: 0/9 markets profitable**, average -32.8% versus -17.1% for the indices. The
   wrapper adds return by holding more semis, so it loses more when semis fall.
 - **One global book is worse.** Rotating the same 29 ETFs + SOXX, top 3 monthly,
   ends at **$48,019** (CAGR 14.1%, maxDD -35.6%) versus
@@ -116,7 +116,7 @@ so tier 2 is measured against the harder bar of beating the index, not just >$10
   France (CAC.PA, EUR). ETF fees and dividend withholding are inside both the bot
   and the index, so they cancel in the comparison but flatter both against a local
   total-return index.
-- **Lookback sensitivity.** 63 / 126 / 252 days: tier 1 profitable 9/9, 9/9, 9/9 and beats 9/9, 9/9, 8/9; tier 2 profitable 30/30, 30/30, 30/30 and beats 28/30, 30/30, 29/30.
+- **Lookback sensitivity.** 63 / 126 / 252 days: tier 1 profitable 9/9, 9/9, 9/9 and beats 9/9, 9/9, 9/9; tier 2 profitable 30/30, 30/30, 30/30 and beats 30/30, 30/30, 30/30.
 - **No per-market tuning.** The config is identical for all 39 markets. Nothing was
   fitted to a single country, which also means nothing was rescued for one.
 - Paper only. No orders, no broker, no keys.

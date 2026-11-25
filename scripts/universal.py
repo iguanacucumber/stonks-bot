@@ -38,7 +38,7 @@ CFG = dict(
     rebalance_days=21,
     min_dollar_vol=5e6,
     cost_bps=10.0,
-    core="SOXX",
+    core="SMH",
     core_weight=1.0,
     core_mode="relative",
     core_lookback=126,
@@ -60,8 +60,10 @@ def benchmark(panel, mem, start=START, end=None):
     return res, m, mkt
 
 
-def dual_selector(core: str = "SOXX", lookback: int = 126):
+def dual_selector(core: str | None = None, lookback: int = 126):
     """Hold the core while its return beats the local benchmark, else the benchmark."""
+
+    core = core or CFG["core"]
 
     def sel(mkt, date, held, banned):
         c = mkt.px[core]
@@ -123,7 +125,7 @@ def tier1() -> list[dict]:
                 "sharpe": m["sharpe"],
                 "dd": m["max_dd"],
                 "trades": m["trades"],
-                "core_days": float((bot.weights["SOXX"] > 0).mean()),
+                "core_days": float((bot.weights[CFG["core"]] > 0).mean()),
                 "cost30": 10000 * c30.equity.iloc[-1],
                 "y2022": my22["total_return"],
                 "bench2022": mb22["total_return"],
@@ -163,7 +165,7 @@ def tier2() -> list[dict]:
                 "sharpe": m["sharpe"],
                 "dd": m["max_dd"],
                 "trades": m["trades"],
-                "core_days": float((res.weights["SOXX"] > 0).mean()),
+                "core_days": float((res.weights[CFG["core"]] > 0).mean()),
                 "cost30": 10000 * (1 + m30["total_return"]),
                 "buy_hold": 10000 * b.equity.iloc[-1],
                 "cagr_bench": bm["cagr"],
@@ -214,8 +216,8 @@ def world_book() -> dict:
 
 def check_fx() -> float:
     """SOXX in EUR divided by SOXX in USD must equal EURUSD."""
-    usd = markets.local_core("USD")
-    eur = markets.local_core("EUR")
+    usd = markets.local_core("SOXX", "USD")
+    eur = markets.local_core("SOXX", "EUR")
     fx = data.fetch_one("EURUSD=X").set_index("date")["adjclose"]
     j = eur.index.intersection(fx.index).intersection(usd.index)
     ratio = (usd.loc[j] / eur.loc[j] / fx.loc[j]).dropna()

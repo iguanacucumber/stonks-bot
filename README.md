@@ -5,7 +5,7 @@ with a constrained LLM news overlay. No broker connection, no orders, no keys.
 
 ## What it does
 
-**Default: dual-momentum rotation, 2x gross.** Hold SOXX while its 6-month total return
+**Default: dual-momentum rotation, 2x gross.** Hold SMH while its 6-month total return
 beats SPY; otherwise rotate into the S&P momentum sleeve. Monthly check, next-close
 execution, 10 bps per side, 2x gross financed at 5%/yr with a daily de-leverage cap
 (`--leverage 1` for the unlevered book), no trailing stop, no regime cut.
@@ -44,21 +44,21 @@ promise.
 
 | $10,000 from | Bot | SPY | Bot max DD | SPY max DD |
 |---|---:|---:|---:|---:|
-| 2015-01-02 → 2026-11-24 | **$762,997** | $42,186 | -66.1% | **-33.7%** |
-| 2026-01-02 → 2026-11-24 | **$12,340** | $10,534 | -67.3% | **-11.5%** |
+| 2015-01-02 → 2026-11-24 | **$889,382** | $42,186 | -60.7% | **-33.7%** |
+| 2026-01-02 → 2026-11-24 | **$11,500** | $10,534 | -60.6% | **-11.5%** |
 
-Full-window CAGR 44.1% vs 12.9%; Sharpe 0.90 vs 0.79. Walk-forward CAGR: 25.8% / 37.7% / 76.3%
+Full-window CAGR 46.0% vs 12.9%; Sharpe 0.93 vs 0.79. Walk-forward CAGR: 29.2% / 38.1% / 87.0%
 vs SPY 11.6% / 7.3% / 19.1%; beats SPY in 9 of 12 calendar years (loses 2015, 2018, 2022).
-The leverage ladder is the whole story: 1x makes $212,063 with a -39.5% drawdown, 1.5x $461,047
-(-54.4%), 2x $762,997 (-66.1%), 2.5x $980,671 (-75.1%). Sharpe is flat across the ladder, so
-leverage buys money, not skill: `results/leverage.md`, `scripts/leverage.py`.
+The leverage ladder: 1x $222,636 (-36.3%, Sharpe 0.99), 1.5x $507,334 (-49.8%), 2x $889,382
+(-60.7%), 2.5x $1,222,440 (-69.4%). Sharpe is flat across the ladder, so leverage buys money,
+not skill: `results/leverage.md`, `scripts/leverage.py`.
 
-The catch: SOXX is the semiconductor index. Even at 1x, SOXX buy-and-hold made $140,256 with a
--45.8% drawdown, and the rotation is an overlay on that asset, not stock alpha. Ten rounds of
-single-knob changes took the unlevered book from $91,136 to $212,063: `results/rounds10.md`.
-Rounds 4-10 buy return by removing stop/regime protection and are tuned on this path; only
-rounds 1-3 also improved the held-back 2023-2026 window. At 2x the drawdown reaches -66%, and
-2022 is -33.7%.
+The catch: SMH is the semiconductor index (more NVDA-concentrated than SOXX). The rotation is
+an overlay on that asset, not stock alpha. Ten rounds of single-knob changes took the
+unlevered SOXX-era book from $91,136 to $212,063: `results/rounds10.md`; SMH later beat SOXX
+on the US and tech books (`results/core.md`). Rounds 4-10 buy return by removing stop/regime
+protection and are tuned on this path; only rounds 1-3 also improved the held-back 2023-2026
+window. At 2x the drawdown reaches -61%, and 2022 is -33.3%.
 
 **Cross-market:** the same config on **39 markets** (9 stock-level including a 48-name
 NASDAQ tech book, 30 country/tech ETFs) is profitable in **39/39** and beats the local

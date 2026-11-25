@@ -41,12 +41,18 @@ def _load(
     financing_bps: float | None = None,
     market: str = "US",
     profile: str = "monthly",
+    core: str | None = None,
+    dd_stop: float | None = None,
 ):
     panel, mem = markets.build(market)
     if market != "US":
         # Yahoo Europe/Asia keep the "." in symbols; the S&P alias map does not.
         universe.canonical = lambda t: t
     kw = dict(PROFILES[profile])
+    if core:
+        kw["core"] = core
+    if dd_stop:
+        kw["dd_stop"] = dd_stop
     if core_weight is not None:
         kw["core_weight"] = core_weight
     if core_mode:
@@ -91,6 +97,8 @@ def cmd_backtest(args):
         args.financing_bps,
         args.market,
         args.profile,
+        args.core,
+        args.dd_stop,
     )
     print(
         f"dates {mkt.dates[0].date()} -> {mkt.dates[-1].date()}  tickers {mkt.px.shape[1]}"
@@ -250,7 +258,7 @@ def cmd_report(args):
     lines = [
         "# stonks-bot — results",
         "",
-        "Default: dual-momentum rotation. Hold SOXX while its 6-month total return beats SPY;",
+        "Default: dual-momentum rotation. Hold SMH while its 6-month total return beats SPY;",
         "otherwise rotate into the S&P momentum sleeve (6 names, 10-day skip). Monthly check,",
         "next-close execution, 10 bps per side, 2x gross with 5%/yr margin interest",
         "(`--leverage 1` for the unlevered book), no trailing stop, no regime cut.",
@@ -387,7 +395,7 @@ def _pnl_box(rows: list[tuple[str, float | None]], capital: float, head: list[st
 def cmd_pnl(args):
     panel, mem, mkt, cfg = _load(
         "2015-01-01", None, None, None, args.leverage, args.financing_bps,
-        args.market, args.profile,
+        args.market, args.profile, args.core, args.dd_stop,
     )
     res = backtest.run(mkt)
     d = mkt.dates[-1]
@@ -427,6 +435,8 @@ def cmd_paper(args):
         args.financing_bps,
         args.market,
         args.profile,
+        args.core,
+        args.dd_stop,
     )
     d = mkt.dates[-1]
     res = backtest.run(mkt)
@@ -503,6 +513,8 @@ def main(argv=None):
     pb.add_argument("--core-weight", type=float, default=None)
     pb.add_argument("--core-mode", default=None)
     pb.add_argument("--market", choices=sorted(markets.MARKETS), default="US")
+    pb.add_argument("--core", default=None, help="core ETF, default SMH")
+    pb.add_argument("--dd-stop", type=float, default=0.0, help="drawdown stop, 0=off")
     pb.add_argument("--profile", choices=sorted(PROFILES), default="monthly")
     pb.add_argument("--leverage", type=float, default=DEFAULT_LEVERAGE)
     pb.add_argument("--financing-bps", type=float, default=DEFAULT_FINANCING_BPS)
@@ -521,6 +533,7 @@ def main(argv=None):
     pn = sub.add_parser("pnl")
     pn.add_argument("--capital", type=float, default=10000.0)
     pn.add_argument("--market", choices=sorted(markets.MARKETS), default="US")
+    pn.add_argument("--core", default=None, help="core ETF, default SMH")
     pn.add_argument("--profile", choices=sorted(PROFILES), default="monthly")
     pn.add_argument("--leverage", type=float, default=DEFAULT_LEVERAGE)
     pn.add_argument("--financing-bps", type=float, default=DEFAULT_FINANCING_BPS)
@@ -533,6 +546,8 @@ def main(argv=None):
     pp.add_argument("--core-weight", type=float, default=None)
     pp.add_argument("--core-mode", default=None)
     pp.add_argument("--market", choices=sorted(markets.MARKETS), default="US")
+    pp.add_argument("--core", default=None, help="core ETF, default SMH")
+    pp.add_argument("--dd-stop", type=float, default=0.0, help="drawdown stop, 0=off")
     pp.add_argument("--profile", choices=sorted(PROFILES), default="monthly")
     pp.add_argument("--leverage", type=float, default=DEFAULT_LEVERAGE)
     pp.add_argument("--financing-bps", type=float, default=DEFAULT_FINANCING_BPS)

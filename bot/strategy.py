@@ -67,9 +67,15 @@ class Config:
     financing_bps: float = 300.0
     leverage_mode: str = "constant"  # "constant" | "trend"
     leverage_down: float = 1.0  # exposure when the regime filter is off
-    # Default: dual-momentum rotation. Hold SOXX while its 6-month return beats SPY,
-    # otherwise run the S&P momentum sleeve. Set core_weight < 1 to blend.
-    core: str | None = "SOXX"
+    # Drawdown circuit breaker: at -dd_stop from the equity peak, cut gross to
+    # dd_scale until the drawdown recovers to -dd_recover. 0 disables it.
+    dd_stop: float = 0.0
+    dd_scale: float = 0.5
+    dd_recover: float = 0.10
+    # Default: dual-momentum rotation. Hold SMH while its 6-month return beats the
+    # benchmark, otherwise run the momentum sleeve. SMH beat SOXX on the US and tech
+    # books (results/core.md); SOXX still edges it in most of Europe, use --core SOXX.
+    core: str | None = "SMH"
     core_weight: float = 1.0
     core_mode: str = "relative"  # "always" | "relative" | "relative_switch"
     core_lookback: int = 126

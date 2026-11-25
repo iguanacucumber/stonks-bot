@@ -151,13 +151,16 @@ ETF_NAMES = {
 }
 
 
-def local_core(currency: str, calendar=None) -> pd.Series:
-    """SOXX adjusted close expressed in `currency`, projected onto `calendar`.
+CORE_SYMBOLS = ("SOXX", "SMH")
+
+
+def local_core(symbol: str, currency: str, calendar=None) -> pd.Series:
+    """A USD core ETF expressed in `currency`, projected onto `calendar`.
 
     US and European holidays differ, so the local series is forward-filled onto the
     local trading calendar; otherwise every US holiday leaves a hole in the panel.
     """
-    soxx = data.fetch_one("SOXX").set_index("date")["adjclose"].sort_index()
+    soxx = data.fetch_one(symbol).set_index("date")["adjclose"].sort_index()
     if currency == "USD":
         out = soxx
     else:
@@ -190,6 +193,14 @@ def build(name: str) -> tuple[pd.DataFrame, pd.DataFrame]:
 
         mem = universe.load_membership()
         panel = data.build_panel(mem)
+        have = set(panel.ticker.unique())
+        missing = [s for s in CORE_SYMBOLS if s not in have]
+        if missing:
+            parts = [panel]
+            for sym in missing:
+                parts.append(_rows(data.fetch_one(sym), sym))
+            panel = pd.concat(parts, ignore_index=True)
+            panel = panel.drop_duplicates(["date", "ticker"]).sort_values(["date", "ticker"])
         _CACHE[name] = (panel, mem)
         return panel, mem
 
@@ -202,18 +213,20 @@ def build(name: str) -> tuple[pd.DataFrame, pd.DataFrame]:
             parts.append(_rows(df, "SPY"))
         elif t in tickers:
             parts.append(_rows(df, t))
-    core = local_core(spec["fx"], frames[spec["bench"]]["date"])
-    parts.append(
-        pd.DataFrame(
-            {
-                "date": core.index,
-                "adjclose": core.to_numpy(),
-                "close": core.to_numpy(),
-                "volume": 1e9,  # core is never screened for liquidity
-                "ticker": "SOXX",
-            }
+    cal = frames[spec["bench"]]["date"]
+    for sym in CORE_SYMBOLS:
+        core = local_core(sym, spec["fx"], cal)
+        parts.append(
+            pd.DataFrame(
+                {
+                    "date": core.index,
+                    "adjclose": core.to_numpy(),
+                    "close": core.to_numpy(),
+                    "volume": 1e9,  # cores are never screened for liquidity
+                    "ticker": sym,
+                }
+            )
         )
-    )
     panel = pd.concat(parts, ignore_index=True)
     panel = panel.drop_duplicates(["date", "ticker"]).sort_values(["date", "ticker"])
     mem = pd.DataFrame({"date": pd.Timestamp(START), "ticker": tickers})
@@ -226,7 +239,7 @@ def build_etf(etf: str) -> tuple[pd.DataFrame, pd.DataFrame]:
     if etf in _CACHE:
         return _CACHE[etf]
     parts = []
-    for sym, col in ((etf, "SPY"), ("SOXX", "SOXX")):
+    for sym, col in [(etf, "SPY")] + [(c, c) for c in CORE_SYMBOLS]:
         df = data.fetch_one(sym)
         if df.empty:
             raise RuntimeError(f"no data for {sym}")

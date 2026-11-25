@@ -9,54 +9,54 @@ numbers after borrow cost, commissions and forced de-leveraging.
 
 | leverage | financing | final | CAGR | Sharpe | maxDD | 2022 | turnover |
 |---:|---:|---:|---:|---:|---:|---:|---:|
-| 1.0x | 5.0% | **$212,063** | 29.4% | 0.95 | -39.5% | -13.3% | 5.4x |
-| 1.5x | 5.0% | **$461,047** | 38.1% | 0.91 | -54.4% | -23.3% | 8.2x |
-| 2.0x | 3.0% | **$951,836** | 46.8% | 0.93 | -65.8% | -32.4% | 11.4x |
-| 2.0x **<- shipped** | 5.0% | **$762,997** | 44.1% | 0.90 | -66.1% | -33.7% | 11.5x |
-| 2.5x | 5.0% | **$980,671** | 47.2% | 0.89 | -75.1% | -43.7% | 15.4x |
+| 1.0x | 5.0% | **$222,636** | 29.9% | 0.99 | -36.3% | -13.1% | 4.9x |
+| 1.5x | 5.0% | **$507,334** | 39.2% | 0.95 | -49.8% | -23.1% | 7.5x |
+| 2.0x | 3.0% | **$1,109,283** | 48.7% | 0.96 | -60.6% | -32.1% | 10.6x |
+| 2.0x **<- shipped** | 5.0% | **$889,382** | 46.0% | 0.93 | -60.7% | -33.3% | 10.7x |
+| 2.5x | 5.0% | **$1,222,440** | 49.9% | 0.92 | -69.4% | -43.3% | 14.3x |
 
-2x turns **$212,063** into **$762,997** (3.6x).
-It also turns a -39.5% drawdown into -66.1%, and 2022 from -13.3% into -33.7%.
+2x turns **$222,636** into **$889,382** (4.0x).
+It also turns a -36.3% drawdown into -60.7%, and 2022 from -13.1% into -33.3%.
 Sharpe barely moves (0.90 vs 0.95): leverage scales money, not skill.
 
 ## All 39 markets at 2x
 
 - Profitable: **39/39**.
 - Beats the local index: **39/39**.
-- Median margin over the index: **+438%**.
-- Weakest market: Turkey at $10,198 vs $7,422.
-- Smallest margin: India at +25%.
-- Worst drawdown: -84.4% (Austria).
+- Median margin over the index: **+627%**.
+- Weakest market: Turkey at $30,903 vs $7,422.
+- Smallest margin: Greece at +124%.
+- Worst drawdown: -84.0% (Austria).
 
 ## Stock-level markets (2x, local currency)
 
 | market | bot $ | index $ | margin | maxDD |
 |---|---:|---:|---:|---:|
-| S&P 500 | **$469,965** | $42,186 | +1014% | -66.1% |
-| DAX (EWG) | **$563,626** | $19,295 | +2821% | -68.9% |
-| CAC 40 | **$75,874** | $26,553 | +186% | -70.4% |
-| IBEX 35 (EWP) | **$174,050** | $23,299 | +647% | -71.1% |
-| FTSE MIB (EWI) | **$190,718** | $29,023 | +557% | -65.8% |
-| AEX (EWN) | **$138,179** | $31,926 | +333% | -65.8% |
-| FTSE 100 (EWU) | **$222,384** | $20,041 | +1010% | -70.9% |
-| SMI (EWL) | **$112,496** | $25,990 | +333% | -63.0% |
-| NASDAQ tech | **$579,850** | $67,550 | +758% | -69.8% |
+| S&P 500 | **$561,293** | $42,186 | +1231% | -63.9% |
+| DAX (EWG) | **$448,485** | $19,295 | +2224% | -65.0% |
+| CAC 40 | **$71,523** | $26,553 | +169% | -72.8% |
+| IBEX 35 (EWP) | **$170,046** | $23,299 | +630% | -71.3% |
+| FTSE MIB (EWI) | **$128,268** | $29,023 | +342% | -64.7% |
+| AEX (EWN) | **$118,918** | $31,926 | +272% | -63.9% |
+| FTSE 100 (EWU) | **$228,305** | $20,041 | +1039% | -65.2% |
+| SMI (EWL) | **$122,475** | $25,990 | +371% | -62.2% |
+| NASDAQ tech | **$706,010** | $67,550 | +945% | -72.8% |
 
 ## Caveats
 
 - **Drawdowns are not hypothetical.** 2x lost two-thirds of the book peak to
   trough in this window. A real margin account would need maintenance margin and
   could be liquidated; this model de-levers instead of blowing up.
-- **Financing is assumed at 5%/yr.** At 3%/yr the same 2x book is $951,836.
+- **Financing is assumed at 5%/yr.** At 3%/yr the same 2x book is $1,109,283.
 - **Path dependence.** Daily-reset leverage suffers volatility drag: 2.5x adds
-  $217,674 over 2x and 9pp more
+  $333,058 over 2x and 9pp more
   drawdown, with 34% more turnover.
 - **Still one asset.** Leverage multiplies SOXX, not a diversified edge.
 - Paper only. No orders, no broker, no keys.
 
 ## Verdict
 
-2x is the knee: **$762,997** from $10,000, profitable and ahead of the
+2x is the knee: **$889,382** from $10,000, profitable and ahead of the
 local index in all 39 markets. The price is a
--66.1% drawdown. 2.5x makes $980,671, but gives up 9pp more drawdown
+-60.7% drawdown. 2.5x makes $1,222,440, but gives up 9pp more drawdown
 for that last increment. There is no free lunch in the data.
