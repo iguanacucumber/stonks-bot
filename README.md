@@ -5,12 +5,17 @@ No broker connection, no orders, no keys.
 
 ## What it does
 
-1. **Universe**: point-in-time S&P 500 membership (fja05680 history, 1996–2026), liquid names only.
-2. **Math core**: 6-month momentum rank, monthly rebalance, top 20, inverse-vol weights,
-   6% name cap, 30% sector cap, 20% trailing stop, SPY 200-day regime (half exposure below).
+**Default: dual-momentum rotation.** Hold QQQ while its 12-month total return beats SPY;
+otherwise hold the S&P momentum sleeve. Monthly check, next-close execution, 10 bps per side,
+no leverage.
+
+The S&P sleeve (used when QQQ lags) is:
+1. **Universe**: point-in-time S&P 500 membership (fja05680 history + 2026 changes), liquid names only.
+2. **Math**: 6-month momentum rank, top 20, inverse-vol weights, 6% name cap, 30% sector cap,
+   20% trailing stop, SPY 200-day regime (half exposure below).
 3. **News**: material SEC 8-K events (earnings, M&A, CEO, guidance, delisting), plus a monthly
    GDELT macro headline digest. Filing timestamps are point-in-time; after-close filings are
-   only usable next session.
+   only usable next session. Optional; not in the default because it showed no edge.
 4. **LLM overlay**: asks one question per name per month:
    *will this stock beat the S&P 500 over the next 63 trading days, and how confident are you —
    or is there nothing to say?* Output is strict JSON:
@@ -34,15 +39,28 @@ Known bias: ~18% of 2015–2026 index members have no Yahoo history (mostly acqu
 names). They are dropped. Results are survivor-biased; treat them as a sanity check, not a
 promise.
 
+## Results (paper backtest, 10 bps)
+
+| $10,000 from | Bot | SPY | Bot max DD | SPY max DD |
+|---|---:|---:|---:|---:|
+| 2015-01-02 → 2026-11-24 | **$45,417** | $42,186 | **-28.6%** | -33.7% |
+| 2026-01-02 → 2026-11-24 | **$11,212** | $10,534 | -11.7% | -11.5% |
+
+Full-window CAGR 13.6% vs 12.9%; Sharpe 0.76 vs 0.79. The paired excess return is +0.9%/yr
+with a bootstrap 95% CI of -5.0% to +6.8% — a real terminal-wealth win, not a statistically
+significant alpha claim. The edge is Nasdaq-100 beta plus a November 2026 switch out of QQQ.
+
 ## Run
 
 ```bash
 uv sync
 .venv/bin/python -m bot.cli ingest                 # ~8 min, cached
 .venv/bin/python -m bot.cli backtest --random-seeds 50
-.venv/bin/python -m bot.cli study --max-names 40   # 2026 LLM ablation
 .venv/bin/python -m bot.cli report
 .venv/bin/python -m bot.cli paper --interval 60 --iterations 10
+# stock + LLM sleeve instead of the QQQ core:
+.venv/bin/python -m bot.cli backtest --core-weight 0
+.venv/bin/python -m bot.cli study --max-names 40
 ```
 
 `paper` polls last prices on a seconds-to-minutes cadence and appends target weights to

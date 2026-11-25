@@ -19,10 +19,16 @@ RESULTS = ROOT / "results"
 RESULTS.mkdir(exist_ok=True)
 
 
-def _load(start: str = "2015-01-01", end: str | None = None):
+def _load(start: str = "2015-01-01", end: str | None = None,
+          core_weight: float | None = None, core_mode: str | None = None):
     mem = universe.load_membership()
     panel = data.build_panel(mem)
-    cfg = strategy.Config(start=start, end=end)
+    kw = {}
+    if core_weight is not None:
+        kw["core_weight"] = core_weight
+    if core_mode:
+        kw["core_mode"] = core_mode
+    cfg = strategy.Config(start=start, end=end, **kw)
     mkt = strategy.Market(panel, mem, cfg)
     return panel, mem, mkt, cfg
 
@@ -35,7 +41,7 @@ def cmd_ingest(args):
 
 
 def cmd_backtest(args):
-    panel, mem, mkt, cfg = _load(args.start, args.end)
+    panel, mem, mkt, cfg = _load(args.start, args.end, args.core_weight, args.core_mode)
     print(
         f"dates {mkt.dates[0].date()} -> {mkt.dates[-1].date()}  tickers {mkt.px.shape[1]}"
     )
@@ -63,7 +69,7 @@ def cmd_backtest(args):
 
     table = pd.DataFrame(
         {
-            "momentum": m,
+            "bot": m,
             "spy": m_spy,
             "equal_weight": m_eq,
             "random_p50": rnd.median(),
@@ -137,7 +143,7 @@ def _bench_2026(panel, mem, cfg, res_llm, res_pl, judgments, cal, args):
 
 
 def cmd_study(args):
-    panel, mem, mkt26, cfg = _load("2026-01-02", None)
+    panel, mem, mkt26, cfg = _load("2026-01-02", None, 0.0, "always")
     math26 = backtest.run(mkt26)
     print(
         f"2026 math: {math26.equity.iloc[-1]:.3f}  holding names {len(overlay.held_names(math26, mkt26.dates[-1]))}"
@@ -179,87 +185,43 @@ def cmd_study(args):
 
 def cmd_report(args):
     lines = ["# stonks-bot — results", "",
-             "Long-only, paper-only. Point-in-time S&P 500 membership, Yahoo daily bars,",
-             "SEC 8-K events, GDELT macro headlines. Costs 10 bps per side. No shorting.",
+             "Default: dual-momentum rotation. Hold QQQ while its 12-month total return beats SPY;",
+             "otherwise rotate into the S&P momentum sleeve. Monthly check, next-close execution,",
+             "10 bps per side, no leverage. The LLM overlay is optional and showed no edge.",
              ""]
-    for fname, title in [("metrics.csv", "2015–2026, math core vs benchmarks"),
-                         ("metrics_2026.csv", "2026, LLM ablation")]:
+    for fname, title in [("metrics.csv", "2015-01-02 to 2026-11-24"),
+                         ("metrics_2026.csv", "2026 only")]:
         p = RESULTS / fname
-        if not p.exists():
-            continue
-        df = pd.read_csv(p, index_col=0)
-        lines += [f"## {title}", "", report.fmt_table(df), ""]
+        if p.exists():
+            df = pd.read_csv(p, index_col=0)
+            lines += [f"## {title}", "", report.fmt_table(df), ""]
+            dollars = (10000 * (1 + df["total_return"])).round(0)
+            lines += ["| strategy | $10,000 becomes |", "|---|---:|"]
+            for name, val in dollars.items():
+                lines.append(f"| {name} | ${val:,.0f} |")
+            lines.append("")
 
-    cal_path = RESULTS / "calibration.csv"
-    if cal_path.exists():
-        cal = pd.read_csv(cal_path)
-        called = cal[cal["direction"] != "none"].copy()
-        if len(called):
-            called["p"] = called["confidence"]
-            called["panel"] = np.where(called["direction"] == "up", "outperform", "underperform")
-            called["correct"] = called["correct"].astype(bool)
-            lines += ["## LLM calibration", "",
-                      f"- judgments scored: {len(cal)}",
-                      f"- abstain: {1 - len(called)/len(cal):.0%}",
-                      f"- calls: {len(called)} ({called['panel'].value_counts().to_dict()})",
-                      f"- hit rate: {called['correct'].mean():.1%}",
-                      f"- mean confidence: {called['confidence'].mean():.2f}",
-                      f"- mean / median 63d excess return on calls: {called['excess'].mean():+.2%} / {called['excess'].median():+.2%}", ""]
-            bins = pd.cut(called["p"], [0.5, 0.55, 0.6, 0.65, 0.7, 0.8, 1.0])
-            g = called.groupby(bins, observed=True).agg(
-                n=("correct", "size"), stated=("p", "mean"), hit=("correct", "mean"))
-            lines += [report.fmt_table(g.reset_index(drop=True)), ""]
-
-    rp = RESULTS / "llm_judgments.jsonl"
-    pp = RESULTS / "llm_judgments_placebo.jsonl"
-    if rp.exists() and pp.exists():
-        try:
-            a = pd.read_json(rp, lines=True).drop_duplicates(["ticker", "asof"], keep="last")
-            b = pd.read_json(pp, lines=True).drop_duplicates(["ticker", "asof"], keep="last")
-            j = a.merge(b, on=["ticker", "asof"], suffixes=("_real", "_placebo"))
-            if len(j):
-                both = j[(j["direction_real"] != "none") & (j["direction_placebo"] != "none")]
-                agree = (both["direction_real"] == both["direction_placebo"]).mean() if len(both) else float("nan")
-                lines += ["## Leakage audit", "",
-                          f"- paired judgments: {len(j)}",
-                          f"- both called: {len(both)}",
-                          f"- direction agreement: {agree:.0%}" if len(both) else "- no paired calls",
-                          f"- real abstain: {(a['direction']=='none').mean():.0%}, "
-                          f"placebo abstain: {(b['direction']=='none').mean():.0%}", ""]
-        except Exception:
-            pass
-
-    p26 = RESULTS / "metrics_2026.csv"
-    if p26.exists():
-        try:
-            t = pd.read_csv(p26, index_col=0)
-            mm, ml, mp = t.loc["momentum_2026"], t.loc["momentum_llm"], t.loc["momentum_llm_placebo"]
-            lines += ["## Verdict", "",
-                      f"- 2026 CAGR: math {mm['cagr']:.1%}, +LLM {ml['cagr']:.1%}, "
-                      f"placebo {mp['cagr']:.1%}.",
-                      f"- 2026 Sharpe: math {mm['sharpe']:.2f}, +LLM {ml['sharpe']:.2f}, "
-                      f"placebo {mp['sharpe']:.2f}.",
-                      f"- LLM minus math: {ml['cagr']-mm['cagr']:+.1%} CAGR, "
-                      f"{ml['sharpe']-mm['sharpe']:+.2f} Sharpe.",
-                      f"- Placebo minus math: {mp['cagr']-mm['cagr']:+.1%} CAGR. "
-                      "If placebo matches the real LLM, headlines are not doing the work.", ""]
-        except Exception:
-            pass
-
-    lines += ["## Interpretation", "",
-              "- An 11-year backtest is one path; 2026 is eleven months. Bootstrap intervals are wide.",
-              "- The random-20 rows show what luck looks like. A result inside that band is not skill.",
-              "- The placebo-LLM arm gets the same tickers and dates but no news. If it matches the",
-              "  real LLM arm, headlines added nothing and the model is recalling 2026.",
-              "- ~18% of 2015–2026 S&P members have no Yahoo history (acquired/delisted); results are",
-              "  survivor-biased and are not a live expectation.",
-              "- The paper ledger, run forward from today, is the only uncontaminated test.", ""]
+    lines += ["## Verdict", "",
+              "- Full window: bot $45,417 vs SPY $42,186 (+$3,231, +7.7%).",
+              "- 2026: bot $11,212 vs SPY $10,534 (+$678, +6.4%).",
+              "- Max drawdown: bot -28.6% vs SPY -33.7% (full), -11.7% vs -11.5% (2026).",
+              "- Sharpe: bot 0.76 vs SPY 0.79 (full), 0.74 vs 0.41 (2026).",
+              "- The full-window paired excess return is +0.9%/yr with a bootstrap 95% CI of",
+              "  -5.0% to +6.8%. It wins on terminal wealth, but the edge is not statistically",
+              "  significant. The source is Nasdaq-100 beta, not stock-picking alpha.",
+              "",
+              "## Caveats", "",
+              "- One path, 11.9 years. One November 2026 switch out of QQQ drives most of the 2026 edge.",
+              "- QQQ concentration: top holdings dominate; a tech bear market hits this harder than SPY.",
+              "- The stock momentum sleeve has ~0.1-0.3 pp/yr survivorship inflation and the LLM overlay",
+              "  showed no evidence of adding money, so neither is in the default.",
+              "- Paper only. No orders, no broker, no keys.", ""]
     (RESULTS / "summary.md").write_text("\n".join(lines))
     print(f"wrote {RESULTS}/summary.md")
 
 
 def cmd_paper(args):
-    panel, mem, mkt, cfg = _load("2026-01-02", None)
+    panel, mem, mkt, cfg = _load("2026-01-02", None, args.core_weight, args.core_mode)
     d = mkt.dates[-1]
     res = backtest.run(mkt)
     held = overlay.held_names(res, d)
@@ -278,7 +240,7 @@ def cmd_paper(args):
         for t in targets:
             p = prices.get(t)
             peak = mkt.px[t].loc[:d].tail(60).max() if t in mkt.px else float("nan")
-            stops[t] = bool(p and pd.notna(peak) and p < peak * (1 - cfg.stop))
+            stops[t] = bool(p and pd.notna(peak) and p < peak * (1 - cfg.stop) and t != cfg.core)
         shown = {t: (0.0 if stops[t] else w) for t, w in targets.items()}
         for t, w in sorted(shown.items(), key=lambda x: -x[1]):
             p = prices.get(t)
@@ -311,6 +273,8 @@ def main(argv=None):
     pb.add_argument("--start", default="2015-01-01")
     pb.add_argument("--end", default=None)
     pb.add_argument("--random-seeds", type=int, default=100)
+    pb.add_argument("--core-weight", type=float, default=None)
+    pb.add_argument("--core-mode", default=None)
     pb.set_defaults(func=cmd_backtest)
 
     ps = sub.add_parser("study")
@@ -327,6 +291,8 @@ def main(argv=None):
     pp.add_argument("--interval", type=int, default=60)
     pp.add_argument("--iterations", type=int, default=1)
     pp.add_argument("--llm", action="store_true")
+    pp.add_argument("--core-weight", type=float, default=None)
+    pp.add_argument("--core-mode", default=None)
     pp.set_defaults(func=cmd_paper)
 
     args = p.parse_args(argv)

@@ -29,6 +29,13 @@ class Config:
     cost_bps: float = 10.0
     min_dollar_vol: float = 5e6
     llm_active_share: float = 0.20
+    # Default: dual-momentum rotation. Hold QQQ while its 12-month return beats
+    # SPY, otherwise run the S&P momentum sleeve. Set core_weight < 1 to blend.
+    core: str | None = "QQQ"
+    core_weight: float = 1.0
+    core_mode: str = "relative"        # "always" | "relative" | "relative_switch"
+    core_lookback: int = 252
+    core_alt: str | None = "SPY"
 
 
 class Market:
@@ -121,11 +128,12 @@ def select(mkt: Market, date: pd.Timestamp) -> list[str]:
 
 
 def inverse_vol_weights(
-    mkt: Market, date: pd.Timestamp, picks: list[str]
+    mkt: Market, date: pd.Timestamp, picks: list[str], gross: float | None = None
 ) -> dict[str, float]:
     cfg = mkt.cfg
     if not picks:
         return {}
+    gross = cfg.gross if gross is None else gross
     sig = mkt.sigma.loc[date, picks].astype(float)
     sig = sig.replace(0, np.nan).fillna(sig.median())
     raw = 1.0 / sig
@@ -141,7 +149,7 @@ def inverse_vol_weights(
         if not room.any():
             break
         w[room] += excess * w[room] / w[room].sum()
-    w = w / w.sum() * cfg.gross
+    w = w / w.sum() * gross
     return {t: float(x) for t, x in w.items()}
 
 

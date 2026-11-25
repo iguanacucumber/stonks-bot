@@ -32,7 +32,37 @@ ALIASES = {
     "ABC": "COR",
     "GOOG": "GOOG",
     "GOOGL": "GOOGL",
+    "BK": "BNY",
+    "MMC": "MRSH",
+    "FI": "FISV",
+    "RTN": "RTX",
+    "UTX": "RTX",
+    "SYMC": "GEN",
+    "NLOK": "GEN",
+    "BHGE": "BKR",
+    "DWDP": "DD",
+    "WRK": "SW",
+    "BLL": "BALL",
+    "GPS": "GAP",
+    "CTL": "LUMN",
+    "JEC": "J",
+    "FLT": "CPAY",
+    "HFC": "DINO",
+    "PEAK": "DOC",
+    "ADS": "BFH",
+    "KORS": "CPRI",
+    "WYND": "TNL",
+    "COG": "CTRA",
+    "CMCSK": "CMCSA",
 }
+
+# Index changes after the frozen fja05680 snapshot (2026-08-18).
+RECENT_CHANGES = [
+    ("2026-09-21", ["BE", "P", "ILMN"], ["TAP", "TTD", "BLDR"]),
+    ("2026-10-01", ["VYLR"], []),
+    ("2026-10-06", ["TWLO"], ["WBD", "CTVA"]),
+    ("2026-10-30", ["OKTA"], ["KVUE"]),
+]
 
 
 def _download(url: str, path: Path) -> Path:
@@ -55,7 +85,15 @@ def load_membership() -> pd.DataFrame:
             if t:
                 rows.append((d, t))
     out = pd.DataFrame(rows, columns=["date", "ticker"])
-    return out.sort_values(["date", "ticker"]).reset_index(drop=True)
+    # apply changes that post-date the snapshot
+    current = set(out.loc[out["date"] == out["date"].max(), "ticker"])
+    for day, adds, removes in RECENT_CHANGES:
+        current = (current - set(removes)) | set(adds)
+        d = pd.Timestamp(day)
+        for t in sorted(current):
+            rows.append((d, t))
+    out = pd.DataFrame(rows, columns=["date", "ticker"])
+    return out.drop_duplicates().sort_values(["date", "ticker"]).reset_index(drop=True)
 
 
 def members_on(membership: pd.DataFrame, date: pd.Timestamp) -> list[str]:

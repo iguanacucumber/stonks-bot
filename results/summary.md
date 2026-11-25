@@ -1,60 +1,61 @@
 # stonks-bot — results
 
-Long-only, paper-only. Point-in-time S&P 500 membership, Yahoo daily bars,
-SEC 8-K events, GDELT macro headlines. Costs 10 bps per side. No shorting.
+Default: dual-momentum rotation. Hold QQQ while its 12-month total return beats SPY;
+otherwise rotate into the S&P momentum sleeve. Monthly check, next-close execution,
+10 bps per side, no leverage. The LLM overlay is optional and showed no edge.
 
-## 2015–2026, math core vs benchmarks
+## 2015-01-02 to 2026-11-24
 
 |              | total_return   | cagr   | vol   |   sharpe |   sortino | max_dd   |   calmar |   beta | alpha   | tracking_error   | hit_rate   |   days |   sharpe_lo |   sharpe_hi |      diff_lo |     diff_ann |      diff_hi |   turnover_ann |   trades | exposure   |
 |:-------------|:---------------|:-------|:------|---------:|----------:|:---------|---------:|-------:|:--------|:-----------------|:-----------|-------:|------------:|------------:|-------------:|-------------:|-------------:|---------------:|---------:|:-----------|
-| momentum     | 261.9%         | 11.4%  | 18.1% |     0.69 |      0.92 | -22.6%   |     0.51 |   0.71 | 2.7%    | 14.1%            | 54.8%      |   2990 |   0.159502  |     1.23126 | -0.084196    | -0.0121202   |  0.0622317   |          13.03 |     4356 | 87.9%      |
+| bot          | 354.2%         | 13.6%  | 19.2% |     0.76 |      0.92 | -28.6%   |     0.48 |   0.9  | 2.2%    | 11.0%            | 51.9%      |   2990 |   0.251357  |     1.31807 | -0.0501387   |  0.00907073  |  0.0678846   |           3.95 |     1266 | 88.8%      |
 | spy          | 321.9%         | 12.9%  | 17.6% |     0.79 |      0.96 | -33.7%   |     0.38 |   1    | -0.0%   | 0.0%             | 54.5%      |   2990 |   0.26295   |     1.35632 | -4.95992e-16 |  1.87079e-16 |  8.79504e-16 |           0    |        0 | 100.0%     |
-| equal_weight | 289.9%         | 12.2%  | 17.7% |     0.74 |      0.91 | -37.5%   |     0.32 |   0.97 | -0.4%   | 4.8%             | 54.3%      |   2990 |   0.208449  |     1.34319 | -0.0338603   | -0.00646839  |  0.0204644   |           2.25 |    28906 | 98.0%      |
-| random_p50   | 185.7%         | 9.2%   | 17.2% |     0.6  |      0.77 | -30.1%   |     0.31 |   0.86 | -1.6%   | 8.5%             | 53.5%      |   2990 |   0.0699645 |     1.20267 | -0.0807432   | -0.0335679   |  0.0105899   |          22.08 |     5506 | 96.9%      |
-| random_p5    | 114.7%         | 6.6%   | 16.9% |     0.46 |      0.6  | -34.0%   |     0.2  |   0.85 | -4.0%   | 8.2%             | 52.6%      |   2990 |  -0.0692965 |     1.06368 | -0.105339    | -0.0580776   | -0.0144433   |          21.94 |     5488 | 96.7%      |
-| random_p95   | 268.3%         | 11.6%  | 17.5% |     0.73 |      0.94 | -26.6%   |     0.41 |   0.88 | 0.6%    | 8.8%             | 54.2%      |   2990 |   0.197964  |     1.34168 | -0.0593775   | -0.0123239   |  0.0335726   |          22.2  |     5521 | 97.1%      |
+| equal_weight | 286.5%         | 12.1%  | 17.7% |     0.73 |      0.9  | -37.5%   |     0.32 |   0.97 | -0.4%   | 4.8%             | 54.5%      |   2990 |   0.203567  |     1.34059 | -0.0347547   | -0.0072374   |  0.0196444   |           2.26 |    29245 | 98.0%      |
+| random_p50   | 204.6%         | 9.8%   | 17.3% |     0.63 |      0.81 | -30.8%   |     0.32 |   0.87 | -1.1%   | 8.5%             | 53.4%      |   2990 |   0.109237  |     1.23687 | -0.0765682   | -0.0279119   |  0.019516    |          22.08 |     5506 | 96.9%      |
+| random_p5    | 107.7%         | 6.4%   | 16.9% |     0.44 |      0.56 | -33.6%   |     0.19 |   0.84 | -4.4%   | 8.2%             | 52.9%      |   2990 |  -0.0781955 |     1.025   | -0.106358    | -0.0598769   | -0.0145144   |          21.9  |     5483 | 96.7%      |
+| random_p95   | 279.1%         | 11.9%  | 17.5% |     0.74 |      0.95 | -29.0%   |     0.37 |   0.88 | 0.6%    | 8.8%             | 54.1%      |   2990 |   0.189916  |     1.33817 | -0.0544644   | -0.00949293  |  0.0341402   |          22.22 |     5519 | 97.0%      |
 
-## 2026, LLM ablation
+| strategy | $10,000 becomes |
+|---|---:|
+| bot | $45,417 |
+| spy | $42,186 |
+| equal_weight | $38,651 |
+| random_p50 | $30,464 |
+| random_p5 | $20,771 |
+| random_p95 | $37,915 |
 
-|                      | total_return   | cagr   | vol   |   sharpe |   sortino | max_dd   |   calmar |   beta | alpha   | tracking_error   | hit_rate   |   days |   sharpe_lo |   sharpe_hi |      diff_lo |     diff_ann |     diff_hi |   turnover_ann |   trades | exposure   |
-|:---------------------|:---------------|:-------|:------|---------:|----------:|:---------|---------:|-------:|:--------|:-----------------|:-----------|-------:|------------:|------------:|-------------:|-------------:|------------:|---------------:|---------:|:-----------|
-| momentum_2026        | 5.7%           | 6.5%   | 23.1% |     0.39 |      0.57 | -13.4%   |     0.48 |   0.97 | 2.9%    | 17.5%            | 50.4%      |    224 |   -1.29639  |     2.1351  | -0.305681    |  0.0184321   | 0.354996    |          13.19 |      329 | 85.5%      |
-| momentum_llm         | 5.6%           | 6.3%   | 23.4% |     0.38 |      0.56 | -13.4%   |     0.47 |   0.99 | 2.7%    | 17.6%            | 50.4%      |    224 |   -1.30621  |     2.11469 | -0.307303    |  0.0175144   | 0.355442    |          13.22 |      329 | 85.7%      |
-| momentum_llm_placebo | 4.7%           | 5.4%   | 23.2% |     0.35 |      0.51 | -13.4%   |     0.4  |   0.98 | 1.8%    | 17.5%            | 50.9%      |    224 |   -1.33447  |     2.08358 | -0.315588    |  0.00822504  | 0.345707    |          13.23 |      329 | 85.7%      |
-| spy_2026             | 5.3%           | 6.0%   | 15.6% |     0.41 |      0.56 | -11.5%   |     0.53 |   1    | -0.0%   | 0.0%             | 49.6%      |    224 |   -1.28442  |     2.34004 |  3.73035e-16 |  3.10862e-15 | 5.84421e-15 |           0    |        0 | 100.0%     |
-| equal_weight_2026    | 8.0%           | 9.1%   | 13.5% |     0.72 |      1.02 | -9.0%    |     1.01 |   0.77 | 4.8%    | 7.0%             | 54.0%      |    224 |   -0.912196 |     2.3863  | -0.123943    |  0.0250467   | 0.178793    |           3.31 |     2777 | 97.6%      |
-| random_p50           | -3.6%          | -4.1%  | 15.6% |    -0.2  |     -0.29 | -12.1%   |    -0.34 |   0.76 | -7.8%   | 10.8%            | 50.0%      |    224 |   -1.7736   |     1.44654 | -0.324698    | -0.100727    | 0.124957    |          21.53 |      407 | 96.6%      |
-| random_p5            | -8.9%          | -10.0% | 14.9% |    -0.59 |     -0.82 | -15.5%   |    -0.64 |   0.75 | -14.0%  | 9.9%             | 48.0%      |    224 |   -2.42407  |     1.21054 | -0.389769    | -0.162843    | 0.0623628   |          21.3  |      405 | 95.3%      |
-| random_p95           | 14.3%          | 16.2%  | 15.7% |     1.06 |      1.56 | -9.9%    |     1.64 |   0.77 | 11.6%   | 11.2%            | 53.8%      |    224 |   -0.606534 |     2.81535 | -0.136974    |  0.0910699   | 0.319045    |          22    |      411 | 96.7%      |
+## 2026 only
 
-## LLM calibration
+|               | total_return   | cagr   | vol   |   sharpe |   sortino | max_dd   |   calmar |   beta | alpha   | tracking_error   | hit_rate   |   days |   sharpe_lo |   sharpe_hi |      diff_lo |     diff_ann |     diff_hi |   turnover_ann |   trades | exposure   |
+|:--------------|:---------------|:-------|:------|---------:|----------:|:---------|---------:|-------:|:--------|:-----------------|:-----------|-------:|------------:|------------:|-------------:|-------------:|------------:|---------------:|---------:|:-----------|
+| dual_momentum | 12.1%          | 13.7%  | 20.2% |     0.74 |      1.11 | -11.7%   |     1.17 |   0.97 | 8.9%    | 13.5%            | 50.0%      |    224 |    -1.30328 |     2.94813 | -0.169376    |  0.0781415   | 0.329109    |           2.15 |       22 | 92.9%      |
+| spy           | 5.3%           | 6.0%   | 15.6% |     0.41 |      0.56 | -11.5%   |     0.53 |   1    | -0.0%   | 0.0%             | 49.6%      |    224 |    -1.28442 |     2.34004 |  3.73035e-16 |  3.10862e-15 | 5.84421e-15 |           0    |        0 | 100.0%     |
+| qqq_buyhold   | 4.4%           | 5.0%   | 24.3% |     0.29 |      0.4  | -19.9%   |     0.25 |   1.48 | -2.4%   | 11.0%            | 52.2%      |    224 |    -1.49588 |     2.23731 | -0.212512    |  0.0076515   | 0.226751    |           0    |        0 | 100.0%     |
+| core80_mom20  | 3.2%           | 3.6%   | 22.8% |     0.27 |      0.39 | -18.7%   |     0.19 |   1.37 | -2.4%   | 10.0%            | 55.4%      |    224 |    -1.44145 |     2.1968  | -0.202556    | -0.00932037  | 0.182419    |           3.42 |      341 | 95.3%      |
+| core50_mom50  | 2.3%           | 2.6%   | 22.0% |     0.23 |      0.33 | -17.7%   |     0.15 |   1.24 | -2.7%   | 11.3%            | 54.0%      |    224 |    -1.47682 |     2.10839 | -0.23433     | -0.0206948   | 0.18397     |           7.29 |      344 | 91.3%      |
 
-- judgments scored: 21
-- abstain: 62%
-- calls: 8 ({'outperform': 6, 'underperform': 2})
-- hit rate: 62.5%
-- mean confidence: 0.58
-- mean 63d excess return on calls: +36.62%
+| strategy | $10,000 becomes |
+|---|---:|
+| dual_momentum | $11,212 |
+| spy | $10,534 |
+| qqq_buyhold | $10,443 |
+| core80_mom20 | $10,320 |
+| core50_mom50 | $10,232 |
 
-|    |   n |   stated |      hit |
-|---:|----:|---------:|---------:|
-|  0 |   1 | 0.55     | 0        |
-|  1 |   3 | 0.566667 | 0.666667 |
-|  2 |   2 | 0.63     | 1        |
+## Verdict
 
-## Leakage audit
+- Full window: bot $45,417 vs SPY $42,186 (+$3,231, +7.7%).
+- 2026: bot $11,212 vs SPY $10,534 (+$678, +6.4%).
+- Max drawdown: bot -28.6% vs SPY -33.7% (full), -11.7% vs -11.5% (2026).
+- Sharpe: bot 0.76 vs SPY 0.79 (full), 0.74 vs 0.41 (2026).
+- The full-window paired excess return is +0.9%/yr with a bootstrap 95% CI of
+  -5.0% to +6.8%. It wins on terminal wealth, but the edge is not statistically
+  significant. The source is Nasdaq-100 beta, not stock-picking alpha.
 
-- paired judgments: 21
-- both called: 2
-- direction agreement: 50%
-- real abstain: 65%, placebo abstain: 57%
+## Caveats
 
-## Interpretation
-
-- An 11-year backtest is one path; 2026 is eleven months. Bootstrap intervals are wide.
-- The random-20 rows show what luck looks like. A result inside that band is not skill.
-- The placebo-LLM arm gets the same tickers and dates but no news. If it matches the
-  real LLM arm, headlines added nothing and the model is recalling 2026.
-- ~18% of 2015–2026 S&P members have no Yahoo history (acquired/delisted); results are
-  survivor-biased and are not a live expectation.
-- The paper ledger, run forward from today, is the only uncontaminated test.
+- One path, 11.9 years. One November 2026 switch out of QQQ drives most of the 2026 edge.
+- QQQ concentration: top holdings dominate; a tech bear market hits this harder than SPY.
+- The stock momentum sleeve has ~0.1-0.3 pp/yr survivorship inflation and the LLM overlay
+  showed no evidence of adding money, so neither is in the default.
+- Paper only. No orders, no broker, no keys.

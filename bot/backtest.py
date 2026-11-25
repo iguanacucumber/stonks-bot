@@ -26,10 +26,23 @@ class Result:
 def _default_selector(
     mkt: Market, date: pd.Timestamp, held: list[str], banned: set[str]
 ) -> dict[str, float]:
-    picks = [t for t in _select_excluding(mkt, date, banned)]
-    w = inverse_vol_weights(mkt, date, picks)
+    cfg = mkt.cfg
+    core = cfg.core if cfg.core in mkt.px.columns else None
+    core_on = True
+    if core and cfg.core_mode in ("relative", "relative_switch"):
+        c = mkt.px[core]
+        q = c.loc[date] / c.shift(cfg.core_lookback).loc[date] - 1
+        s = mkt.spy.loc[date] / mkt.spy.shift(cfg.core_lookback).loc[date] - 1
+        core_on = bool(pd.notna(q) and pd.notna(s) and q > s)
+        if core and cfg.core_mode == "relative_switch" and not core_on:
+            core = cfg.core_alt if cfg.core_alt in mkt.px.columns else None
+    core_w = cfg.core_weight if core and (core_on or cfg.core_mode == "relative_switch") else 0.0
+    picks = [t for t in _select_excluding(mkt, date, banned) if t != core]
+    w = inverse_vol_weights(mkt, date, picks, gross=max(0.0, cfg.gross - core_w))
     if not bool(mkt.regime.loc[date]):
-        w = {t: x * mkt.cfg.regime_gross for t, x in w.items()}
+        w = {t: x * cfg.regime_gross for t, x in w.items()}
+    if core:
+        w[core] = w.get(core, 0.0) + core_w
     return w
 
 
@@ -151,7 +164,7 @@ def run(
             if p is None:
                 p = entry.get(t, 0.0)
             vals[t] = sh * p
-            if t in peak and p > 0:
+            if t in peak and p > 0 and t != cfg.core:
                 peak[t] = max(peak[t], p)
                 if p < peak[t] * (1.0 - cfg.stop):
                     pending_exit.add(t)

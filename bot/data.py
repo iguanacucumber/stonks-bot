@@ -128,7 +128,7 @@ def build_panel(membership: pd.DataFrame, force: bool = False) -> pd.DataFrame:
         return pd.read_parquet(path)
     tickers = sorted(membership["ticker"].unique())
     canonical = {t: universe.canonical(t) for t in tickers}
-    symbols = sorted(set(canonical.values()) | {"SPY"})
+    symbols = sorted(set(canonical.values()) | {"SPY", "QQQ"})
     print(f"fetching {len(symbols)} symbols from Yahoo...", flush=True)
     frames = fetch_all(symbols, force=force)
     parts = []
