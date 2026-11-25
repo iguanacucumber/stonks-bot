@@ -127,6 +127,8 @@ def run(
     arr = mkt._px_arr
     arr_open = mkt._px_open
     exec_open = cfg.exec_price == "open"
+    if cfg.dd_stop and cfg.dd_scale <= 0:
+        raise ValueError("dd_scale must be > 0: a full cash exit cannot recover")
     cost_rate = cfg.cost_bps / 1e4
     borrow_rate = cfg.financing_bps / 1e4 / 252.0
     realized = 0.0

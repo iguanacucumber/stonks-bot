@@ -123,6 +123,13 @@ Verdict: catastrophic. Banning the core after a loss sale forces the book into t
 churning sleeve, and the sleeve then pays more tax than the preserved loss was worth.
 Keep the wash-sale *disallowance* rule; do not avoid re-entry. Reverted.
 
-## 10. SOXX/SMH rotation
+## 10. Drawdown stop to cash
+
+Cutting to 100% cash at -20% from the peak, with a 21/42/63-day re-entry pause:
+$15,715 / $18,976 / $7,911 versus $1.4M for the book. The stop is a permanent
+out-of-the-market penalty. The partial 50% version is the only usable form; the engine
+now raises if `dd_scale <= 0`.
+
+## 11. SOXX/SMH rotation
 
 Top-1 by 126d/10d between SOXX and SMH: $545k at 2x, below SMH alone ($889k). Rejected.

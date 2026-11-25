@@ -140,6 +140,18 @@ def main():
     w1 = backtest.run(strategy.Market(panel, mem, tax1)).equity.iloc[-1]
     assert w1 < w0, f"tax did not bite: {w1:.3f} vs {w0:.3f}"
 
+    # a full cash drawdown exit cannot recover; refuse it instead of dying silently
+    try:
+        backtest.run(
+            strategy.Market(
+                panel, mem,
+                strategy.Config(start=str(dates[250].date()), dd_stop=0.2, dd_scale=0.0),
+            )
+        )
+        raise AssertionError("dd_scale=0 should be rejected")
+    except ValueError:
+        pass
+
     # wash sales can only add tax, never remove it
     wash_cfg = strategy.Config(
         start=str(dates[250].date()), top_n=5, rebalance_days=5, tax_rate=0.5,
