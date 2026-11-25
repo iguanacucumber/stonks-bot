@@ -130,3 +130,15 @@ shipped config fills at the next open, so today's trades change the book intrada
 - The guard drops an unfinished current session and falls back to the prior-book
   close-to-close return when `weights_open` is partial (this removed a 1,540 bps
   partial-bar spike on 2026-11-25).
+
+## 2026-11-02 outlier resolved: it was the open rebalance cost
+
+On 2026-11-02 the book switched from 2.5x SMH into five sleeve names at the open:
+turnover ~5.0x NAV, 10 bps/side => ~50 bps. The replayer did not include the cost of
+the open trades, which is most of the 70 bps gap.
+
+`Result.eq_open_pre` (pre-trade) and `Result.eq_open` (post-trade) are now stored, and
+the replay applies the cost factor `eq_open / eq_open_pre - 1`. The outlier falls from
+**70.4 bps to 26.3 bps**; median stays 0.77 bps and p95 11.5 bps. The residual is
+financing and close-trade timing on rebalance days, not a data error. The invariant
+`eq_open <= eq_open_pre` (trades cannot create equity) is now a unit test.

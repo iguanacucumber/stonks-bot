@@ -130,6 +130,11 @@ def replay(mkt, res, cfg, n: int, panel):
             or (len(old) > 0 and len(new) < 0.6 * len(old))
         )
         paper = simple if dirty else (1.0 + overnight) * (1.0 + intraday) - 1.0
+        cost_bps = 0.0
+        if not dirty and res.eq_open is not None and res.eq_open_pre is not None:
+            cost_f = float(res.eq_open.loc[dm] / res.eq_open_pre.loc[dm] - 1.0)
+            cost_bps = cost_f * 1e4
+            paper = (1.0 + paper) * (1.0 + cost_f) - 1.0
         bt = res.equity.loc[dm] / res.equity.loc[dprev] - 1.0
         rows.append(
             {

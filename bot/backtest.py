@@ -51,6 +51,8 @@ class Result:
     weights: pd.DataFrame
     nav: pd.DataFrame
     weights_open: pd.DataFrame | None = None
+    eq_open_pre: pd.Series | None = None
+    eq_open: pd.Series | None = None
 
 
 def _sector_fallback(mkt: Market, date: pd.Timestamp) -> dict[str, float]:
@@ -209,6 +211,8 @@ def run(
     cashs = np.zeros(n)
     wmat = np.zeros((n, nc))
     wopen = np.zeros((n, nc))
+    eq_open_pre_arr = np.zeros(n)
+    eq_open_arr = np.zeros(n)
 
     for i, d in enumerate(dates):
         ri = rows.get(d)
@@ -223,6 +227,9 @@ def run(
         # margin interest on yesterday's negative cash (debt grows by the daily rate)
         if cash < 0 and borrow_rate:
             cash *= 1.0 + borrow_rate
+
+        mark_open = np.where(po > 0, po, pr) if exec_open else pr
+        eq_open_pre_arr[i] = cash + float((shares * mark_open).sum())
 
         # 1. execute orders decided at the previous close, at today's close
         if pending_target is not None or pending_exit:
@@ -334,9 +341,10 @@ def run(
 
         # executed book at the fill price, used by the forward paper tracker to split
         # overnight (previous book) from intraday (post-fill book) P&L
-        mark_open = np.where(po > 0, po, pr) if exec_open else pr
-        eq_open = cash + float((shares * mark_open).sum())
-        wopen[i] = (shares * mark_open) / eq_open if eq_open > 0 else 0.0
+        eq_open_arr[i] = cash + float((shares * mark_open).sum())
+        wopen[i] = (
+            (shares * mark_open) / eq_open_arr[i] if eq_open_arr[i] > 0 else 0.0
+        )
 
         # 2. mark to market and check trailing stops
         # A missing bar (foreign holiday, halted name) is carried at the last observed
@@ -475,6 +483,8 @@ def run(
         weights=wdf,
         nav=nav,
         weights_open=wopen_df,
+        eq_open_pre=pd.Series(eq_open_pre_arr, index=dates),
+        eq_open=pd.Series(eq_open_arr, index=dates),
     )
 
 

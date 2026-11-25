@@ -196,6 +196,10 @@ def main():
             want = 1.01 ** steps * live - 1
             assert abs(h[label] - want) < 1e-12, f"{label}: {h[label]} != {want}"
 
+    # open-trade costs cannot increase equity; the forward tracker relies on this
+    assert (res.eq_open <= res.eq_open_pre + 1e-9).all(), "open equity grew"
+    assert (res.eq_open >= res.eq_open_pre * 0.98).all(), "open cost >2% of equity"
+
     print(
         f"ok: {len(res.equity)} days, final {res.equity.iloc[-1]:.3f}, "
         f"{len(res.trades)} trades, sharpe {backtest.metrics(res.equity, mkt.spy)['sharpe']:.2f}"
