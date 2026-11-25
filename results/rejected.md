@@ -108,6 +108,21 @@ Synthetic core = 0.5 SMH + 0.5 SOXX, daily rebalanced, same 2.5x + trend rules.
 Verdict: no diversification benefit in this sample; the blend dilutes the stronger fund.
 Rejected.
 
-## 9. SOXX/SMH rotation
+## 9. Wash-sale re-entry ban
+
+Ban a name for 31 days after a loss sale, so the loss can never be disallowed.
+
+| variant | pre-tax | after 37% | turnover |
+|---|---:|---:|---:|
+| monthly, no ban | $1,402,314 | $107,839 | 13.8x |
+| monthly, 31d ban | $1,095,881 | $47,619 | 21.0x |
+| tax profile, no ban | $952,797 | $252,271 | 7.3x |
+| tax profile, 31d ban | — | $17,422 | 28.2x |
+
+Verdict: catastrophic. Banning the core after a loss sale forces the book into the
+churning sleeve, and the sleeve then pays more tax than the preserved loss was worth.
+Keep the wash-sale *disallowance* rule; do not avoid re-entry. Reverted.
+
+## 10. SOXX/SMH rotation
 
 Top-1 by 126d/10d between SOXX and SMH: $545k at 2x, below SMH alone ($889k). Rejected.
