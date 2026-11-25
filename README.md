@@ -64,6 +64,12 @@ on the US and tech books (`results/core.md`). Rounds 4-10 buy return by removing
 protection and are tuned on this path; only rounds 1-3 also improved the held-back 2023-2026
 window. At 2.5x the drawdown reaches -60%, and 2022 is -32.8%.
 
+**Robustness:** 84 five-year windows (every month start 2015-2021): the bot beats SPY in
+**100%**, median **+889%** vs +94%, worst window +147% vs +32%. A 10-day block bootstrap
+(2000 paths) gives median 139x, p5 5.6x, P(beat SPY) 95%, but median max drawdown -71% and
+99% of paths breach -50%. Returns are robust to start date; the risk is not small.
+`results/robustness.md`.
+
 **Real life:** at 30 bps/side (close fill) the US book still makes **$928,859**; next-open
 fills lose at every cost level; a 20% tax on realized gains leaves **$374,527**, 37% leaves
 **$107,889** (22.2%/yr). The 1-day mean survives all three (+0.246% → +0.232% → +0.165%).
