@@ -60,7 +60,7 @@ Rounds 4-10 buy return by removing stop/regime protection and are tuned on this 
 rounds 1-3 also improved the held-back 2023-2026 window. At 2x the drawdown reaches -66%, and
 2022 is -33.7%.
 
-**Cross-market:** the same config on **39 markets** (9 stock-level including a 49-name
+**Cross-market:** the same config on **39 markets** (9 stock-level including a 48-name
 NASDAQ tech book, 30 country/tech ETFs) is profitable in **39/39** and beats the local
 index in **39/39** over 2015-2026, at 1x and at 2x, at 10 bps and at 30 bps:
 `results/universal.md`, `results/leverage.md`, `scripts/universal.py`. The catch is the engine:
@@ -82,7 +82,7 @@ uv run python -m bot.cli backtest --core-weight 0
 uv run python -m bot.cli study --max-names 40
 ```
 
-**Tech / short horizons.** `--market TECH` runs the 49-name NASDAQ book (NVDA, MSFT, GOOGL,
+**Tech / short horizons.** `--market TECH` runs the 48-name NASDAQ book (NVDA, MSFT, GOOGL,
 META, AVGO, ... benchmark QQQ); it is the best 1-day/1-week book in the sample. `--profile
 monthly|weekly|daily` changes the clock; faster profiles lose to costs, measured in
 `results/short.md`.
