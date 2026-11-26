@@ -87,8 +87,11 @@ def ledger_summary(
     if ledger is None:
         if not eur_ledger_available():
             return None
+        from bot import dividends as dividend_events  # type: ignore[import-not-found]
         from bot import eur_ledger  # type: ignore[import-not-found]
 
+        tickers = sorted(set(res.trades["ticker"])) if len(res.trades) else []
+        events = dividend_events.load_dividends(tickers, fetch_missing=False)
         cfg = eur_ledger.EurLedgerConfig(
             capital=capital,
             tax_rate=tax_rate,
@@ -98,7 +101,9 @@ def ledger_summary(
             broker_bps=broker_bps,
             broker_fixed_eur=broker_fixed_eur,
         )
-        ledger = eur_ledger.replay(res, panel, market, cfg)
+        ledger = eur_ledger.replay(
+            res, panel, market, cfg, dividends=events if len(events) else None
+        )
     years = (len(res.equity) - 1) / 252.0
     return {
         "mode": "eur_ledger",
