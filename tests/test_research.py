@@ -10,6 +10,7 @@ import csv
 import sys
 from pathlib import Path
 from tempfile import TemporaryDirectory
+from unittest import SkipTest
 
 import numpy as np
 import pandas as pd
@@ -17,7 +18,8 @@ import pandas as pd
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
-from bot import strategy  # noqa: E402
+from bot import data as bot_data  # noqa: E402
+from bot import markets, strategy  # noqa: E402
 from bot.research.costs import CostModel, after_tax  # noqa: E402
 from bot.research.data import CROSS_ASSET, make_panel  # noqa: E402
 from bot.research.dividends import apply_dividend_tax  # noqa: E402
@@ -48,7 +50,30 @@ from bot.research.walkforward import (  # noqa: E402
 from scripts.research_common import tech_baseline, us_baseline  # noqa: E402
 
 
+def _bars_dir() -> Path:
+    """Read the live module path so a cache-less simulation can redirect it."""
+    return Path(bot_data.BARS)
+
+
+def _cache_dir() -> Path:
+    return Path(bot_data.CACHE)
+
+
+def require_bars(*symbols: str) -> None:
+    """Skip cleanly when the committed cache is absent or incomplete."""
+    missing = [s for s in symbols if not (_bars_dir() / f"{s}.csv").exists()]
+    if missing:
+        raise SkipTest(f"cache bars missing: {', '.join(missing[:5])}")
+
+
+def require_cache_files(*names: str) -> None:
+    missing = [n for n in names if not (_cache_dir() / n).exists()]
+    if missing:
+        raise SkipTest(f"cache files missing: {', '.join(missing)}")
+
+
 def test_baseline_reproduces_after_tax():
+    require_bars(*markets.UNIVERSES["TECH"], "QQQ", "SMH", "SOXX")
     b = tech_baseline()
     assert abs(b["after_tax_multiple"] - 57.01) < 0.10
     assert abs(b["maxdd"] + 0.678) < 0.005
@@ -58,6 +83,10 @@ def test_baseline_reproduces_after_tax():
 
 
 def test_us_baseline_and_ledger_order():
+    require_cache_files(
+        "panel.parquet", "membership.parquet", "membership.stamp", "sp500_history.csv"
+    )
+    require_bars("SPY", "SMH", "SOXX")
     u = us_baseline()
     assert u["after_tax_multiple"] > 65.0
     assert u["ledger_multiple"] < u["after_tax_multiple"]
@@ -75,6 +104,7 @@ def test_expanding_folds_are_disjoint_and_cover_years():
 
 
 def test_cross_asset_selector_weights_sum_to_one():
+    require_bars(*CROSS_ASSET)
     panel, mem = make_panel(CROSS_ASSET)
     cfg = strategy.Config(
         start="2015-01-01", end="2026-11-25", trend_ma=0, cost_bps=0.0
@@ -102,6 +132,7 @@ def test_cross_asset_selector_weights_sum_to_one():
 
 
 def test_walk_forward_smoke():
+    require_bars(*CROSS_ASSET)
     panel, mem = make_panel(CROSS_ASSET)
     spec = StrategySpec(
         name="smoke",
@@ -254,6 +285,7 @@ def test_dividend_adjustment_reduces_equity():
 
 
 def test_short_selector_returns_cash_or_one():
+    require_bars("SPY", "BIL")
     panel, mem = make_panel(("SPY", "BIL"))
     cfg = strategy.Config(
         start="2015-01-01",
@@ -295,10 +327,22 @@ def main() -> None:
         test_dividend_adjustment_reduces_equity,
         test_short_selector_returns_cash_or_one,
     ]
+    failures = 0
+    skipped = 0
     for fn in checks:
-        fn()
-        print(f"ok: {fn.__name__}")
-    print(f"ok: {len(checks)} research checks")
+        try:
+            fn()
+        except SkipTest as exc:
+            skipped += 1
+            print(f"skip: {fn.__name__}: {exc}")
+        except Exception:
+            failures += 1
+            raise
+        else:
+            print(f"ok: {fn.__name__}")
+    print(f"ok: {len(checks) - skipped} research checks, {skipped} skipped")
+    if failures:
+        raise SystemExit(1)
 
 
 if __name__ == "__main__":
