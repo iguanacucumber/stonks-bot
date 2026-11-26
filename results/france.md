@@ -16,8 +16,9 @@ old close-fill baseline: the merged honest-open engine gives Trade Republic
 **39.50x** and Interactive Brokers **50.89x** on the €10k core-only CTO, so the
 38.80x in this file is **legacy** and not directly comparable to `brokers.md`.
 
-> **Start-date check:** 84/84 five-year windows beat QQQ after tax;
-> `results/robustness_best.md`.
+> **Start-date check:** 84/84 five-year windows beat QQQ after tax at 2 bps;
+> at 25 bps monthly wins 99% (median 4.38x) and the tax fallback 96% (4.98x).
+> `results/robustness_best.md`, `results/robustness_fx.md`.
 >
 > **Post-fix (2026-11-26):** US/TECH core opens are now real. TECH monthly at
 > Trade Republic is 31.90x, core-only tax 39.50x; at Interactive Brokers monthly

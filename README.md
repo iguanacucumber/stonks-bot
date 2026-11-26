@@ -127,6 +127,11 @@ available.
 Start-date check: **84/84 five-year windows beat QQQ after tax** (median **5.67x**
 vs 1.97x, worst 2.03x); full-window block bootstrap p5 **3.38x**. The tail is still
 brutal: p5 max drawdown **-90.9%**. `results/robustness_best.md`.
+
+FX stress: at **3 bps** still **84/84** (median 5.60x, full 55.6x); at **25 bps**
+the monthly book wins **99%** of windows (median 4.38x, full 31.9x) and the tax
+fallback wins **96%** (median 4.98x, full 39.5x). The win rate is robust to FX;
+the level is not. `results/robustness_fx.md`.
 The optimum depends on the broker's cost structure. `--country fr` now defaults to
 **TECH + monthly + IBKR**; `--profile tax` selects the core-only book. Pass your actual
 `--fx-bps` (per side) to let the CLI choose: at **≥15 bps** it switches the default to
