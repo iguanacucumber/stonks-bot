@@ -6,7 +6,7 @@ moving instead of stopping after one merge.
 
 ## Wave 3 candidates
 
-### 1. Multi-currency, real-tax ledger (highest priority)
+### 1. Multi-currency, real-tax ledger (done — PR #22)
 
 Current model computes tax in the asset's native currency (USD) and translates the
 terminal result at spot EUR/USD. A French investor is taxed on EUR gains at realization,
@@ -14,6 +14,10 @@ and FX gains/losses are part of the taxable base. This can move after-tax result
 materially. Build a EUR-denominated ledger with per-lot EUR cost basis, FX conversion
 fees, and annual PFU settlement. Acceptance: reproduce the current USD-native number as
 a cross-check, then publish the EUR-ledger number and the difference.
+
+Status: `bot/eur_ledger.py`, `scripts/eur_ledger.py`, `results/eur_ledger.md` merged.
+TECH 57.01x terminal-FX -> 52.89x EUR ledger; US 70.86x -> 66.02x. Remaining work:
+dividend/withholding tax and CLI integration.
 
 ### 2. Dividend and withholding-tax drag
 
