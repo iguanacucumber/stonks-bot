@@ -50,7 +50,7 @@ Private repo `iguanacucumber/stonks-bot`, one issue per workstream. Orchestrator
 
 ## Status
 
-- [ ] forward
+- [x] forward — PR #6 merged at `0c26f1c`; tax-book automation `aut_217921c67001Ab2ef18eRqknWO` at 23:35 UTC
 - [ ] pea-ucits
 - [ ] execution
 - [ ] risk
