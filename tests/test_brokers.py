@@ -122,6 +122,21 @@ def main():
     close(f["after_tax_eur"] / 10000.0, 1.90, "after-tax multiple")
     assert f["after_tax_eur"] < f["pre_tax_eur"]
 
+    # FX translation: USDCHF quotes CHF per USD, so one CHF is
+    # 1/(EURUSD*USDCHF) EUR, not EURUSD/USDCHF.
+    fx_dates = pd.bdate_range("2020-01-01", periods=2)
+    fx = {"EURUSD=X": 1.10, "GBPUSD=X": 1.30, "USDCHF=X": 0.80}
+    old_fetch = france.data.fetch_one
+    france.data.fetch_one = lambda symbol: pd.DataFrame(
+        {"date": fx_dates, "adjclose": fx[symbol]}
+    )
+    try:
+        close(france.eur_per_unit("US").iloc[0], 1.0 / 1.10, "USD->EUR")
+        close(france.eur_per_unit("GB").iloc[0], 1.30 / 1.10, "GBP->EUR")
+        close(france.eur_per_unit("CH").iloc[0], 1.0 / (1.10 * 0.80), "CHF->EUR")
+    finally:
+        france.data.fetch_one = old_fetch
+
     print(
         "ok: 8 broker presets, PEA guard, ticket fees, after-tax helper "
         f"({len(france.PEA_BROKERS)} PEA-eligible)"

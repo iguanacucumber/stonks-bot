@@ -182,9 +182,7 @@ CURRENCY = {
 }
 
 
-def best_profile(
-    country: str, profile: str | None, fx_bps: float | None
-) -> str:
+def best_profile(country: str, profile: str | None, fx_bps: float | None) -> str:
     """Choose the book for the user's actual FX cost.
 
     Explicit --profile wins. Otherwise the monthly book is best at IBKR's 2-3 bps;
@@ -275,8 +273,10 @@ def eur_per_unit(market: str) -> pd.Series | None:
         gbpusd = data.fetch_one("GBPUSD=X").set_index("date")["adjclose"].sort_index()
         return gbpusd / eurusd
     if spec["fx"] == "CHF":
+        # USDCHF quotes CHF per USD. One CHF is therefore
+        # 1/(EURUSD * USDCHF) EUR, not EURUSD/USDCHF.
         usdchf = data.fetch_one("USDCHF=X").set_index("date")["adjclose"].sort_index()
-        return eurusd / usdchf
+        return 1.0 / (eurusd * usdchf)
     raise ValueError(spec["fx"])
 
 
