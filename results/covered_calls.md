@@ -101,7 +101,8 @@ core rows are the implementable comparison.
 
 ## Decision
 
-**Accept for income opt-in:** 4 variant(s) pass. Do not make it default; review execution and assignment tax first.
+**Accept only as a model-only income opt-in:** 4 of 36 variants pass, all of them 10% OTM / 40% IV. Every 25% and 30% IV variant has negative net option income. Keep the no-overlay US monthly book as the default; this is not a validated live strategy.
+The 10%/40% rows improve terminal, maxDD and the worst 5-year window in this sample, but the 40% IV is an assumption (no option quotes in cache) and the model is optimistic on European cash settlement and fractional contracts. Treat it as a hypothesis for a paper/income sleeve, not a default allocation.
 
 ## Caveats
 
