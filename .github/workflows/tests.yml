@@ -24,6 +24,8 @@ jobs:
         run: uv run python tests/test_brokers.py
       - name: Incremental data cache tests
         run: uv run python tests/test_data.py
+      - name: News point-in-time and LLM cache tests
+        run: uv run python tests/test_news_llm.py
       - name: CLI smoke
         run: |
           uv run python -m bot.cli --help >/dev/null
