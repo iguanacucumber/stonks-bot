@@ -90,7 +90,9 @@ are robust to start date; the risk is not small. `results/robustness.md`.
 (52.2%/yr); at 10 bps it is $2,191,762. A 20% tax on realized gains leaves **$579,284**
 (40.8%/yr), 37% leaves **$164,988** (26.7%/yr). The 1-day mean survives costs and tax
 (+0.260% → +0.246% → +0.179%). A weekday job at 21:15 UTC logs the forward paper book and
-shadow comparison (`results/paper.md`).
+shadow comparison (`results/paper.md`). `paper_report.py` writes
+`results/paper_audit.csv` and counts only dates whose return, weights and fills
+all match the shadow; the gate needs five such dates.
 
 **Taxable account:** `--profile tax --tax-rate 0.37` drops the stock sleeve, widens the
 leverage band to 30%, and sells the highest-basis tax lots first. It makes less pre-tax

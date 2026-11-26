@@ -26,6 +26,9 @@ import pandas as pd  # noqa: E402
 from paper_daily import book_paths, load  # noqa: E402
 
 BOOKS = ("monthly", "tax")
+AUDIT = ROOT / "results" / "paper_audit.csv"
+MAX_RETURN_DIFF_BPS = 5.0
+MAX_WEIGHT_DIFF_BPS = 1.0
 
 
 def target_diff(live: dict, shadow: dict) -> dict:
@@ -40,6 +43,30 @@ def target_diff(live: dict, shadow: dict) -> dict:
         ),
         "gross_shadow": sum(float(x) for x in shadow.values()),
     }
+
+
+def verified_mask(df: pd.DataFrame) -> pd.Series:
+    """A forward date counts only when returns, weights and fills all match."""
+    parts = df["fills"].astype(str).str.split("/", n=1, expand=True)
+    full_fills = parts[0] == parts[1]
+    return (
+        (df["diff_bps"].abs() <= MAX_RETURN_DIFF_BPS)
+        & (df["max_w_diff_bps"] <= MAX_WEIGHT_DIFF_BPS)
+        & full_fills
+    )
+
+
+def audit_frame(
+    rows: list[dict], exposure: list[dict], book: str, market: str
+) -> pd.DataFrame:
+    """Machine-readable per-date audit: live vs shadow return, gross and fills."""
+    left = pd.DataFrame(rows)
+    right = pd.DataFrame(exposure)[["date", "max_w_diff_bps", "fills"]]
+    df = left.merge(right, on="date", how="left")
+    df.insert(0, "book", book)
+    df.insert(1, "market", market)
+    df["verified"] = verified_mask(df)
+    return df
 
 
 def main():
@@ -154,12 +181,22 @@ def main():
     df = pd.DataFrame(rows)
     if df.empty:
         print(f"no comparable rows yet ({pending} waiting for a completed close)")
-        print(f"GATE: WAIT 0/{args.min_rows} distinct dates (book {args.book})")
+        print(f"GATE: WAIT 0/{args.min_rows} verified dates (book {args.book})")
         return
     print(df.round(4).to_string(index=False))
     if exposure:
         print("\nexposure and target/fill check (live vs shadow):")
         print(pd.DataFrame(exposure).round(4).to_string(index=False))
+    audit = audit_frame(rows, exposure, args.book, args.market)
+    if AUDIT.exists():
+        old = pd.read_csv(AUDIT)
+        out = pd.concat([old, audit], ignore_index=True).drop_duplicates(
+            ["book", "market", "date"], keep="last"
+        )
+    else:
+        out = audit
+    out.sort_values(["book", "market", "date"]).to_csv(AUDIT, index=False)
+    verified = int(audit["verified"].sum())
     print(
         f"\n{skipped} intraday row(s) skipped (not close-valid)"
         + (f"; {incomplete} incomplete close(s) skipped" if incomplete else "")
@@ -171,11 +208,12 @@ def main():
     )
     if pending:
         print(f"{pending} row(s) waiting for the completed daily bar")
-    gate = len(df) >= args.min_rows
+    gate = verified >= args.min_rows
     print(
-        f"GATE: {'PASS' if gate else 'WAIT'} {len(df)}/{args.min_rows} distinct dates "
-        f"(book {args.book})"
+        f"GATE: {'PASS' if gate else 'WAIT'} {verified}/{args.min_rows} verified "
+        f"dates ({len(df)} distinct, book {args.book}, market {args.market})"
     )
+    print(f"audit: {AUDIT.relative_to(ROOT)} ({verified}/{len(df)} rows verified)")
     if not gate:
         print("not a track record yet; do not draw conclusions from this table")
 

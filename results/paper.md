@@ -159,3 +159,9 @@ match. Returns agree to 0.6 bps. The gate is still **1/5**; the monthly job
 appends one date per weekday and the tax-book job at 23:35 UTC starts the second
 book. Do not treat 57.01x as validated until five distinct close-valid dates
 pass this same check.
+
+`paper_report.py` now persists the check to `results/paper_audit.csv` (one row
+per book/market/date) and counts only **verified** dates toward the gate:
+|return diff| <= 5 bps, max weight diff <= 1 bp, and full fills. The US and tax
+books share the same audit file. A close-valid date with a failed fill or a
+larger shadow drift stays out of the gate.

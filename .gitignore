@@ -7,6 +7,10 @@ results/*.log
 
 !results/paper_daily.csv
 !results/paper_ledger.csv
+!results/paper_daily_tax.csv
+!results/paper_ledger_tax.csv
+!results/paper_ledger_us.csv
+!results/paper_audit.csv
 
 # worktree symlinks
 /.venv

@@ -24,7 +24,7 @@ from paper_daily import (  # noqa: E402
     ledger_file,
     replay_file,
 )
-from paper_report import target_diff  # noqa: E402
+from paper_report import audit_frame, target_diff  # noqa: E402
 
 
 def synthetic(days: int = 420, n: int = 30, seed: int = 3):
@@ -525,6 +525,32 @@ def main():
     assert td["names"] == "1/3"
     assert abs(td["max_w_diff"] - 0.5) < 1e-12
     assert abs(td["gross_shadow"] - 1.0) < 1e-12
+
+    # a forward date counts only when shadow return, weights and fills all match
+    row = {
+        "date": "2026-11-25",
+        "live": 0.0009,
+        "shadow": 0.0009,
+        "diff_bps": 0.58,
+        "gross_live": 1.2937,
+        "gross_shadow": 1.2937,
+        "risk": 0.5,
+        "live_equity": 10009.0,
+        "shadow_equity": 10009.0,
+    }
+    exp = [{"date": "2026-11-25", "max_w_diff_bps": 0.0049, "fills": "6/6"}]
+    audit = audit_frame([row], exp, "monthly", "TECH")
+    assert audit["verified"].iloc[0]
+    assert audit["book"].iloc[0] == "monthly" and audit["market"].iloc[0] == "TECH"
+    assert not audit_frame([{**row, "diff_bps": 10.0}], exp, "monthly", "TECH")[
+        "verified"
+    ].iloc[0]
+    assert not audit_frame(
+        [row],
+        [{"date": "2026-11-25", "max_w_diff_bps": 0.0049, "fills": "5/6"}],
+        "monthly",
+        "TECH",
+    )["verified"].iloc[0]
 
     # calendar cadence: 1 month unchanged, 2 months keeps six dates
     dts3 = pd.bdate_range("2020-01-01", periods=260)
