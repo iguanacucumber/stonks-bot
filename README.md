@@ -9,7 +9,7 @@
 [![Python](https://img.shields.io/badge/Python-3.11-3776AB?logo=python&logoColor=white)](pyproject.toml)
 [![Statut](https://img.shields.io/badge/statut-paper%20only-8957e5)](results/paper.md)
 [![France](https://img.shields.io/badge/France-2026-1f6feb)](results/france.md)
-[![Après impôt](https://img.shields.io/badge/apr%C3%A8s%20imp%C3%B4t-57%2C0x-3fb950)](results/brokers.md)
+[![Après impôt](https://img.shields.io/badge/apr%C3%A8s%20imp%C3%B4t-66%2C0x-3fb950)](results/eur_ledger.md)
 [![English](https://img.shields.io/badge/English-README-8b949e)](README.en.md)
 
 </div>
