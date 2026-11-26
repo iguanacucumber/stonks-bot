@@ -190,6 +190,27 @@ A variant replaces the max-growth default only if all hold:
 If a family fails, all its variants stay in the report and the default does not
 change.
 
+## Amendments before the main sweep
+
+These are dated before the full v3 table, but after small design probes. They are
+recorded so the main table cannot silently move a goalpost.
+
+1. **Comparison direction.** "maxDD <= -50%" in the balanced gates means the
+   drawdown is no worse than -50%, i.e. `maxdd >= -0.50`. The same reading applies
+   to "no worse than -67.8%" in the max-growth gates. All verdicts use the
+   numeric `maxdd` and the baseline value explicitly.
+2. **V7 target 40% is post-hoc.** V1-V4 were the pre-registered vol-target
+   variants (20/25/30/35%). The 35% variant nearly passes the balanced return
+   gate (19.1x) and the 40% neighbour is materially better (27.5x, -44.8% DD).
+   V7 is added as a **post-hoc neighbour** for the balanced profile only. It is
+   not eligible to replace max_growth, and the report includes the full 35-50%
+   neighbourhood so the reader can see whether it is a plateau. Primary V3
+   (30%) remains the family's pre-registered representative.
+3. **H3 collar is a model failure, not an economic result.** The short call is
+   not covered when the daily 200-day cut moves the book to cash; a standalone
+   collar cash-flow model can therefore go negative. It is reported as
+   unimplementable with this engine, not as evidence for or against collars.
+
 ## Verdict labels
 
 `accept` = max-growth gates pass. `balanced` = opt-in balanced gates pass, default
