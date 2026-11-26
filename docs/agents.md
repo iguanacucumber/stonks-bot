@@ -10,7 +10,8 @@ Goal: improve real-life after-tax returns on both short and long horizons.
 | 1 | `agent/forward` | `../stonks-wt-forward` | subagent | forward-log the core-only tax book next to the monthly TECH book; close-valid gate for both | 1 |
 | 2 | `agent/pea-ucits` | `../stonks-wt-pea` | subagent | PEA-eligible UCITS semiconductor core at 1x; after-tax PEA vs CTO vs World | 2 |
 | 3 | `agent/execution` | `../stonks-wt-exec` | subagent | limit-order fill model from daily high/low; cost/fill-rate evidence | 3 |
-| 4 | `agent/risk` | `../stonks-wt-risk` | subagent | drawdown/tail improvement without overfitting; breadth/DD ladder/core mix | 4 |
+| 4 | `agent/risk` | `../stonks-wt-risk` | subagent | drawdown/tail improvement without overfitting; breadth/DD ladder/core mix | 5 (merged early) |
+| 5 | `agent/brokers` | `../stonks-wt-brokers` | subagent | French broker matrix beyond Bourse Direct/Trade Republic; PEA eligibility; after-tax | 4 |
 
 Merge order is deliberate: scripts first, new market second, execution engine third.
 Risk was expected last because it could touch the engine; in practice it added only
@@ -54,4 +55,5 @@ Private repo `iguanacucumber/stonks-bot`, one issue per workstream. Orchestrator
 - [x] pea-ucits — PR #8 merged at `0993f87`; no pure semis UCITS is PEA-eligible; PUST 5.08x vs CTO 38.80x
 - [ ] execution
 - [x] risk — PR #7 merged at `9ff23b7`; docs/scripts only, merged early because it does not touch the engine; verdict: keep defaults
+- [ ] brokers
 - [ ] merged and re-tested
