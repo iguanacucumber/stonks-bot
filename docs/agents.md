@@ -1,0 +1,57 @@
+# Agent orchestration
+
+Orchestrator: main session. Base commit: `7db10cc` (master, clean).
+Goal: improve real-life after-tax returns on both short and long horizons.
+
+## Workstreams
+
+| # | branch | worktree | owner | task | merge |
+|---|---|---|---|---|---|
+| 1 | `agent/forward` | `../stonks-wt-forward` | subagent | forward-log the core-only tax book next to the monthly TECH book; close-valid gate for both | 1 |
+| 2 | `agent/pea-ucits` | `../stonks-wt-pea` | subagent | PEA-eligible UCITS semiconductor core at 1x; after-tax PEA vs CTO vs World | 2 |
+| 3 | `agent/execution` | `../stonks-wt-exec` | subagent | limit-order fill model from daily high/low; cost/fill-rate evidence | 3 |
+| 4 | `agent/risk` | `../stonks-wt-risk` | subagent | drawdown/tail improvement without overfitting; breadth/DD ladder/core mix | 4 |
+
+Merge order is deliberate: scripts first, new market second, execution engine third,
+risk last (it touches `strategy.py`/`backtest.py` and will rebase on the merged
+execution work).
+
+## Rules for agents
+
+- Work only in your worktree, on your branch. Never write `master`, never merge.
+- The venv and cache are symlinked from `../stonks-bot`; do **not** run `--refresh`
+  or `data.fetch_all(..., force=True)`. Read the cache only.
+- Every claim needs a command output or a committed file under `results/`.
+- Do not fabricate paper rows or forward dates.
+- Commit in your branch with `git -c user.name=stonks-agent -c user.email=agent@local`.
+  Do not push; the orchestrator pushes.
+- Run `uv run python tests/test_core.py` before the final commit.
+- Final report: branch, commit hash, files changed, tests, headline numbers, open risks.
+
+## Acceptance
+
+1. Forward: `scripts/paper_daily.py --book tax` logs the core-only book to separate
+   CSVs; `paper_report.py --book tax` prints the live-vs-shadow gate; the 2026-11-25
+   row stays reconciled, not fabricated. Existing TECH monthly path unchanged.
+2. PEA: a concrete PEA-eligible UCITS ticker with Yahoo history; 1x core-only book
+   under `tax_country="fr_pea"`, Trade Republic/Bourse Direct; after-tax terminal,
+   FTT/FX/fees, CAGR, maxDD; compared with the CTO 2.5x SMH and a World PEA benchmark.
+3. Execution: baseline next-open vs limit-at-open-minus-k bps using daily high/low;
+   fill rate, missed-fill cost, final after-tax wealth for k in 5/10/20/30 bps; a clear
+   recommendation, opt-in only.
+4. Risk: 2-3 pre-registered rules, full-window and 2018/2022, bootstrap p5, maxDD,
+   CAGR, after French tax/fees; reject anything that only helps one year or one path.
+   Default config changes only if the evidence is unambiguous.
+
+## GitHub
+
+Private repo `iguanacucumber/stonks-bot`, one issue per workstream. Orchestrator pushes
+`master` and the four agent branches, then merges after review.
+
+## Status
+
+- [ ] forward
+- [ ] pea-ucits
+- [ ] execution
+- [ ] risk
+- [ ] merged and re-tested
