@@ -228,6 +228,20 @@ excess gross/turnover and duplicate orders. The paper ledger is **pre-tax,
 average-cost**: it is not the after-tax EUR ledger. No real broker, no keys.
 See `docs/live.md` and `results/live_demo.md`.
 
+## Advisor and operations
+
+```bash
+uv run python scripts/advise.py --profile max_growth --horizon 12 \
+  --drawdown-tolerance 0.60 --capital 10000 --wrapper cto --as-of 2026-11-25
+uv run python scripts/ops.py status
+uv run python scripts/ops.py doctor
+uv run python scripts/ops.py backup --out /var/backups/stonks-bot
+```
+
+`advise.py` turns a profile, horizon, capital and drawdown tolerance into an
+allocation and a paper order list, with a 15-year withdrawal simulator. `ops.py`
+adds status, diagnostics, checksummed backups and the runbook. No real orders.
+
 **Cross-market:** the same config on **39 markets** (9 stock-level including a 49-name
 NASDAQ tech book, 30 country/tech ETFs) is profitable in **39/39** and beats the local
 index in **39/39** over 2015-2026, at 1x and at the shipped 2.5x + trend, at 10 bps and at

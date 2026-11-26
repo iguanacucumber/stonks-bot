@@ -147,6 +147,18 @@ uv run python scripts/live.py reconcile --book monthly --market US
 
 Le dry-run est le défaut ; `--paper` est le seul mode qui écrit. L'état est atomique sous `state/live/`, les ordres sont idempotents, les rails bloquent les données périmées, les jours fériés, le gross/turnover excessif et les doublons. Le ledger papier est **pré-impôt et au coût moyen** : il ne remplace pas le grand livre EUR après impôt. Aucun broker réel, aucune clé.
 
+## Le conseiller et l'exploitation
+
+```bash
+uv run python scripts/advise.py --profile max_growth --horizon 12 \
+  --drawdown-tolerance 0.60 --capital 10000 --wrapper cto --as-of 2026-11-25
+uv run python scripts/ops.py status
+uv run python scripts/ops.py doctor
+uv run python scripts/ops.py backup --out /var/backups/stonks-bot
+```
+
+`advise.py` transforme le profil, l'horizon et la tolérance au risque en allocation et liste d'ordres papier, avec un simulateur de retrait sur 15 ans. `ops.py` donne le status, le diagnostic, les sauvegardes vérifiées et le runbook. Aucun ordre réel.
+
 Les détails techniques sont dans le [README anglais](README.en.md), les [résultats brokers](results/brokers.md), les [résultats France](results/france.md), le [test de robustesse](results/robustness_best.md) et le [résumé v2](results/v2_summary.md).
 
 <sub>Les performances passées ne préjugent pas des performances futures. Dernière mise à jour : 26 novembre 2026, données au 25 novembre 2026. Résumé v2 et tests : `results/v2_summary.md`.</sub>
