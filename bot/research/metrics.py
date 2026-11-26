@@ -34,7 +34,9 @@ def cagr(equity: pd.Series) -> float:
 
 
 def annual_return(equity: pd.Series, year: int) -> float:
-    eq = equity.loc[str(year)]
+    eq = (
+        equity.loc[str(year)] if (equity.index.year == year).any() else equity.iloc[0:0]
+    )
     if len(eq) < 2:
         return float("nan")
     return float(eq.iloc[-1] / eq.iloc[0] - 1.0)
