@@ -1,26 +1,26 @@
 {
   "snapshot": "2026-11-25",
-  "runtime_seconds": 5.104197969998495,
+  "runtime_seconds": 4.107170065999526,
   "expected": {
     "TECH-monthly": {
       "native": 51.82,
       "terminal_fx": 57.01,
-      "eur_ledger": 53.45
+      "eur_ledger": 52.98
     },
     "TECH-tax": {
       "native": 46.26,
       "terminal_fx": 50.89,
-      "eur_ledger": 49.32
+      "eur_ledger": 48.8
     },
     "US-monthly": {
       "native": 64.41,
       "terminal_fx": 70.86,
-      "eur_ledger": 66.72
+      "eur_ledger": 66.17
     },
     "US-tax": {
       "native": 46.26,
       "terminal_fx": 50.89,
-      "eur_ledger": 49.32
+      "eur_ledger": 48.8
     }
   },
   "rows": [
@@ -29,68 +29,68 @@
       "book": "monthly",
       "native": 51.82313369471318,
       "terminal_fx": 57.01253052888282,
-      "eur_ledger": 53.450349842594356,
-      "ledger_cagr": 0.3980926167135228,
-      "ledger_maxdd": -0.650934630601337,
+      "eur_ledger": 52.97548829641186,
+      "ledger_cagr": 0.39704219305379196,
+      "ledger_maxdd": -0.6556843082284467,
       "ledger_fees": 22090.322948920628,
       "ledger_tax": 114590.55902556313,
       "ledger_exit": 160980.07520599203,
-      "ledger_vs_terminal": -0.062480662641063556,
+      "ledger_vs_terminal": -0.07080973594788564,
       "start": "2015-01-02",
       "end": "2026-11-25",
       "trades": 1836,
-      "runtime_seconds": 0.9798951689990645
+      "runtime_seconds": 0.6137230899985298
     },
     {
       "market": "TECH",
       "book": "tax",
       "native": 46.256265824027224,
       "terminal_fx": 50.88821496168048,
-      "eur_ledger": 49.320030741646484,
-      "ledger_cagr": 0.38865451863690104,
-      "ledger_maxdd": -0.6386133525326085,
+      "eur_ledger": 48.79932921048525,
+      "ledger_cagr": 0.38741370292973687,
+      "ledger_maxdd": -0.6449231157683128,
       "ledger_fees": 8206.031778338447,
       "ledger_tax": 56117.22345982357,
       "ledger_exit": 210907.21628876572,
-      "ledger_vs_terminal": -0.03081625522166309,
+      "ledger_vs_terminal": -0.0410485168868312,
       "start": "2015-01-02",
       "end": "2026-11-25",
       "trades": 178,
-      "runtime_seconds": 0.16606245300135924
+      "runtime_seconds": 0.13931778899859637
     },
     {
       "market": "US",
       "book": "monthly",
       "native": 64.40690275070385,
       "terminal_fx": 70.8563965077221,
-      "eur_ledger": 66.72065191790138,
-      "ledger_cagr": 0.42445124952545044,
-      "ledger_maxdd": -0.5644106314735022,
+      "eur_ledger": 66.16548074305116,
+      "ledger_cagr": 0.4234491438945829,
+      "ledger_maxdd": -0.5690908190763639,
       "ledger_fees": 23970.816893851366,
       "ledger_tax": 131988.64288371743,
       "ledger_exit": 210493.18317647016,
-      "ledger_vs_terminal": -0.05836797796187665,
+      "ledger_vs_terminal": -0.0662031375552623,
       "start": "2015-01-02",
       "end": "2026-11-25",
       "trades": 1692,
-      "runtime_seconds": 1.9843471300009696
+      "runtime_seconds": 1.5275872970014461
     },
     {
       "market": "US",
       "book": "tax",
       "native": 46.25626582402738,
       "terminal_fx": 50.88821496168066,
-      "eur_ledger": 49.320030741646626,
-      "ledger_cagr": 0.3886545186369015,
-      "ledger_maxdd": -0.6386133525326081,
+      "eur_ledger": 48.79932921048538,
+      "ledger_cagr": 0.3874137029297371,
+      "ledger_maxdd": -0.6449231157683125,
       "ledger_fees": 8206.03177833847,
       "ledger_tax": 56117.22345982369,
       "ledger_exit": 210907.21628876653,
-      "ledger_vs_terminal": -0.030816255221663647,
+      "ledger_vs_terminal": -0.041048516886831865,
       "start": "2015-01-02",
       "end": "2026-11-25",
       "trades": 178,
-      "runtime_seconds": 0.36236169100084226
+      "runtime_seconds": 0.2961486940002942
     }
   ],
   "failures": []

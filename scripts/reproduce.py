@@ -61,10 +61,10 @@ BASELINE_BOOKS = (
     ("US", "tax"),
 )
 EXPECTED_BASELINE = {
-    ("TECH", "monthly"): {"native": 51.82, "terminal_fx": 57.01, "eur_ledger": 53.45},
-    ("TECH", "tax"): {"native": 46.26, "terminal_fx": 50.89, "eur_ledger": 49.32},
-    ("US", "monthly"): {"native": 64.41, "terminal_fx": 70.86, "eur_ledger": 66.72},
-    ("US", "tax"): {"native": 46.26, "terminal_fx": 50.89, "eur_ledger": 49.32},
+    ("TECH", "monthly"): {"native": 51.82, "terminal_fx": 57.01, "eur_ledger": 52.98},
+    ("TECH", "tax"): {"native": 46.26, "terminal_fx": 50.89, "eur_ledger": 48.80},
+    ("US", "monthly"): {"native": 64.41, "terminal_fx": 70.86, "eur_ledger": 66.17},
+    ("US", "tax"): {"native": 46.26, "terminal_fx": 50.89, "eur_ledger": 48.80},
 }
 BASELINE_TOL = 0.05
 EXPECTED = {

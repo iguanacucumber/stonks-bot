@@ -1,3 +1,6 @@
+> Historical v1 orchestration record (April 2026 branches). The current program is
+> in `docs/orchestration-v2.md`, `results/v2_summary.md` and the wave 3/4 issues.
+
 # Agent orchestration
 
 Orchestrator: main session. Base commit: `7db10cc` (master, clean).

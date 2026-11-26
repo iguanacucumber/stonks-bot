@@ -25,6 +25,16 @@ import numpy as np
 import pandas as pd
 
 from . import france
+from .fx_hedge import (
+    FxHedgeConfig,
+    HedgePeriod,
+    forward_rate,
+    hedge_notional,
+    hedge_pnl_eur,
+    month_end_dates,
+    ratio_for_date,
+    roll_cost_eur,
+)
 
 
 def french_rate(year: int) -> float:
@@ -105,6 +115,25 @@ class EurLedgerResult:
     harvest_notional: float = 0.0
     harvest_fees: float = 0.0
     harvest_count: int = 0
+    fx_hedge_pnl: float = 0.0
+    fx_hedge_cost: float = 0.0
+    fx_hedge_periods: int = 0
+    fx_hedge_avg_notional: float = 0.0
+    fx_hedge_log: pd.DataFrame = field(
+        default_factory=lambda: pd.DataFrame(
+            columns=[
+                "start",
+                "expiry",
+                "ratio",
+                "notional_usd",
+                "spot_start",
+                "forward",
+                "spot_end",
+                "roll_cost_eur",
+                "pnl_eur",
+            ]
+        )
+    )
 
 
 def _pfu_rate(cfg: EurLedgerConfig, year: int) -> float:
@@ -210,28 +239,25 @@ def replay(
     market: str,
     config: EurLedgerConfig | None = None,
     dividends: pd.DataFrame | None = None,
+    fx_hedge: FxHedgeConfig | None = None,
     harvest: HarvestDecision | None = None,
     harvest_dates: Iterable[pd.Timestamp] | None = None,
 ) -> EurLedgerResult:
     """Replay `res.trades` in EUR with HIFO lots, PFU and margin interest.
 
     `res` is a `bot.backtest.Result` (or any object with `.equity` and `.trades`).
-    `panel` is the native long panel used by the engine (date, ticker, adjclose,
-    and optionally open). `dividends` is an optional long frame (date/ex_date,
-    ticker, amount) of gross native-currency dividends per current share.
-    Because adjusted closes already reinvest gross dividends, the default only
-    deducts dividend taxes. With `cfg.dividend_reinvest=False`, the gross amount
-    is also moved from the position to cash by a synthetic share reduction (no
-    fee, no realized gain).
+    `panel` is the native long panel used by the engine (date, ticker, adjclose).
+    `dividends` is an optional long frame (date/ex_date, ticker, amount) of gross
+    native-currency dividends per current share. Because adjusted closes already
+    reinvest gross dividends, the default only deducts dividend taxes. With
+    `cfg.dividend_reinvest=False`, the gross amount is also moved from the
+    position to cash by a synthetic share reduction (no fee, no realized gain).
 
     `harvest` is an optional callback for tax-loss harvesting. It receives the
     session, current EUR positions, HIFO lots, the session's EUR open prices and
     cash, and returns synthetic trades (``ticker``, ``side``, ``shares`` in
     ledger units, ``price`` in EUR). It runs before the engine's own trades on
-    that session, so a sell/re-entry pair can reset the EUR basis without
-    changing the intended target weight. `harvest_dates` limits the callback to
-    the supplied sessions (normally the monthly rebalance dates); None means
-    every session.
+    that session. `harvest_dates` limits the callback to the supplied sessions.
     """
     cfg = config or EurLedgerConfig()
     dates = pd.DatetimeIndex(res.equity.index)
@@ -249,6 +275,18 @@ def replay(
     pxe = px.pivot(index="date", columns="ticker", values="px_eur").sort_index().ffill()
     # only need the dates we mark
     pxe = pxe.reindex(index=pxe.index.union(dates)).ffill().reindex(dates)
+    pxu = (
+        panel[["date", "ticker", "adjclose"]]
+        .pivot(index="date", columns="ticker", values="adjclose")
+        .sort_index()
+        .ffill()
+        .reindex(dates)
+    )
+    roll_dates = month_end_dates(dates) if fx_hedge is not None else []
+    next_roll = {
+        pd.Timestamp(a): pd.Timestamp(b)
+        for a, b in zip(roll_dates[:-1], roll_dates[1:])
+    }
     pxo = None
     if harvest is not None and "open" in panel.columns:
         po = panel[["date", "ticker", "open"]].copy()
@@ -291,6 +329,13 @@ def replay(
     dividend_tax_topup = 0.0
     dividend_tax_total = 0.0
     dividend_events = 0
+    hedge_period: HedgePeriod | None = None
+    hedge_logs: list[dict] = []
+    fx_hedge_pnl = 0.0
+    fx_hedge_cost = 0.0
+    fx_hedge_periods = 0
+    fx_hedge_notional_days = 0.0
+    fx_hedge_days = 0
     harvest_rows: list[dict] = []
     harvest_notional = 0.0
     harvest_fees = 0.0
@@ -369,10 +414,7 @@ def replay(
         # the normal target rebalance continue. The callback sees the live EUR
         # lots, so its threshold and band use the same basis as the tax replay.
         if harvest is not None and (hdates is None or d.normalize() in hdates):
-            if pxo is not None:
-                price_row = pxo.loc[d]
-            else:
-                price_row = pxe.loc[d]
+            price_row = pxo.loc[d] if pxo is not None else pxe.loc[d]
             synthetic = harvest(d, pos, lots, price_row, cash) or []
             for tr in synthetic:
                 ticker = str(tr["ticker"])
@@ -439,7 +481,33 @@ def replay(
                     if pos[tr.ticker] <= 1e-12:
                         pos.pop(tr.ticker, None)
 
+        spot = float(fx.loc[d])
+        if hedge_period is not None and d >= hedge_period.expiry:
+            pnl = hedge_pnl_eur(hedge_period.notional_usd, hedge_period.forward, spot)
+            cash += pnl
+            # CTO netting: hedge P&L and its roll cost enter the same annual
+            # capital-gains bucket as the equity lots; a loss carries forward.
+            realized_year += pnl - hedge_period.roll_cost_eur
+            fx_hedge_pnl += pnl
+            fx_hedge_cost += hedge_period.roll_cost_eur
+            fx_hedge_periods += 1
+            hedge_logs.append(
+                {
+                    "start": hedge_period.start,
+                    "expiry": hedge_period.expiry,
+                    "ratio": hedge_period.ratio,
+                    "notional_usd": hedge_period.notional_usd,
+                    "spot_start": hedge_period.spot_start,
+                    "forward": hedge_period.forward,
+                    "spot_end": spot,
+                    "roll_cost_eur": hedge_period.roll_cost_eur,
+                    "pnl_eur": pnl,
+                }
+            )
+            hedge_period = None
+
         value = 0.0
+        usd_value = 0.0
         for ticker, shares in pos.items():
             if ticker not in pxe.columns:
                 continue
@@ -449,6 +517,32 @@ def replay(
             else:
                 p = last_px.get(ticker, 0.0)
             value += shares * p
+            if ticker in pxu.columns:
+                pu = float(pxu[ticker].loc[d])
+                if np.isfinite(pu) and pu > 0:
+                    usd_value += shares * pu
+
+        if fx_hedge is not None and d in next_roll and usd_value > 0 and d < dates[-1]:
+            ratio = ratio_for_date(fx.loc[:d], fx_hedge)
+            notional = hedge_notional(usd_value, ratio)
+            if notional > 0:
+                days = int((next_roll[d] - d).days)
+                fwd = forward_rate(spot, fx_hedge.carry_bps, days, fx_hedge.day_count)
+                cost = roll_cost_eur(notional, spot, fx_hedge.roll_bps)
+                cash -= cost
+                fx_hedge_cost += cost
+                hedge_period = HedgePeriod(
+                    start=d,
+                    expiry=next_roll[d],
+                    ratio=ratio,
+                    notional_usd=notional,
+                    spot_start=spot,
+                    forward=fwd,
+                    roll_cost_eur=cost,
+                )
+                fx_hedge_notional_days += notional * days
+                fx_hedge_days += days
+
         eq.append(cash + value)
         cashs.append(cash)
 
@@ -500,6 +594,13 @@ def replay(
         dividends_net=dividends_gross - dividend_tax_total,
         dividend_events=dividend_events,
         dividend_reinvest=bool(cfg.dividend_reinvest),
+        fx_hedge_pnl=fx_hedge_pnl,
+        fx_hedge_cost=fx_hedge_cost,
+        fx_hedge_periods=fx_hedge_periods,
+        fx_hedge_avg_notional=(
+            fx_hedge_notional_days / fx_hedge_days if fx_hedge_days else 0.0
+        ),
+        fx_hedge_log=pd.DataFrame(hedge_logs),
         harvest_trades=(
             pd.DataFrame(harvest_rows)
             if harvest_rows

@@ -220,9 +220,10 @@ uv run python scripts/live.py plan  --book monthly --market US
 uv run python scripts/live.py run   --book monthly --market US --paper
 uv run python scripts/live.py status --book monthly --market US
 uv run python scripts/live.py reconcile --book monthly --market US
+uv run python scripts/forward_daily.py --paper --tax
 ```
 
-Dry-run is the default; `--paper` is the only writer. State is atomic under
+Dry-run is the default; `--paper` is the only writer. `forward_daily.py` runs US + TECH (+ tax) after the close, refreshes only stale bars, reconciles, and updates the gate; a weekday automation runs at 21:45 UTC. State is atomic under
 `state/live/`, orders are idempotent, and rails block stale data, holidays,
 excess gross/turnover and duplicate orders. The paper ledger is **pre-tax,
 average-cost**: it is not the after-tax EUR ledger. No real broker, no keys.
@@ -347,4 +348,4 @@ tests/test_core.py
 ```
 
 
-See `results/v2_summary.md` for the four-workstream v2 evidence, the EUR-ledger baseline, the rejected alpha/short-horizon studies, and the live/evaluation merge hashes.
+See `docs/feature_matrix.md` for the command map and `results/v2_summary.md` for the four-workstream v2 evidence, the EUR-ledger baseline, the rejected alpha/short-horizon studies, and the live/evaluation merge hashes.

@@ -16,9 +16,9 @@
 
 | variant | terminal-FX | EUR ledger | maxDD | trades | what changes |
 |---|---:|---:|---:|---:|---|
-| static-49 baseline | **57.01x** | 53.45x | -67.8% | 1836 | nothing |
-| S&P-dated TECH | **23.22x** | 21.66x | -87.6% | 832 | dated membership; non-S&P names removed |
-| public-at-2015 | **50.64x** | 47.00x | -68.3% | 1856 | later IPOs removed |
+| static-49 baseline | **57.01x** | 52.98x | -67.8% | 1836 | nothing |
+| S&P-dated TECH | **23.22x** | 21.43x | -87.6% | 832 | dated membership; non-S&P names removed |
+| public-at-2015 | **50.64x** | 46.45x | -68.3% | 1856 | later IPOs removed |
 
 The S&P-dated run is **33.79x lower** (59% of the baseline) on terminal-FX. This is a **sensitivity, not a lower bound**: the S&P-dated universe is not nested inside the static-49 list (it removes ASML, ARM, MELI, TEAM, ZS and ANT, and it starts names at their index addition), and it still contains only 2026 survivors. It shows that the TECH result is highly sensitive to universe construction; it does not measure the true NASDAQ-2015 bias, which is not reconstructible from this cache because failed and acquired names have no Yahoo history. The EUR ledger columns are the real-life accounting modes, not a causal decomposition.
 
