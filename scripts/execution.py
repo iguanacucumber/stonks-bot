@@ -414,7 +414,7 @@ def main() -> None:
         "",
         "- `results/france.md`: core-only tax 38.80x -> **39.50x**, monthly 27.18x ->",
         "  **31.90x**; `results/france.csv` and `metrics_france.csv` follow.",
-        "- `README.md`: the 38.8x/27.2x headline rows and the next-open wording.",
+        "- `README.en.md`: the 38.8x/27.2x headline rows and the next-open wording.",
         "- `results/pea_ucits.md`: the CTO 38.80x comparator.",
         "- `results/risk_v2.md`: its 38.80x baseline and all rule deltas.",
         "- `results/summary.md`: the 38.80x summary row.",
