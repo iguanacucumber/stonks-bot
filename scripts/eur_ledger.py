@@ -71,18 +71,21 @@ def run(market: str, book: str) -> dict:
 
 def main() -> None:
     rows = []
-    for market in ("TECH", "US"):
-        for book in ("monthly", "tax"):
-            r = run(market, book)
-            rows.append(r)
-            print(
-                f"{market:4s} {book:7s} native {r['native_usd_mult']:6.2f}x  "
-                f"headline {r['headline_eur_mult']:6.2f}x  "
-                f"EUR-ledger {r['ledger_mult']:6.2f}x (€{r['ledger_after']:,.0f})  "
-                f"CAGR {r['cagr']:6.1%}  DD {r['maxdd']:7.1%}  "
-                f"tax €{r['tax']:,.0f}  exit €{r['exit']:,.0f}  "
-                f"fees €{r['fees']:,.0f}  gap €{r['reconcile']:,.0f}"
-            )
+    # The core-only tax book is always 100% SMH; it does not depend on the market.
+    cases = [("TECH", "monthly"), ("TECH", "tax"), ("US", "monthly")]
+    for market, book in cases:
+        r = run(market, book)
+        if book == "tax":
+            r["market"] = "CORE"
+        rows.append(r)
+        print(
+            f"{r['market']:4s} {book:7s} native {r['native_usd_mult']:6.2f}x  "
+            f"headline {r['headline_eur_mult']:6.2f}x  "
+            f"EUR-ledger {r['ledger_mult']:6.2f}x (€{r['ledger_after']:,.0f})  "
+            f"CAGR {r['cagr']:6.1%}  DD {r['maxdd']:7.1%}  "
+            f"tax €{r['tax']:,.0f}  exit €{r['exit']:,.0f}  "
+            f"fees €{r['fees']:,.0f}  gap €{r['reconcile']:,.0f}"
+        )
 
     lines = [
         "# EUR ledger: what a French investor actually keeps",

@@ -13,9 +13,8 @@ strategy, not a different one.
 | market | book | USD-native | headline EUR | EUR ledger | CAGR | maxDD | tax paid | exit tax | fees |
 |---|---|---:|---:|---:|---:|---:|---:|---:|---:|
 | TECH | monthly | 51.82x | 57.01x | **52.89x** | 39.7% | -66.0% | €119,328 | €160,980 | €22,090 |
-| TECH | tax | 46.26x | 50.89x | **49.02x** | 38.8% | -64.2% | €58,736 | €210,907 | €8,206 |
+| CORE | tax | 46.26x | 50.89x | **49.02x** | 38.8% | -64.2% | €58,736 | €210,907 | €8,206 |
 | US | monthly | 64.41x | 70.86x | **66.02x** | 42.3% | -57.5% | €138,086 | €210,493 | €23,971 |
-| US | tax | 46.26x | 50.89x | **49.02x** | 38.8% | -64.2% | €58,736 | €210,907 | €8,206 |
 
 `USD-native` is the after-tax result in the asset currency. `headline EUR` is
 the current README method: USD-native after tax multiplied by terminal FX.
