@@ -26,9 +26,15 @@ the winners.
   full-window; 2x-cost 1.13x is below BIL 1.20x. Overnight 1.01x at
   an optimistic 5 bps/side, 0.82x at 7.25 bps/side all-in, 0.60x at
   14.5 bps/side. No satellite.
+- **H5 PIT Nasdaq-100:** `paper` (terminal robustness, weak rolling premium).
+  PIT retains **95%** of the static TECH EUR ledger (50.29x vs 52.98x;
+  terminal-FX 55.14x vs 57.01x), survives 2x costs (20.78x), but beats the
+  static core-only book in only 18% of 5-year windows. US all-PIT remains
+  primary at 66.17x EUR ledger / -56.9% maxDD. 110/266 PIT tickers lack cached
+  bars: residual delisting bias makes the PIT number an upper bound.
 - **Candidate config:** no Alpha Lab allocation; keep US monthly 2.5x
   (70.86x headline / 66.17x EUR ledger, -56.9% ledger maxDD). If the TECH
-  sleeve is kept, use PIT S&P membership (`paper`, not default).
+  sleeve is kept, use PIT Nasdaq-100 membership (`paper`, not default).
 
 ## Baseline (reproduced, not assumed)
 
@@ -131,6 +137,19 @@ hit rate above 50%, and beats a cash/BIL alternative after 2x costs. A family
 that only wins in-sample or dies at 2x costs is `reject`, with the numbers kept
 in `results/alpha_short.md`.
 
+### H5 — PIT Nasdaq-100 TECH universe (v4)
+
+The static 49-name TECH list is all-always and survivor-selected. Build a
+point-in-time Nasdaq-100 membership from public complete snapshots
+(`bot/research/data/nasdaq100_history.csv`, source documented in
+`bot/research/data/README.md`) and re-run the same monthly 2.5x book.
+
+Pass: PIT retains at least 80% of the static book's dividend-corrected EUR
+ledger, beats its own core-only version, survives 2x costs, and does not
+overtake US all-PIT. If PIT collapses, the static sleeve was largely a
+survivorship artifact; if it survives, keep US primary and use PIT membership
+for any retained TECH sleeve. Residual delisting bias is reported explicitly.
+
 ## File ownership
 
 - `bot/research/`: harness (orchestrator).
@@ -139,6 +158,9 @@ in `results/alpha_short.md`.
 - `scripts/research_short.py`, `results/alpha_short.md`: worker C.
 - `scripts/research_baseline.py`, `tests/test_research.py`, `docs/research.md`,
   `results/alpha_summary.md`: orchestrator.
+- v4 PIT work: `bot/research/pit_universe.py`, `bot/research/data/`,
+  `scripts/research_pit_tech.py`, `tests/test_pit_universe.py`,
+  `results/pit_tech.md`.
 
 Workers do not edit shared earnings code (`bot/backtest.py`, `bot/strategy.py`)
 and do not commit. The orchestrator reviews and commits.
