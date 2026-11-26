@@ -52,12 +52,17 @@ def ask(prompt: str, model: str = DEFAULT_MODEL, timeout: int = 240) -> str:
     path = CACHE / f"{key}.json"
     if path.exists():
         try:
-            return json.loads(path.read_text())["text"]
+            cached = json.loads(path.read_text())["text"]
+            # Never let a failed call poison the cache: retry it next run.
+            if cached.strip() and not cached.startswith("ERROR "):
+                return cached
         except Exception:
             pass
     cmd = ["opencode", "run", "--format", "json", "--archived", "-m", model, prompt]
     last = ""
+    ok = False
     for attempt in range(2):
+        ok = False
         try:
             p = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout)
             out = _clean(p.stdout)
@@ -74,10 +79,13 @@ def ask(prompt: str, model: str = DEFAULT_MODEL, timeout: int = 240) -> str:
                 if part.get("type") == "text" and part.get("text"):
                     texts.append(part["text"])
             last = "\n".join(texts) if texts else out
+            ok = True
         except Exception as e:
             last = f"ERROR {e}"
-        if last.strip():
+        if ok and last.strip():
             break
+    if not ok or not last.strip():
+        return last
     path.write_text(
         json.dumps({"prompt": prompt, "model": model, "text": last}, indent=1)
     )

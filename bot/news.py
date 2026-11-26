@@ -80,8 +80,24 @@ def submissions(cik: str) -> dict | None:
     return _get_json(f"https://data.sec.gov/submissions/CIK{int(cik):010d}.json", path)
 
 
+def _accepted_et(value: object) -> pd.Timestamp | None:
+    """SEC acceptance timestamp in naive New York time, or None."""
+    if not value:
+        return None
+    try:
+        ts = pd.Timestamp(str(value))
+    except Exception:
+        return None
+    if ts.tzinfo is None:
+        ts = ts.tz_localize("UTC")
+    return ts.tz_convert("America/New_York").tz_localize(None)
+
+
 def events_for(
-    cik: str, ticker: str, start: pd.Timestamp, end: pd.Timestamp,
+    cik: str,
+    ticker: str,
+    start: pd.Timestamp,
+    end: pd.Timestamp,
     cutoff: pd.Timestamp | None = None,
 ) -> list[dict]:
     data = submissions(cik)
@@ -90,6 +106,11 @@ def events_for(
     r = data.get("filings", {}).get("recent", {})
     if not r:
         return []
+    cutoff_et = None
+    if cutoff is not None:
+        cutoff_et = pd.Timestamp(cutoff)
+        if cutoff_et.tzinfo is not None:
+            cutoff_et = cutoff_et.tz_convert("America/New_York").tz_localize(None)
     out = []
     for i, form in enumerate(r.get("form", [])):
         if form != "8-K":
@@ -101,6 +122,13 @@ def events_for(
         d = pd.Timestamp(str(filed))
         if d < start.normalize() or d > end.normalize():
             continue
+        if cutoff_et is not None:
+            accepted_et = _accepted_et(accepted)
+            if accepted_et is not None:
+                if accepted_et > cutoff_et:
+                    continue  # after the signal close: usable next session only
+            elif d.normalize() >= cutoff_et.normalize():
+                continue  # no timestamp: only prior-day filings are safe
         items = [
             x.strip()
             for x in str(r.get("items", [""] * len(r["form"]))[i] or "").split(",")
@@ -157,7 +185,7 @@ def filing_text(cik: str, accession: str, primary_doc: str) -> str:
     # prefer exhibits (press release) and the primary document
     candidates.sort(key=lambda x: -x[0])
     text = ""
-    for _, _, name in candidates[:2]:
+    for _, name in candidates[:2]:
         try:
             r = requests.get(f"{base}/{name}", headers=UA, timeout=40)
             if r.status_code != 200:
