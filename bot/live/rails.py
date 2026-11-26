@@ -175,6 +175,8 @@ def make_orders(
                 fill_session=fill_session,
             )
         )
+    # Sells first: a switch must free cash/positions before buys are attempted.
+    orders.sort(key=lambda o: (0 if o.side == SELL else 1, o.ticker))
     return orders
 
 
@@ -199,6 +201,16 @@ def check_rails(
     gross = sum(abs(float(w)) for w in target.values())
     if gross > float(cfg.max_gross) + TOL:
         issues.append(f"target gross {gross:.3f} > max_gross {cfg.max_gross:.3f}")
+    current_gross = portfolio.gross(marks)
+    if (
+        equity > 0
+        and current_gross > float(cfg.max_gross) * equity + TOL
+        and any(o.side == BUY for o in orders)
+    ):
+        issues.append(
+            f"current gross {current_gross / equity:.3f} > max_gross "
+            f"{cfg.max_gross:.3f}; deleverage before buying"
+        )
     if not target:
         issues.append("selector returned an empty target book")
     if not target and any(p.active for p in portfolio.positions.values()):

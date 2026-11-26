@@ -68,16 +68,23 @@ class LiveConfig:
     rebalance_offset: int = 0
 
     # Live-only safety rails. Defaults are deliberately tighter than "no rail".
+    # dd_stop is a non-validated safety overlay, not a walk-forward alpha rule.
     dd_stop: float = 0.35  # 0 disables the live drawdown breaker
     dd_scale: float = 0.5
     dd_recover: float = 0.10
+    # Ceiling only: max_gross never becomes a target. The target comes from the
+    # research leverage (2.5x) and the risk cut.
     max_gross: float = 3.0
     max_turnover: float = 3.0
     max_orders: int = 50
     min_order_notional: float = 25.0
+    # Reporting age limit for the stale reason; a missing current-session close
+    # always blocks regardless of this number.
     max_stale_days: int = 3
     max_pending_sessions: int = 5
-    trade_band: float = 0.002
+    # Trade band matches the shipped research book (0.0). ``min_order_notional`` is
+    # the only live execution minimum; it is reported and never hides a target drift.
+    trade_band: float = 0.0
 
     # Paper execution model.
     slippage_bps: float = 5.0
@@ -135,6 +142,11 @@ class LiveConfig:
     @property
     def market_label(self) -> str:
         return str(markets.MARKETS[self.market]["label"])
+
+    @property
+    def leverage_band(self) -> float:
+        """Book's researched leverage-drift band (0 monthly, 0.30 tax)."""
+        return float(book_overrides(self.book).get("leverage_band", 0.0))
 
     @property
     def book_label(self) -> str:

@@ -203,7 +203,7 @@ def extra_tests() -> None:
         cfg = _cfg(tmp, dd_stop=0.30, dd_scale=0.5)
         snap = build_snapshot(cfg, s1, panel=panel, membership=mem)
         state = LiveState.new(cfg)
-        state.peak_equity = 20_000.0
+        state.peak_equity = 30_000.0
         state.portfolio.cash = 10_000.0
         risk = evaluate_risk(cfg, state, snap, equity=10_000.0)
         assert risk.risk_off and risk.risk_reason == "dd"
@@ -236,6 +236,135 @@ def extra_tests() -> None:
         assert res.blocked and "cannot mark book" in (res.blocked_reason or "")
         assert res.orders == []
 
+    # Overdue pending plans must never fill at a historical open.
+    with TemporaryDirectory() as tmp, fixed_fx({"default": 1.10}):
+        cfg = _cfg(tmp)
+        engine = LiveEngine(cfg)
+        r1 = engine.run(
+            now="2021-12-01T02:00:00+00:00", as_of=s1, panel=panel, membership=mem
+        )
+        assert r1.plan is not None and r1.plan.orders
+        later = "2021-12-08"
+        overdue = engine.run(
+            now="2021-12-09T02:00:00+00:00", as_of=later, panel=panel, membership=mem
+        )
+        assert overdue.blocked and "overdue" in (overdue.blocked_reason or ""), (
+            overdue.blocked_reason
+        )
+        state = engine.store.load()
+        assert state.pending_plan is not None
+        assert not state.all_fills(), "no historical fill may be fabricated"
+
+    # A blocked risk cut is persisted and retried, not silently forgotten.
+    with TemporaryDirectory() as tmp, fixed_fx({"default": 1.10}):
+        from bot.live.models import Position
+
+        cfg = _cfg(tmp, dd_stop=0.30, max_turnover=0.05)
+        store = StateStore(cfg)
+        state = LiveState.new(cfg)
+        state.portfolio.cash = 5_000.0
+        state.portfolio.positions["T00"] = Position(100.0, 50.0, 50.0)
+        state.target_weights = {"T00": 0.5}
+        state.peak_equity = 30_000.0
+        store.save(state)
+        blocked = LiveEngine(cfg).run(
+            now="2021-12-02T02:00:00+00:00", as_of=s2, panel=panel, membership=mem
+        )
+        assert blocked.blocked and "max_turnover" in (blocked.blocked_reason or ""), blocked.blocked_reason
+        state = store.load()
+        assert state.risk_off and state.pending_cut is not None
+        assert state.pending_cut["reason"] in ("risk_off", "trend")
+
+        relaxed = _cfg(tmp, dd_stop=0.30, max_turnover=2.0)
+        retry = LiveEngine(relaxed).run(
+            now="2021-12-03T03:00:00+00:00",
+            as_of="2021-12-02",
+            panel=panel,
+            membership=mem,
+            allow_config_change=True,
+        )
+        assert not retry.blocked and retry.plan.orders
+        assert any(o.side == "SELL" for o in retry.plan.orders)
+        assert store.load().pending_cut is None
+
+    # A gap that pushes gross above leverage must plan a sale, not just report it.
+    with TemporaryDirectory() as tmp, fixed_fx({"default": 1.10}):
+        cfg = _cfg(tmp, leverage=1.0, max_gross=2.0)
+        engine = LiveEngine(cfg)
+        engine.run(
+            now="2021-12-01T02:00:00+00:00", as_of=s1, panel=panel, membership=mem
+        )
+        engine.run(
+            now="2021-12-02T02:00:00+00:00", as_of=s2, panel=panel, membership=mem
+        )
+        state = engine.store.load()
+        value = sum(
+            p.qty * (p.last_price or 0.0)
+            for p in state.portfolio.positions.values()
+            if p.active
+        )
+        assert value > 0
+        for p in state.portfolio.positions.values():
+            p.qty *= 2.0
+        state.portfolio.cash -= value
+        state.peak_equity = max(state.peak_equity, state.portfolio.equity({}))
+        engine.store.save(state)
+        res = engine.run(
+            now="2021-12-03T02:00:00+00:00",
+            as_of="2021-12-02",
+            panel=panel,
+            membership=mem,
+        )
+        assert not res.blocked, res.blocked_reason
+        assert any(o.side == "SELL" for o in res.plan.orders), res.plan.orders
+        assert not any(o.side == "BUY" for o in res.plan.orders), res.plan.orders
+
+    # Sells execute before buys; a partial sell is visible, never hidden by a buy.
+    from bot.live.broker import Bar as _Bar
+    from bot.live.models import Position as _Position
+
+    pf = Portfolio(cash=1_000.0)
+    pf.positions["AAA"] = _Position(10.0, 10.0, 10.0)
+    sell_first = Plan(
+        plan_id="sellfirst",
+        book="monthly",
+        market="US",
+        signal_session=s1,
+        fill_session=s2,
+        created_at="t",
+        target_weights={"BBB": 0.1},
+        current_weights={"AAA": 0.1},
+        orders=[
+            OrderIntent("buy", "BBB", "BUY", 1.0, 10.0, "rebalance", s2),
+            OrderIntent("sell", "AAA", "SELL", 10.0, 10.0, "rebalance", s2),
+        ],
+    )
+    fills = PaperBroker(
+        slippage_bps=0.0,
+        commission_bps=0.0,
+        min_commission=0.0,
+        max_participation=0.5,
+    ).execute(
+        sell_first,
+        {"AAA": _Bar(10.0, 10.0, 5.0), "BBB": _Bar(10.0, 10.0, 1e9)},
+        "t",
+        pf,
+    )
+    assert [f.side for f in fills] == ["SELL", "BUY"], fills
+    sell_order = next(o for o in sell_first.orders if o.order_id == "sell")
+    assert sell_order.status == "PARTIAL"
+    assert abs(fills[0].qty - 2.5) < TOL
+
+    # max_gross is a ceiling, not a target: a generous rail does not change weights.
+    with TemporaryDirectory() as tmp, fixed_fx({"default": 1.10}):
+        cfg = _cfg(tmp, max_gross=10.0)
+        res = LiveEngine(cfg).plan(
+            now="2021-12-01T02:00:00+00:00", as_of=s1, panel=panel, membership=mem
+        )
+        assert not res.blocked
+        assert abs(sum(res.plan.target_weights.values()) - 1.0) < 1e-6
+        assert cfg.max_gross == 10.0
+
     # Holiday CLI exits non-zero without creating state.
     import live as live_cli
 
@@ -267,6 +396,10 @@ def main() -> None:
     # Config: new live plans target US by default, any market stays explicit.
     cfg = LiveConfig()
     assert cfg.market == "US"
+    assert cfg.trade_band == 0.0, "live trade band must match the shipped book"
+    from bot import strategy as _strategy
+
+    assert _strategy.Config().trade_band == cfg.trade_band
     assert cfg.native_currency == "USD" and cfg.currency == "USD"
     assert cfg.reporting_currency == "EUR"
     assert cfg.market_label == "S&P 500"
@@ -375,6 +508,8 @@ def main() -> None:
 
         # Report/JSON label the book, market and both currencies.
         text = report.format_report(r1, cfg, mode="run", forward_gate="WAIT 0/5")
+        assert "pre-tax" in text and "not HIFO/PFU" in text
+        assert "non-validated safety overlay" in text
         assert "book=monthly" in text and "market=US (S&P 500)" in text
         assert "native=USD" in text and "reporting=EUR" in text
         assert "US monthly is the best-evidence live book" in text
@@ -392,11 +527,11 @@ def main() -> None:
         assert "market=TECH (NASDAQ tech)" in tech_text
         assert "validation/research" in tech_text
 
-        # Three sessions later the pending plan fills at the fill-session FX, not
-        # at today's FX. That distinction is what lets the EUR ledger reconcile.
+        # The pending plan fills only at its exact fill session. A later run may
+        # mark the book but must not fabricate a historical open.
         r2 = engine.run(
-            now=f"{later}T22:00:00+00:00",
-            as_of=later,
+            now=f"{settle}T22:00:00+00:00",
+            as_of=settle,
             panel=panel,
             membership=mem,
         )
@@ -409,6 +544,14 @@ def main() -> None:
             assert abs(float(fill.notional_eur) - fill.notional / 1.10) < 1e-6
             assert abs(float(fill.commission_eur) - fill.commission / 1.10) < 1e-6
 
+        # A later completed session updates the mark/FX and must be idempotent.
+        r_mark = engine.run(
+            now=f"{later}T22:00:00+00:00",
+            as_of=later,
+            panel=panel,
+            membership=mem,
+        )
+        assert not r_mark.blocked
         state = engine.store.load()
         assert state.currency == "USD"
         assert state.last_fx_date == later
@@ -423,7 +566,15 @@ def main() -> None:
         assert state.fees_paid_eur > 0
 
         rows = engine.store.ledger_rows()
-        assert len(rows) == 2
+        assert len(rows) == 3
+        fill_row = [r for r in rows if r["session"] == settle][0]
+        assert fill_row["currency"] == "USD"
+        assert abs(float(fill_row["fx_rate"]) - 1.0 / 1.10) < 1e-6
+        assert fill_row["fx_date"] == settle
+        ledger_fills = json.loads(fill_row["fills"])
+        assert ledger_fills and all(f["fx_rate"] is not None for f in ledger_fills)
+        assert all(f["notional_eur"] is not None for f in ledger_fills)
+
         current = [r for r in rows if r["session"] == later][0]
         assert current["currency"] == "USD"
         assert abs(float(current["fx_rate"]) - 1.0 / 1.20) < 1e-6
@@ -432,9 +583,6 @@ def main() -> None:
         assert abs(float(current["cash_eur"]) - state.last_cash_eur) < 1e-5
         assert "fees_eur" in current and float(current["fees_eur"]) > 0
         assert "realized_pnl_eur" in current
-        ledger_fills = json.loads(current["fills"])
-        assert ledger_fills and all(f["fx_rate"] is not None for f in ledger_fills)
-        assert all(f["notional_eur"] is not None for f in ledger_fills)
 
         # Rerunning the same completed session is a no-op, including the ledger.
         r3 = engine.run(
@@ -443,8 +591,8 @@ def main() -> None:
             panel=panel,
             membership=mem,
         )
-        assert r3.created is False and r3.plan.plan_id == r2.plan.plan_id
-        assert len(engine.store.ledger_rows()) == 2
+        assert r3.created is False and r3.plan.plan_id == r_mark.plan.plan_id
+        assert len(engine.store.ledger_rows()) == 3
 
         rep = reconcile.reconcile(cfg, state, engine.store)
         assert rep.ok, rep.issues

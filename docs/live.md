@@ -139,17 +139,18 @@ execution of a plan that failed a rail.
 
 | Rail | Default | Behavior |
 |---|---:|---|
-| max gross | 3.0x | target gross above the cap blocks |
+| max gross | 3.0x | ceiling only; target gross above it blocks; it is never a target |
 | max turnover | 3.0x | `max(buys,sells)/equity` above the cap blocks |
 | max orders | 50 | more intents than this blocks |
-| min order | 25 native | smaller drift orders are skipped; full exits still allowed |
-| stale data | 3 days | benchmark or any required symbol missing today's close blocks |
+| min order | 25 native | execution minimum only; target/current drift is always in the report |
+| trade band | 0.0 | matches the shipped research book; no extra live band |
+| stale data | current close | any required symbol missing today's close blocks; `max_stale_days` only labels age in the reason |
 | market closed | NYSE calendar | holiday/weekend/unknown session blocks |
 | duplicate order | ids + `(ticker,side,fill_session)` | any collision blocks |
-| pending age | 5 sessions | an unsettled plan older than this blocks for manual review |
-| drawdown breaker | -35% -> 0.5x | cuts the current book; recovery at -10% |
+| pending fill | exact fill session | an older pending plan blocks, never fills at a stale historical open |
+| drawdown breaker | -35% -> 0.5x | cuts the current book; recovery at -10%; non-validated overlay |
 | trend cut | core below 200d MA -> 0.5x | research daily overlay |
-| leverage | 2.5x | below max gross; financing 5%/yr on negative cash |
+| leverage gap | > 2.5x (or book band) | plans a sell before any new buy |
 
 The drawdown breaker is a **live safety overlay**, not a backtested alpha rule. It
 can make the paper book differ from the research equity curve; the report always
@@ -157,6 +158,11 @@ shows `risk_off`, the drawdown, and the scale. Set `--dd-stop 0` to disable it f
 research-parity run. A trend cut clears only when the core is back above its MA; a
 drawdown cut clears only at the recovery level. A cleared cut does not re-lever
 until the next month-end rebalance.
+
+If a risk cut or gap deleverage is blocked by another rail, the target is persisted
+as `pending_cut` and retried on the next session; it is not silently forgotten. If
+the retry is still blocked, the book stays in the old target and the block is
+reported until a human reconciles.
 
 ## Idempotency and crash recovery
 
@@ -187,14 +193,23 @@ book silently.
 - buy price = open x (1 + slippage), sell price = open x (1 - slippage);
 - commission = max(min_commission, notional x commission_bps / 10,000);
 - fill quantity is capped at `max_participation x open-day volume` (default 2%);
+- sells execute before buys, even if a hand-built plan lists them in another order;
 - a binding cap produces a `PARTIAL` order/fill, never a rounded-up full fill;
 - zero/missing volume or open produces `UNFILLED`, never a synthetic price;
+- a sell that partially fills cannot be hidden by a later buy using its expected
+  cash; the next run sees the actual position and gross exposure;
 - the residual of a day order is not retried the next day. The next month-end plan
   sizes from the actual position, so the deviation is visible and reconciled.
 
-The paper ledger is pre-tax. It tracks native and EUR amounts but does not model
-French PFU, FTT, dividends or tax lots. Prices are split/dividend-adjusted cache
-prices, not raw broker statements.
+A pending plan can settle only on its exact `fill_session`. If the process misses
+that session, the next run blocks with `overdue pending plan` and leaves the state
+untouched for `reconcile`; it never fabricates a historical open.
+
+The paper ledger is **pre-tax and average-cost**, not HIFO/PFU, and is not the
+after-tax EUR ledger. It tracks native and EUR amounts for later reconciliation but
+must not be compared with `results/eur_ledger.md` after-tax numbers until tax lots
+and annual PFU are implemented. Prices are split/dividend-adjusted cache prices, not
+raw broker statements.
 
 ## Cron / systemd
 

@@ -113,6 +113,7 @@ class LiveState:
     last_mark_session: str | None = None
     last_plan_id: str | None = None
     pending_plan: Plan | None = None
+    pending_cut: dict[str, Any] | None = None
     plans: dict[str, Plan] = field(default_factory=dict)
     runs: dict[str, dict[str, Any]] = field(default_factory=dict)
     fees_paid: float = 0.0
@@ -204,6 +205,7 @@ class LiveState:
             "last_mark_session": self.last_mark_session,
             "last_plan_id": self.last_plan_id,
             "pending_plan": self.pending_plan.to_dict() if self.pending_plan else None,
+            "pending_cut": self.pending_cut,
             "plans": {pid: p.to_dict() for pid, p in sorted(self.plans.items())},
             "runs": self.runs,
             "fees_paid": _f(self.fees_paid),
@@ -256,6 +258,7 @@ class LiveState:
             last_mark_session=raw.get("last_mark_session"),
             last_plan_id=raw.get("last_plan_id"),
             pending_plan=pending,
+            pending_cut=raw.get("pending_cut"),
             plans=plans,
             runs={str(k): dict(v) for k, v in (raw.get("runs") or {}).items()},
             fees_paid=float(raw.get("fees_paid", 0.0)),

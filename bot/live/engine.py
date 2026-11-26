@@ -32,7 +32,6 @@ from .models import (
 from .rails import (
     RiskState,
     check_rails,
-    desired_targets,
     evaluate_risk,
     make_orders,
     turnover_of,
@@ -199,6 +198,12 @@ def _settle_pending(
     session = str(snap.session.date())
     if plan.fill_session > session:
         return None, []  # still waiting for the next open
+    if plan.fill_session < session:
+        raise EngineError(
+            f"overdue pending plan {plan.plan_id}: fill session "
+            f"{plan.fill_session} is older than today {session}; refusing to "
+            "fabricate a historical open. Run reconcile, then cancel/replan."
+        )
     if plan.status == PLAN_BLOCKED:
         state.pending_plan = None
         return plan, []
@@ -358,23 +363,53 @@ def _simulate(
         strategy_target = levered_targets(
             snap, [t for t, p in state.portfolio.positions.items() if p.active]
         )
-    target, reason = desired_targets(
-        cfg,
-        state,
-        snap,
-        risk,
-        strategy_target,
-        current_weights,
-        due=due,
-        initialized=initialized,
-    )
+    # Gap-down deleverage: the researched leverage is a target, not just a signal-
+    # close check. If a gap leaves gross above leverage*(1+band), plan a sale for
+    # the next open instead of silently running hotter than the book.
+    cap = cfg.leverage * equity * (1.0 + cfg.leverage_band)
+    deleverage = cfg.leverage > 0 and gross_native > cap + 1e-6
+    cut = state.pending_cut
+    retry_cut = bool(cut) and not (due or initialized)
+    target: dict[str, float]
+    reason: str
+    if due or initialized:
+        target = dict(strategy_target)
+        if risk.risk_off:
+            target = {t: w * risk.scale for t, w in target.items()}
+        reason = "rebalance" if due else "initial"
+        retry_cut = False
+    elif retry_cut:
+        scale = float(cut.get("scale", 1.0))
+        if risk.risk_off:
+            scale = min(scale, float(risk.scale))
+        if deleverage:
+            scale = min(scale, cap / gross_native)
+        target = {t: w * scale for t, w in current_weights.items()}
+        reason = str(cut.get("reason") or "risk_retry")
+        if not target:
+            retry_cut = False
+            target = dict(state.target_weights)
+            reason = "hold"
+    elif risk.entered:
+        target = {t: w * risk.scale for t, w in current_weights.items()}
+        reason = "risk_off"
+    elif deleverage:
+        scale = cap / gross_native
+        if risk.risk_off:
+            scale = min(scale, float(risk.scale))
+        target = {t: w * scale for t, w in current_weights.items()}
+        reason = "deleverage"
+    else:
+        target = dict(state.target_weights)
+        reason = "hold_until_rebalance" if risk.cleared else "hold"
+    target = {t: float(w) for t, w in target.items() if float(w) > TOL}
     # Every target needs a mark for sizing and for the coverage check.
     for ticker in set(target) | set(strategy_target):
         px = snap.close(ticker)
         if px is not None:
             marks[ticker] = float(px)
     fill_session = str(calendar.next_session(snap.session))
-    trade = bool(due or initialized or risk.entered)
+    trade = bool(due or initialized or risk.entered or retry_cut or deleverage)
     plan_id = _plan_id(cfg, session, fill_session, target, equity, reason, trade)
     orders = []
     if trade:
@@ -447,6 +482,7 @@ def _simulate(
         state.risk_off = risk.risk_off
         state.risk_reason = risk.risk_reason
         state.pending_plan = plan if orders else None
+        state.pending_cut = None
         state.last_plan_id = plan.plan_id
         state.last_session = session
         state.last_mark_session = session
@@ -462,6 +498,21 @@ def _simulate(
             "time": now,
             "reason": plan.blocked_reason,
         }
+        if target and (risk.risk_off or deleverage or retry_cut):
+            ratios = [
+                target[t] / current_weights[t]
+                for t in target
+                if current_weights.get(t, 0.0) > TOL
+            ]
+            state.pending_cut = {
+                "target": {t: round(float(w), 8) for t, w in target.items()},
+                "reason": reason,
+                "scale": round(min(ratios), 8) if ratios else 1.0,
+                "session": session,
+                "plan_id": plan.plan_id,
+            }
+        elif not (risk.risk_off or deleverage):
+            state.pending_cut = None
     rate = fx.get("rate")
     if rate is not None:
         state.last_fx_rate = float(rate)

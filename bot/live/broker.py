@@ -97,7 +97,12 @@ class PaperBroker:
         portfolio: Portfolio,
     ) -> list[Fill]:
         fills: list[Fill] = []
-        for order in plan.orders:
+        # Sells first, even if a hand-built plan lists buys first. A partial or
+        # unfilled sell can never be hidden by a buy that uses its expected cash.
+        orders = sorted(
+            plan.orders, key=lambda o: (0 if o.side == "SELL" else 1, o.ticker)
+        )
+        for order in orders:
             if order.status not in ("PENDING", PARTIAL):
                 continue
             bar = bars.get(order.ticker)

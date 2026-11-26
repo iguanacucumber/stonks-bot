@@ -144,6 +144,15 @@ def format_report(
         f"trend_breach={bool(risk.get('trend_breach'))}  "
         f"scale={float(risk.get('scale', 1.0)):.2f}"
     )
+    lines.append(
+        "accounting: pre-tax, average-cost paper ledger; not HIFO/PFU and not "
+        "the after-tax EUR ledger"
+    )
+    if cfg.dd_stop:
+        lines.append(
+            "risk note: the drawdown breaker is a non-validated safety overlay; "
+            "max_gross is a ceiling, never a target"
+        )
     if result.settled_plan is not None:
         lines.append(
             f"settled prior plan {result.settled_plan.plan_id} "

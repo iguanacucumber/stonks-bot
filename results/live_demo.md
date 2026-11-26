@@ -1,20 +1,24 @@
 # Live autopilot demo transcript
 
-Generated from the committed cache with a throwaway state dir `/tmp/opencode/live-demo-_ieumwus`.
+Generated from the committed cache with a throwaway state dir `/tmp/opencode/live-demo-mtl6n3_e`.
 
 No network, no real broker, no secrets. The state dir is outside git.
 
+Accounting: pre-tax, average-cost paper ledger; not HIFO/PFU and not the after-tax EUR ledger.
+
 ## Plan (TECH monthly, committed cache, no write)
 
-Command: `uv run python scripts/live.py plan --book monthly --market TECH --state-dir /tmp/opencode/live-demo-_ieumwus --as-of 2026-11-25 --now 2026-11-26T02:00:00+00:00`
+Command: `uv run python scripts/live.py plan --book monthly --market TECH --state-dir /tmp/opencode/live-demo-mtl6n3_e --as-of 2026-11-25 --now 2026-11-26T02:00:00+00:00`
 
 ```text
 LIVE PLAN (dry-run)  book=monthly (monthly momentum)  market=TECH (NASDAQ tech)  native=USD  reporting=EUR  broker=paper
 recommendation: US monthly is the best-evidence live book; this TECH monthly run is for validation/research
 session=2026-11-25  equity=10,000.00 USD  cash=10,000.00  gross=0.00%  equity_eur=€9,100.00 @ 0.910000 EUR/USD (2026-11-24)
-signal=2026-11-25  fill=2026-11-27  plan=fc4f2484149b3273be3d  status=OK
+signal=2026-11-25  fill=2026-11-27  plan=9d6fb5664a4ac3ade3a0  status=OK
 data: bench last=2026-11-25  fresh=True  panel=2026-11-25
 risk: drawdown=+0.00%  breaker_off=True  reason=trend  trend_breach=True  scale=0.50
+accounting: pre-tax, average-cost paper ledger; not HIFO/PFU and not the after-tax EUR ledger
+risk note: the drawdown breaker is a non-validated safety overlay; max_gross is a ceiling, never a target
 
 target vs current
 ticker        target   current    drift%      target$              order
@@ -47,15 +51,17 @@ Exit code: `0`
 
 ## Plan (US monthly, default best-evidence book)
 
-Command: `uv run python scripts/live.py plan --book monthly --market US --state-dir /tmp/opencode/live-demo-_ieumwus --as-of 2026-11-25 --now 2026-11-26T02:00:00+00:00`
+Command: `uv run python scripts/live.py plan --book monthly --market US --state-dir /tmp/opencode/live-demo-mtl6n3_e --as-of 2026-11-25 --now 2026-11-26T02:00:00+00:00`
 
 ```text
 LIVE PLAN (dry-run)  book=monthly (monthly momentum)  market=US (S&P 500)  native=USD  reporting=EUR  broker=paper
 recommendation: US monthly is the best-evidence live book; TECH monthly remains the forward validation track
 session=2026-11-25  equity=10,000.00 USD  cash=10,000.00  gross=0.00%  equity_eur=€9,100.00 @ 0.910000 EUR/USD (2026-11-24)
-signal=2026-11-25  fill=2026-11-27  plan=0bd999b47ad179caebac  status=OK
+signal=2026-11-25  fill=2026-11-27  plan=8fd478f926481ac742fe  status=OK
 data: bench last=2026-11-25  fresh=True  panel=2026-11-25
 risk: drawdown=+0.00%  breaker_off=True  reason=trend  trend_breach=True  scale=0.50
+accounting: pre-tax, average-cost paper ledger; not HIFO/PFU and not the after-tax EUR ledger
+risk note: the drawdown breaker is a non-validated safety overlay; max_gross is a ceiling, never a target
 
 target vs current
 ticker        target   current    drift%      target$              order
@@ -88,15 +94,17 @@ Exit code: `0`
 
 ## Paper run 1: plan from 2026-11-24, fill next open
 
-Command: `uv run python scripts/live.py run --book monthly --market TECH --state-dir /tmp/opencode/live-demo-_ieumwus --paper --as-of 2026-11-24 --now 2026-11-25T02:00:00+00:00`
+Command: `uv run python scripts/live.py run --book monthly --market TECH --state-dir /tmp/opencode/live-demo-mtl6n3_e --paper --as-of 2026-11-24 --now 2026-11-25T02:00:00+00:00`
 
 ```text
 LIVE PAPER RUN  book=monthly (monthly momentum)  market=TECH (NASDAQ tech)  native=USD  reporting=EUR  broker=paper
 recommendation: US monthly is the best-evidence live book; this TECH monthly run is for validation/research
 session=2026-11-24  equity=10,000.00 USD  cash=10,000.00  gross=0.00%  equity_eur=€9,100.00 @ 0.910000 EUR/USD (2026-11-24)
-signal=2026-11-24  fill=2026-11-25  plan=dbc2640c6b47bd10e59a  status=OK
+signal=2026-11-24  fill=2026-11-25  plan=b8928642b54336d86ddc  status=OK
 data: bench last=2026-11-24  fresh=True  panel=2026-11-24
 risk: drawdown=+0.00%  breaker_off=True  reason=trend  trend_breach=True  scale=0.50
+accounting: pre-tax, average-cost paper ledger; not HIFO/PFU and not the after-tax EUR ledger
+risk note: the drawdown breaker is a non-validated safety overlay; max_gross is a ceiling, never a target
 
 target vs current
 ticker        target   current    drift%      target$              order
@@ -129,16 +137,18 @@ Exit code: `0`
 
 ## Paper run 2: fill at 2026-11-25 open, plan next
 
-Command: `uv run python scripts/live.py run --book monthly --market TECH --state-dir /tmp/opencode/live-demo-_ieumwus --paper --as-of 2026-11-25 --now 2026-11-26T02:00:00+00:00`
+Command: `uv run python scripts/live.py run --book monthly --market TECH --state-dir /tmp/opencode/live-demo-mtl6n3_e --paper --as-of 2026-11-25 --now 2026-11-26T02:00:00+00:00`
 
 ```text
 LIVE PAPER RUN  book=monthly (monthly momentum)  market=TECH (NASDAQ tech)  native=USD  reporting=EUR  broker=paper
 recommendation: US monthly is the best-evidence live book; this TECH monthly run is for validation/research
 session=2026-11-25  equity=10,237.63 USD  cash=-2,288.32  gross=122.35%  equity_eur=€9,316.24 @ 0.910000 EUR/USD (2026-11-24)
-signal=2026-11-25  fill=2026-11-27  plan=0af532ad035e7f0e4202  status=OK
+signal=2026-11-25  fill=2026-11-27  plan=52c4498491e15e16601d  status=OK
 data: bench last=2026-11-25  fresh=True  panel=2026-11-25
 risk: drawdown=+0.00%  breaker_off=True  reason=trend  trend_breach=True  scale=0.50
-settled prior plan dbc2640c6b47bd10e59a (6 fills, 6.14 commissions)
+accounting: pre-tax, average-cost paper ledger; not HIFO/PFU and not the after-tax EUR ledger
+risk note: the drawdown breaker is a non-validated safety overlay; max_gross is a ceiling, never a target
+settled prior plan b8928642b54336d86ddc (6 fills, 6.14 commissions)
 
 fills at the open
 ticker     side          qty      price     notional     comm        pnl    session
@@ -175,16 +185,18 @@ Exit code: `0`
 
 ## Paper run 3: exact rerun of the same session (idempotent no-op)
 
-Command: `uv run python scripts/live.py run --book monthly --market TECH --state-dir /tmp/opencode/live-demo-_ieumwus --paper --as-of 2026-11-25 --now 2026-11-26T03:00:00+00:00`
+Command: `uv run python scripts/live.py run --book monthly --market TECH --state-dir /tmp/opencode/live-demo-mtl6n3_e --paper --as-of 2026-11-25 --now 2026-11-26T03:00:00+00:00`
 
 ```text
 LIVE PAPER RUN  book=monthly (monthly momentum)  market=TECH (NASDAQ tech)  native=USD  reporting=EUR  broker=paper
 recommendation: US monthly is the best-evidence live book; this TECH monthly run is for validation/research
 session=2026-11-25  equity=10,237.63 USD  cash=-2,288.32  gross=125.00%  equity_eur=€9,316.24 @ 0.910000 EUR/USD (2026-11-24)
-signal=2026-11-25  fill=2026-11-27  plan=0af532ad035e7f0e4202  status=OK
+signal=2026-11-25  fill=2026-11-27  plan=52c4498491e15e16601d  status=OK
 data: bench last=2026-11-25  fresh=True  panel=2026-11-25
 risk: drawdown=+0.00%  breaker_off=True  reason=trend  trend_breach=True  scale=0.50
-settled prior plan dbc2640c6b47bd10e59a (6 fills, 6.14 commissions)
+accounting: pre-tax, average-cost paper ledger; not HIFO/PFU and not the after-tax EUR ledger
+risk note: the drawdown breaker is a non-validated safety overlay; max_gross is a ceiling, never a target
+settled prior plan b8928642b54336d86ddc (6 fills, 6.14 commissions)
 
 fills at the open
 ticker     side          qty      price     notional     comm        pnl    session
@@ -222,10 +234,10 @@ Exit code: `0`
 
 ## Reconcile fills / orders / positions / cash / EUR / ledger
 
-Command: `uv run python scripts/live.py reconcile --book monthly --market TECH --state-dir /tmp/opencode/live-demo-_ieumwus --now 2026-11-26T03:00:00+00:00`
+Command: `uv run python scripts/live.py reconcile --book monthly --market TECH --state-dir /tmp/opencode/live-demo-mtl6n3_e --now 2026-11-26T03:00:00+00:00`
 
 ```text
-RECONCILE OK  state=/tmp/opencode/live-demo-_ieumwus/monthly_tech.json  ledger_rows=2
+RECONCILE OK  state=/tmp/opencode/live-demo-mtl6n3_e/monthly_tech.json  ledger_rows=2
   plans: 2
   orders: 6
   fills: 6
@@ -246,7 +258,7 @@ Exit code: `0`
 
 ## Status (book, pending plan, health, forward gate)
 
-Command: `uv run python scripts/live.py status --book monthly --market TECH --state-dir /tmp/opencode/live-demo-_ieumwus --as-of 2026-11-25 --now 2026-11-26T03:00:00+00:00`
+Command: `uv run python scripts/live.py status --book monthly --market TECH --state-dir /tmp/opencode/live-demo-mtl6n3_e --as-of 2026-11-25 --now 2026-11-26T03:00:00+00:00`
 
 ```text
 LIVE STATUS  book=monthly (monthly momentum)  market=TECH (NASDAQ tech)  native=USD  reporting=EUR  broker=paper
@@ -254,11 +266,13 @@ recommendation: US monthly is the best-evidence live book; this TECH monthly run
 session=2026-11-25  equity=10,237.63 USD  cash=-2,288.32  gross=122.35%  equity_eur=€9,316.24 @ 0.910000 EUR/USD (2026-11-24)
 data: bench last=2026-11-25  fresh=True  panel=2026-11-25
 risk: drawdown=-0.00%  breaker_off=True  reason=trend  trend_breach=True  scale=0.50
+accounting: pre-tax, average-cost paper ledger; not HIFO/PFU and not the after-tax EUR ledger
+risk note: the drawdown breaker is a non-validated safety overlay; max_gross is a ceiling, never a target
 
 read-only status; no state written
 forward gate: WAIT 1/5 verified dates (monthly/TECH, paper_audit.csv)
-state: /tmp/opencode/live-demo-_ieumwus/monthly_tech.json
-updated=2026-11-26T15:11:11+00:00  created=2026-11-26T15:11:11+00:00  last_session=2026-11-25  last_mark=2026-11-25
+state: /tmp/opencode/live-demo-mtl6n3_e/monthly_tech.json
+updated=2026-11-26T15:21:56+00:00  created=2026-11-26T15:21:55+00:00  last_session=2026-11-25  last_mark=2026-11-25
 cash=-2,288.32  equity_hint=10,237.63  fees=6.14  financing=0.00  realized=0.00
 fx: USD->EUR 0.910000 (2026-11-24)  equity_eur=9,316.24  cash_eur=-2,082.37  gross_eur=11,398.61
 EUR ledger: fees_eur=5.59  financing_eur=0.00  realized_eur=0.00
@@ -288,7 +302,7 @@ health
   [OK  ] benchmark_fresh: SPY last=2026-11-25 session=2026-11-25
   [OK  ] fx_eur: USD->EUR 0.910000 (2026-11-24)
   [OK  ] symbols_fresh: all fresh
-  [OK  ] state: updated 2026-11-26T15:11:11+00:00
+  [OK  ] state: updated 2026-11-26T15:21:56+00:00
   [OK  ] pending_plan: none
   [OK  ] duplicate_orders: 6 unique ids / 6 orders
   [OK  ] duplicate_fills: 6 unique ids / 6 fills
@@ -299,7 +313,7 @@ Exit code: `0`
 
 ## Holiday gate: 2026-11-26 is Thanksgiving (no orders, exit 2)
 
-Command: `uv run python scripts/live.py plan --book monthly --market TECH --state-dir /tmp/opencode/live-demo-_ieumwus --as-of 2026-11-26 --now 2026-11-27T03:00:00+00:00`
+Command: `uv run python scripts/live.py plan --book monthly --market TECH --state-dir /tmp/opencode/live-demo-mtl6n3_e --as-of 2026-11-26 --now 2026-11-27T03:00:00+00:00`
 
 ```text
 LIVE PLAN (dry-run)  book=monthly (monthly momentum)  market=TECH (NASDAQ tech)  native=USD  reporting=EUR  broker=paper
@@ -316,7 +330,7 @@ Exit code: `2`
 
 ## Artifacts
 
-- state bytes: 17990
+- state bytes: 18012
 - ledger data rows: 2
 
 ## Tests run for this demo
