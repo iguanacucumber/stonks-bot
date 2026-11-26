@@ -36,6 +36,37 @@ def ftt_rate(date: pd.Timestamp) -> float:
     return 0.004
 
 
+def limit_fill(
+    open_px: float,
+    high: float,
+    low: float,
+    close: float,
+    is_buy: bool,
+    limit_bps: float,
+) -> tuple[float, bool]:
+    """Fill a day's limit order at the open-anchored limit, else at the close.
+
+    The order is decided before the open and rests for the session: the limit is
+    open*(1-k) for a buy and open*(1+k) for a sell. A touch of the same day's
+    low/high fills at the limit; otherwise the fallback is market-on-close. The
+    0 bps case returns the open unchanged, which keeps the shipped path exact.
+    """
+    if limit_bps <= 0 or not np.isfinite(open_px) or open_px <= 0:
+        return float(open_px), False
+    k = limit_bps / 1e4
+    if is_buy:
+        limit = open_px * (1.0 - k)
+        if np.isfinite(low) and low > 0 and low <= limit:
+            return float(limit), True
+    else:
+        limit = open_px * (1.0 + k)
+        if np.isfinite(high) and high > 0 and high >= limit:
+            return float(limit), True
+    if np.isfinite(close) and close > 0:
+        return float(close), False
+    return float(open_px), False
+
+
 def tax_on_gain(
     taxable: float, federal: float, state: float, salt_left: float, salt_cap: float
 ) -> tuple[float, float]:
@@ -155,7 +186,12 @@ def run(
     rows = mkt._px_row
     arr = mkt._px_arr
     arr_open = mkt._px_open
+    arr_high = mkt._px_high
+    arr_low = mkt._px_low
     exec_open = cfg.exec_price == "open"
+    do_limit = cfg.limit_bps > 0
+    if do_limit and not exec_open:
+        raise ValueError("limit_bps requires exec_price='open'")
     if cfg.dd_stop and cfg.dd_scale <= 0:
         raise ValueError("dd_scale must be > 0: a full cash exit cannot recover")
     cost_rate = cfg.cost_bps / 1e4
@@ -336,6 +372,8 @@ def run(
         pr = np.where(np.isnan(row) | (row <= 0), 0.0, row)
         orow = arr_open[ri] if ri is not None else np.full(nc, np.nan)
         po = np.where(np.isnan(orow) | (orow <= 0), 0.0, orow)
+        hrow = arr_high[ri] if ri is not None else np.full(nc, np.nan)
+        lrow = arr_low[ri] if ri is not None else np.full(nc, np.nan)
         prev_px = last_px.copy()  # prior close: the correct fallback for a missing open
         seen = pr > 0
         last_px[seen] = pr[seen]
@@ -376,15 +414,26 @@ def run(
             # close, not at today's close (which would be look-ahead).
             mark = mark_open
             equity_now = cash + float(shares @ mark)
+
+            def _fill(ci: int, is_buy: bool) -> float:
+                """Open fill, or the opt-in limit fill using today's range."""
+                if do_limit and po[ci] > 0:
+                    px, _ = limit_fill(
+                        po[ci], hrow[ci], lrow[ci], pr[ci], is_buy, cfg.limit_bps
+                    )
+                    return px
+                return float(mark[ci])
+
             # sell exits first
             for ci in list(held):
                 if ci in pending_exit or (has_target and ci not in keep):
                     p = mark[ci]
                     if p == 0.0:
                         continue
-                    notional = shares[ci] * p
+                    fill = _fill(ci, False)
+                    notional = shares[ci] * fill
                     cash += notional - _fees(notional, False, ci, d)
-                    gain = _sell(ci, shares[ci], p, d)
+                    gain = _sell(ci, shares[ci], fill, d)
                     if (
                         cfg.tax_country.startswith("fr")
                         or cfg.tax_rate
@@ -397,7 +446,7 @@ def run(
                             names[ci],
                             "SELL",
                             shares[ci],
-                            float(p),
+                            float(fill),
                             notional,
                             pending_reason.get(ci, "rebalance"),
                         )
@@ -445,9 +494,31 @@ def run(
                                 sh = delta / p
                     if abs(delta) < 1e-12:
                         continue
-                    cash -= delta + _fees(abs(delta), delta > 0, ci, d)
+                    is_buy = delta > 0
+                    fill = _fill(ci, is_buy)
+                    if is_buy and cfg.leverage <= 1.0:
+                        # The fallback close can be above the open: cap the ticket
+                        # at the actual fill price so cash cannot go negative.
+                        grid = (
+                            cfg.us_grid
+                            if names[ci] in cfg.us_tickers
+                            else cfg.broker_grid
+                        )
+                        reserve = (
+                            max((f for _, f in grid), default=0.0) / cfg.initial_capital
+                            if grid and cfg.initial_capital > 0
+                            else 0.0
+                        )
+                        cap = max(0.0, cash - reserve) / (fill * (1.0 + fee_rate))
+                        if sh > cap:
+                            sh = cap
+                            delta = sh * p
+                    if abs(delta) < 1e-12:
+                        continue
+                    notional = abs(sh * fill)
+                    cash -= sh * fill + _fees(notional, is_buy, ci, d)
                     if sh < 0:
-                        gain = _sell(ci, -sh, p, d)
+                        gain = _sell(ci, -sh, fill, d)
                         if (
                             cfg.tax_country.startswith("fr")
                             or cfg.tax_rate
@@ -464,8 +535,8 @@ def run(
                             names[ci],
                             "BUY" if sh > 0 else "SELL",
                             abs(sh),
-                            float(p),
-                            abs(delta),
+                            float(fill),
+                            notional,
                             pending_reason.get(ci, "rebalance"),
                         )
                     )
@@ -475,14 +546,14 @@ def run(
                             if (d - wd).days <= cfg.wash_sale_days:
                                 realized += loss  # disallowed loss, added back
                         if cfg.tax_lots == "hifo":
-                            lots.setdefault(ci, []).append([sh, p])
+                            lots.setdefault(ci, []).append([sh, fill])
                             entry[ci] = _avg_basis(ci)
                         elif old_sh <= 0 or np.isnan(entry[ci]):
-                            entry[ci] = p
+                            entry[ci] = fill
                         else:
-                            entry[ci] = (entry[ci] * old_sh + p * sh) / (old_sh + sh)
+                            entry[ci] = (entry[ci] * old_sh + fill * sh) / (old_sh + sh)
                         if old_sh <= 0 or np.isnan(peak[ci]):
-                            peak[ci] = p
+                            peak[ci] = fill
                     elif shares[ci] <= 0:
                         entry[ci] = np.nan
                         peak[ci] = np.nan

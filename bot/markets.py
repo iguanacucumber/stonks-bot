@@ -180,17 +180,99 @@ def _rows(df: pd.DataFrame, ticker: str) -> pd.DataFrame:
         out["open"] = df["open"] * df["adjclose"] / df["close"]
     else:
         out["open"] = df["adjclose"]
+    # Keep the same adjustment factor on the range, so a limit at the adjusted
+    # open can be checked against adjusted high/low.
+    for col in ("high", "low"):
+        if col in df.columns:
+            out[col] = df[col] * df["adjclose"] / df["close"]
+        else:
+            out[col] = df["adjclose"]
     out["ticker"] = ticker
+    return out
+
+
+def _range_from_bars(
+    panel: pd.DataFrame,
+    alias: dict[str, str] | None = None,
+    fix_open: bool = False,
+) -> pd.DataFrame:
+    """Add adjusted high/low from cache/bars to a panel that dropped them.
+
+    Read-only: a symbol with no cached bar file is left as-is (no network fetch).
+    `alias` maps a panel ticker to its bar symbol (e.g. TECH stores QQQ as SPY).
+    `fix_open` also replaces the open with the real bar open; this matters for
+    the synthetic core rows, whose stored open is the adjusted close. Only use it
+    on USD panels, where the bar needs no FX translation.
+    """
+    alias = alias or {}
+    have_cols = {"high", "low"} <= set(panel.columns)
+    if have_cols and not panel[["high", "low"]].isna().any().any() and not fix_open:
+        return panel
+    parts = []
+    for ticker in panel["ticker"].unique():
+        symbol = alias.get(ticker, ticker)
+        path = data.BARS / f"{symbol.replace('/', '_')}.csv"
+        if not path.exists():
+            continue
+        try:
+            df = pd.read_csv(path, parse_dates=["date"])
+        except Exception:
+            continue
+        if df.empty or not {"high", "low"} <= set(df.columns):
+            continue
+        f = df["adjclose"] / df["close"]
+        cols = {
+            "date": df["date"],
+            "ticker": ticker,
+            "high": df["high"] * f,
+            "low": df["low"] * f,
+        }
+        if fix_open and "open" in df.columns:
+            cols["open_bar"] = df["open"] * f
+        parts.append(pd.DataFrame(cols))
+    if not parts:
+        return panel
+    rng = pd.concat(parts, ignore_index=True)
+    base = panel.drop(columns=["high", "low"], errors="ignore").copy()
+    if fix_open:
+        # Only the synthetic core rows have open == close; leave every real open
+        # untouched so the opt-in k=0 run matches the shipped panel exactly.
+        base["_fix_open"] = base["ticker"].isin(CORE_SYMBOLS) & (
+            (base["open"] - base["close"]).abs() <= 1e-12
+        )
+    out = base.merge(rng, on=["date", "ticker"], how="left")
+    if have_cols:
+        old = panel[["date", "ticker", "high", "low"]]
+        out = out.merge(old, on=["date", "ticker"], how="left", suffixes=("", "_keep"))
+        for col in ("high", "low"):
+            out[col] = out[col].where(out[col].notna(), out[f"{col}_keep"])
+            out = out.drop(columns=[f"{col}_keep"])
+    if fix_open and "open_bar" in out.columns:
+        fix = out["_fix_open"].fillna(False)
+        out["open"] = out["open_bar"].where(fix & out["open_bar"].notna(), out["open"])
+        out = out.drop(columns=["_fix_open", "open_bar"])
     return out
 
 
 _CACHE: dict[str, tuple[pd.DataFrame, pd.DataFrame]] = {}
 
 
-def build(name: str) -> tuple[pd.DataFrame, pd.DataFrame]:
-    """Long panel + static membership for one market. Benchmark is stored as 'SPY'."""
+def build(name: str, with_range: bool = False) -> tuple[pd.DataFrame, pd.DataFrame]:
+    """Long panel + static membership for one market. Benchmark is stored as 'SPY'.
+
+    `with_range` adds adjusted high/low from cache/bars when the stored panel
+    dropped them. It is opt-in because the raw-bar join is only needed for the
+    limit-at-open execution mode.
+    """
     if name in _CACHE:
-        return _CACHE[name]
+        panel, mem = _CACHE[name]
+        if with_range:
+            panel = _range_from_bars(
+                panel,
+                {"SPY": MARKETS[name]["bench"]} if name != "US" else None,
+                fix_open=name in ("US", "TECH"),
+            )
+        return panel, mem
     spec = MARKETS[name]
     if name == "US":
         from bot import universe
@@ -204,8 +286,12 @@ def build(name: str) -> tuple[pd.DataFrame, pd.DataFrame]:
             for sym in missing:
                 parts.append(_rows(data.fetch_one(sym), sym))
             panel = pd.concat(parts, ignore_index=True)
-            panel = panel.drop_duplicates(["date", "ticker"]).sort_values(["date", "ticker"])
+            panel = panel.drop_duplicates(["date", "ticker"]).sort_values(
+                ["date", "ticker"]
+            )
         _CACHE[name] = (panel, mem)
+        if with_range:
+            panel = _range_from_bars(panel, fix_open=name in ("US", "TECH"))
         return panel, mem
 
     tickers = UNIVERSES[name]
@@ -236,6 +322,10 @@ def build(name: str) -> tuple[pd.DataFrame, pd.DataFrame]:
     panel = panel.drop_duplicates(["date", "ticker"]).sort_values(["date", "ticker"])
     mem = pd.DataFrame({"date": pd.Timestamp(START), "ticker": tickers})
     _CACHE[name] = (panel, mem)
+    if with_range:
+        panel = _range_from_bars(
+            panel, {"SPY": spec["bench"]}, fix_open=name in ("US", "TECH")
+        )
     return panel, mem
 
 

@@ -75,12 +75,15 @@ def _load(
     broker: str | None = None,
     wrapper: str = "cto",
     capital: float = 10000.0,
+    limit_bps: float | None = None,
 ):
     profile = profile or ("tax" if country == "fr" else "monthly")
     broker = broker or ("trade-republic" if country == "fr" else "none")
     if wrapper == "pea" and market != "FR":
         raise SystemExit("--wrapper pea is only modelled for --market FR")
-    panel, mem = markets.build(market)
+    # Passing --limit-bps (even 0) opts into the raw-bar open/high/low panel, so
+    # the k=0 baseline is the same honest next-open path as the limit runs.
+    panel, mem = markets.build(market, with_range=limit_bps is not None)
     if market != "US":
         # Yahoo Europe/Asia keep the "." in symbols; the S&P alias map does not.
         universe.canonical = lambda t: t
@@ -115,6 +118,7 @@ def _load(
         DEFAULT_REBALANCE if rebalance_mode is None else rebalance_mode
     )
     kw["exec_price"] = DEFAULT_EXEC if exec_price is None else exec_price
+    kw["limit_bps"] = float(limit_bps or 0.0)
     if financing_bps is not None:
         kw["financing_bps"] = financing_bps
     if wrapper == "pea":
@@ -180,6 +184,7 @@ def cmd_backtest(args):
         broker,
         args.wrapper,
         args.capital,
+        limit_bps=args.limit_bps,
     )
     print(
         f"dates {mkt.dates[0].date()} -> {mkt.dates[-1].date()}  tickers {mkt.px.shape[1]}"
@@ -752,8 +757,16 @@ def main(argv=None):
     pb.add_argument("--salt-cap", type=float, default=10000.0)
     pb.add_argument("--wash-sale-days", type=int, default=None)
     pb.add_argument("--leverage-band", type=float, default=None)
-    pb.add_argument("--rebalance-mode", choices=["days", "calendar"], default=DEFAULT_REBALANCE)
+    pb.add_argument(
+        "--rebalance-mode", choices=["days", "calendar"], default=DEFAULT_REBALANCE
+    )
     pb.add_argument("--exec", choices=["close", "open"], default=DEFAULT_EXEC)
+    pb.add_argument(
+        "--limit-bps",
+        type=float,
+        default=None,
+        help="opt-in limit-at-open: buy open*(1-k), sell open*(1+k), k in bps",
+    )
     pb.add_argument("--profile", choices=sorted(PROFILES), default=None)
     pb.add_argument("--leverage", type=float, default=DEFAULT_LEVERAGE)
     pb.add_argument("--financing-bps", type=float, default=DEFAULT_FINANCING_BPS)
@@ -782,7 +795,9 @@ def main(argv=None):
     pn.add_argument("--salt-cap", type=float, default=10000.0)
     pn.add_argument("--wash-sale-days", type=int, default=None)
     pn.add_argument("--leverage-band", type=float, default=None)
-    pn.add_argument("--rebalance-mode", choices=["days", "calendar"], default=DEFAULT_REBALANCE)
+    pn.add_argument(
+        "--rebalance-mode", choices=["days", "calendar"], default=DEFAULT_REBALANCE
+    )
     pn.add_argument("--exec", choices=["close", "open"], default=DEFAULT_EXEC)
     pn.add_argument("--profile", choices=sorted(PROFILES), default=None)
     pn.add_argument("--leverage", type=float, default=DEFAULT_LEVERAGE)
@@ -806,7 +821,9 @@ def main(argv=None):
     pp.add_argument("--salt-cap", type=float, default=10000.0)
     pp.add_argument("--wash-sale-days", type=int, default=None)
     pp.add_argument("--leverage-band", type=float, default=None)
-    pp.add_argument("--rebalance-mode", choices=["days", "calendar"], default=DEFAULT_REBALANCE)
+    pp.add_argument(
+        "--rebalance-mode", choices=["days", "calendar"], default=DEFAULT_REBALANCE
+    )
     pp.add_argument("--exec", choices=["close", "open"], default=DEFAULT_EXEC)
     pp.add_argument("--profile", choices=sorted(PROFILES), default=None)
     pp.add_argument("--leverage", type=float, default=DEFAULT_LEVERAGE)

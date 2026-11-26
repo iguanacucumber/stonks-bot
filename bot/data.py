@@ -142,6 +142,11 @@ def build_panel(membership: pd.DataFrame, force: bool = False) -> pd.DataFrame:
             d["open"] = df["open"] * df["adjclose"] / df["close"]
         else:
             d["open"] = df["adjclose"]
+        for col in ("high", "low"):
+            if col in df.columns:
+                d[col] = df[col] * df["adjclose"] / df["close"]
+            else:
+                d[col] = df["adjclose"]
         d["ticker"] = sym
         parts.append(d)
     panel = pd.concat(parts, ignore_index=True)

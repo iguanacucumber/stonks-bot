@@ -285,6 +285,76 @@ def main():
         first = ores.trades[ores.trades.side == "BUY"].iloc[0]
         assert abs(first.price - want) < 1e-9, f"{mode} fill {first.price} != {want}"
 
+    # limit-at-open fills at the limit on a touch, else at the close
+    fp, hit = backtest.limit_fill(100.0, 101.0, 98.0, 100.5, True, 10)
+    assert hit and abs(fp - 99.9) < 1e-12, (fp, hit)
+    fp, hit = backtest.limit_fill(100.0, 101.0, 99.95, 100.5, True, 10)
+    assert not hit and abs(fp - 100.5) < 1e-12, (fp, hit)
+    fp, hit = backtest.limit_fill(100.0, 100.5, 99.0, 99.5, False, 10)
+    assert hit and abs(fp - 100.1) < 1e-12, (fp, hit)
+    fp, hit = backtest.limit_fill(100.0, 100.05, 99.0, 99.5, False, 10)
+    assert not hit and abs(fp - 99.5) < 1e-12, (fp, hit)
+    assert backtest.limit_fill(100.0, 101.0, 98.0, 100.5, True, 0) == (
+        100.0,
+        False,
+    ), "0 bps must stay on the next-open path"
+
+    # limit_bps=0 with high/low present reproduces the baseline exactly
+    op_range = op.copy()
+    op_range["high"] = np.maximum(op_range["open"], op_range["adjclose"]) * 1.01
+    op_range["low"] = np.minimum(op_range["open"], op_range["adjclose"]) * 0.99
+    lim_cfg = strategy.Config(
+        start=str(dts2[25].date()),
+        top_n=1,
+        rebalance_days=50,
+        lookback=20,
+        skip=2,
+        core=None,
+        core_weight=0.0,
+        min_dollar_vol=0.0,
+        max_weight=1.0,
+        sector_cap=1.0,
+        stop=1.0,
+        cost_bps=0.0,
+        exec_price="open",
+        limit_bps=0.0,
+    )
+    base_res = backtest.run(strategy.Market(op, omem, lim_cfg))
+    zero_res = backtest.run(strategy.Market(op_range, omem, lim_cfg))
+    assert np.allclose(base_res.equity.values, zero_res.equity.values), (
+        "limit_bps=0 changed equity"
+    )
+    pd.testing.assert_frame_equal(base_res.trades, zero_res.trades, check_exact=True)
+    lim_res = backtest.run(
+        strategy.Market(op_range, omem, replace(lim_cfg, limit_bps=10.0))
+    )
+    first = lim_res.trades[lim_res.trades.side == "BUY"].iloc[0]
+    assert abs(first.price - 150.0 * (1 - 10 / 1e4)) < 1e-9, (
+        f"limit engine fill {first.price}"
+    )
+    # no look-ahead in limit mode: truncating future bars must not change the past
+    cut_l = dts2[200]
+    lcfg = replace(lim_cfg, limit_bps=10.0)
+    lfull = backtest.run(strategy.Market(op_range, omem, lcfg))
+    lcut = backtest.run(
+        strategy.Market(
+            op_range[op_range["date"] <= cut_l],
+            omem,
+            replace(lcfg, end=str(cut_l.date())),
+        )
+    )
+    assert np.allclose(
+        lfull.equity.loc[:cut_l].iloc[:-1].values,
+        lcut.equity.loc[:cut_l].iloc[:-1].values,
+    ), "limit mode look-ahead detected"
+    try:
+        strategy.Market(
+            op_range, omem, replace(lim_cfg, limit_bps=10.0, exec_price="close")
+        )
+        raise AssertionError("limit_bps with exec_price=close should be rejected")
+    except ValueError:
+        pass
+
     # P&L windows: 1/5/21/252 trading days, chained with the live day
     eq = pd.Series(1.01 ** np.arange(300))
     for live in (1.0, 1.02):
