@@ -32,6 +32,7 @@ after-tax hurdles (BIL, QQQ) at 2x costs. That is the result, not a missing test
 | v9 | sector cross-sectional reversal | daily walk-forward 2019-2026 | 1.29x vs QQQ 2.80x; 1.12x at 2x | reject |
 | v9 | calendar/seasonality | daily 2019-2026 | 1.01x; below BIL at 2x | reject |
 | v9 | volatility breakout | daily 2019-2026 | 0.91x; 2/8 positive folds | reject |
+| v11 | earnings 8-K 2.02 intraday continuation/fade | 2.02 timestamps + 1h 2y, 5m 60d | fixed-slot best 1.149x vs QQQ 1.170x; full-capital gap fade 1.190x but 2026 -0.7%, p=0.035 | reject |
 
 ## Why the result is credible
 
@@ -39,12 +40,21 @@ after-tax hurdles (BIL, QQQ) at 2x costs. That is the result, not a missing test
 - Signals use only completed bars; entry is the next bar open.
 - Costs are 5 bps/side base and 10 bps 2x; French PFU is modeled.
 - Pairs/events use placebos/walk-forward; intraday sample limits are stated.
+- v11 earnings 2.02 uses SEC acceptance timestamps, a one-bar execution
+  delay, 5-slot concurrency, short borrow and date-shift placebos. It reports
+  both a 20%-slot risk budget and an upper-bound full-capital sizing; the only
+  full-capital lead fails the year-fold rule. The 5m book has only 15 events
+  in 60 days and is execution quality only.
 - Every variant and failed fold is in the trial registries:
-  `results/alpha_trials.csv`, `results/short2_trials.csv`, `results/short3.md`.
+  `results/alpha_trials.csv`, `results/short2_trials.csv`,
+  `results/short3.md`, `results/earn_intraday_trials.csv`.
 
 ## What would be needed to revisit
 
 - A paid intraday/MBO dataset with several years of history and auction data.
+- A curated quarterly earnings calendar and auction-capable execution; the
+  cached 2.02 screen includes monthly filers, and a one-bar delay gives up the
+  overnight gap that carries most of the earnings reaction.
 - A market-making/execution edge with sub-bp spreads and queue position.
 - A funding/borrow model for neutral pairs.
 - Real forward paper evidence at 5/5 before any allocation.
