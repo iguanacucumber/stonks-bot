@@ -19,13 +19,16 @@ Status: `bot/eur_ledger.py`, `scripts/eur_ledger.py`, `results/eur_ledger.md` me
 TECH 57.01x terminal-FX -> 53.45x EUR ledger; US 70.86x -> 66.72x. Remaining work:
 dividend/withholding tax and CLI integration.
 
-### 2. Dividend and withholding-tax drag
+### 2. Dividend and withholding-tax drag (done — v3/dividends)
 
 Adjusted closes reinvest gross dividends. The model ignores PFU on dividends, the
 15% US treaty withholding, and the French credit. For SMH the drag is small; for
-TLT/GLD/SPY/cross-asset books it is not. Store dividend events from Yahoo (`events=div`)
-and charge tax annually. Acceptance: SMH-only results change by a documented small
-amount; any bond/gold strategy is re-evaluated with the drag.
+TLT/GLD/SPY/cross-asset books it is not. `bot/dividends.py` stores Yahoo
+`events=div` under `cache/dividends/`; `bot/eur_ledger.py` can replay the schedule
+with withholding, the year-dependent PFU credit and an optional cash mode.
+`results/dividends.md` documents the small equity drag and the ~1%/yr high-yield
+bond drag. Acceptance: SMH/TECH/US move only a little; the bond-heavy example is
+re-evaluated with the drag.
 
 ### 3. Real broker adapter (IBKR paper first)
 

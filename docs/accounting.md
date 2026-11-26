@@ -39,8 +39,10 @@ core-only tax book is behind on terminal wealth but cheaper to run.
 
 ## Caveats
 
-- Dividends are still gross (adjusted closes); dividend and withholding tax are a
-  separate backlog item. Small for SMH, material for bond/gold books.
+- The base EUR ledger still treats dividends as gross (adjusted closes). The
+  dividend overlay in `results/dividends.md` adds Yahoo events, 15% US treaty
+  withholding and the year-dependent French PFU credit; small for SMH, material
+  for bond/gold books. Pass a dividend schedule to `eur_ledger.replay` to use it.
 - The fee model approximates IBKR at €10k; the engine's exact fee total can differ by a
   few hundred euros. The tax/FX effect dominates.
 - The overlay does not change `bot/backtest.py`, the CLI defaults, or the forward book.

@@ -33,8 +33,9 @@ rolling 12m are computed on the EUR daily equity curve, not the USD engine.
 
 ## Caveats
 
-- Dividends are still gross (adjusted closes); dividend/withholding tax is a
-  separate backlog item. The drag is small for SMH, larger for bond/gold books.
+- Dividends are still gross in this base report (adjusted closes). See
+  `results/dividends.md` for the 15% withholding, year-dependent PFU credit
+  and the corrected multiples; the drag is small for SMH, larger for bonds.
 - The fee model is an approximation of IBKR at €10k; the engine's exact fee
   total can differ by a few hundred euros. The tax/FX effect dominates.
 - This is a reporting overlay. It does not change `bot/backtest.py`, the CLI

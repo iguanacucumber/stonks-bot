@@ -10,6 +10,10 @@ spot ignores two things:
 This module replays the engine's trades in EUR. Signals and share quantities stay
 USD-native (that is what the bot actually sees); only the accounting currency
 changes. It is a reporting/validation layer, not a trading strategy.
+
+French PFU is year-dependent: 30% through 2025 and 31.4% from 2026, matching
+`bot.backtest.fr_rate`. Dividends use the same schedule, with the 15% US treaty
+withholding credited against the PFU.
 """
 
 from __future__ import annotations
@@ -43,6 +47,26 @@ class EurLedgerConfig:
     broker_bps: float = 0.25
     broker_fixed_eur: float = 1.0
     loss_carry_years: int = 10
+    # Dividend treatment. Adjusted closes already reinvest the gross distribution,
+    # so the default replay only charges withholding/PFU and leaves the gross
+    # dividend inside the total-return position. Set dividend_reinvest=False to
+    # move the gross amount to cash as an accounting transformation (see report).
+    withholding_rate: float = 0.15
+    # None -> year-dependent French PFU (30% through 2025, 31.4% from 2026),
+    # unless tax_rate forces a flat stressed rate. A float overrides only dividends.
+    dividend_tax_rate: float | None = None
+    dividend_reinvest: bool = True
+    wrapper: str = "cto"  # "cto" | "pea"; PEA skips US dividend tax
+
+    def __post_init__(self) -> None:
+        if not 0.0 <= float(self.withholding_rate) < 1.0:
+            raise ValueError("withholding_rate must be in [0, 1)")
+        if self.dividend_tax_rate is not None and not (
+            0.0 <= float(self.dividend_tax_rate) < 1.0
+        ):
+            raise ValueError("dividend_tax_rate must be None or in [0, 1)")
+        if str(self.wrapper).lower() not in ("cto", "pea"):
+            raise ValueError("wrapper must be 'cto' or 'pea'")
 
 
 @dataclass
@@ -63,6 +87,23 @@ class EurLedgerResult:
     loss_carry: float
     reconcile_gap: float
     config: EurLedgerConfig = field(default_factory=EurLedgerConfig)
+    dividends_gross: float = 0.0
+    dividend_withholding: float = 0.0
+    dividend_tax_credit: float = 0.0
+    dividend_tax_topup: float = 0.0
+    dividend_tax_total: float = 0.0
+    dividends_net: float = 0.0
+    dividend_events: int = 0
+    dividend_reinvest: bool = True
+
+
+def _pfu_rate(cfg: EurLedgerConfig, year: int) -> float:
+    """Dividend PFU rate: explicit override, forced flat rate, or by year."""
+    if cfg.dividend_tax_rate is not None:
+        return float(cfg.dividend_tax_rate)
+    if cfg.tax_rate is not None:
+        return float(cfg.tax_rate)
+    return french_rate(year)
 
 
 def _consume_hifo(
@@ -98,22 +139,80 @@ def _fx_series(market: str, dates: pd.DatetimeIndex) -> pd.Series:
     return out.rename("eur_per_unit")
 
 
+def _dividend_map(
+    dividends: pd.DataFrame | None,
+    dates: pd.DatetimeIndex,
+) -> dict[pd.Timestamp, list[tuple[str, float]]]:
+    """Map ex-dates to the first ledger session on/after each event.
+
+    The schedule is native-currency gross amount per current share. A weekend
+    ex-date is applied at the next session; an event outside the replay window
+    is ignored. Duplicate date/ticker rows keep the last value, never sum.
+    """
+    if dividends is None or len(dividends) == 0 or len(dates) == 0:
+        return {}
+    df = pd.DataFrame(dividends).copy()
+    date_col = next(
+        (c for c in ("date", "ex_date", "ex-date") if c in df.columns), None
+    )
+    if date_col is None or "ticker" not in df.columns or "amount" not in df.columns:
+        raise ValueError("dividends need date/ex_date, ticker and amount columns")
+    df["date"] = pd.to_datetime(df[date_col]).dt.normalize()
+    df["ticker"] = df["ticker"].astype(str)
+    df["amount"] = pd.to_numeric(df["amount"], errors="coerce")
+    df = df.dropna(subset=["date", "ticker", "amount"])
+    df = df[np.isfinite(df["amount"]) & (df["amount"] > 0)]
+    df = df.drop_duplicates(["date", "ticker"], keep="last")
+    if df.empty:
+        return {}
+    first, last = dates[0], dates[-1]
+    df = df[(df["date"] >= first) & (df["date"] <= last)]
+    if df.empty:
+        return {}
+    index = dates.searchsorted(df["date"].to_numpy(), side="left")
+    out: dict[pd.Timestamp, list[tuple[str, float]]] = {}
+    for session, ticker, amount in zip(
+        dates[index], df["ticker"].to_numpy(), df["amount"].to_numpy()
+    ):
+        out.setdefault(pd.Timestamp(session), []).append((str(ticker), float(amount)))
+    return out
+
+
+def _reduce_lots(lots: list[list[float]], sold: float, shares: float) -> None:
+    """Scale lots when a synthetic cash distribution removes shares."""
+    if shares <= 0 or sold <= 0:
+        return
+    keep = max(0.0, (shares - min(sold, shares)) / shares)
+    for lot in lots:
+        lot[0] *= keep
+    lots[:] = [lot for lot in lots if lot[0] > 1e-12]
+
+
 def replay(
     res,
     panel: pd.DataFrame,
     market: str,
     config: EurLedgerConfig | None = None,
+    dividends: pd.DataFrame | None = None,
 ) -> EurLedgerResult:
     """Replay `res.trades` in EUR with HIFO lots, PFU and margin interest.
 
     `res` is a `bot.backtest.Result` (or any object with `.equity` and `.trades`).
     `panel` is the native long panel used by the engine (date, ticker, adjclose).
+    `dividends` is an optional long frame (date/ex_date, ticker, amount) of gross
+    native-currency dividends per current share. Because adjusted closes already
+    reinvest gross dividends, the default only deducts dividend taxes. With
+    `cfg.dividend_reinvest=False`, the gross amount is also moved from the
+    position to cash by a synthetic share reduction (no fee, no realized gain).
     """
     cfg = config or EurLedgerConfig()
     dates = pd.DatetimeIndex(res.equity.index)
     if len(dates) == 0:
         raise ValueError("empty equity series")
     fx = _fx_series(market, dates)
+    div_by_date = (
+        {} if str(cfg.wrapper).lower() == "pea" else _dividend_map(dividends, dates)
+    )
 
     px = panel[["date", "ticker", "adjclose"]].copy()
     px["px_eur"] = (
@@ -141,6 +240,12 @@ def replay(
     year = int(dates[0].year)
     tax_paid = 0.0
     total_fees = 0.0
+    dividends_gross = 0.0
+    dividend_withholding = 0.0
+    dividend_tax_credit = 0.0
+    dividend_tax_topup = 0.0
+    dividend_tax_total = 0.0
+    dividend_events = 0
     eq: list[float] = []
     cashs: list[float] = []
 
@@ -171,6 +276,45 @@ def replay(
 
         if cash < 0 and cfg.financing_bps:
             cash *= 1.0 + cfg.financing_bps / 1e4 / 252.0
+
+        # Dividends are known before the ex-date open. Process them before the
+        # day's fills: a seller on the ex-date still receives the distribution,
+        # a buyer on the ex-date does not.
+        for ticker, amount in div_by_date.get(d, ()):
+            shares = float(pos.get(ticker, 0.0))
+            if shares <= 1e-12:
+                continue
+            fxd = float(fx.loc[d])
+            gross = shares * float(amount) * fxd
+            if not np.isfinite(gross) or gross <= 0:
+                continue
+            withholding = gross * float(cfg.withholding_rate)
+            pfu = gross * _pfu_rate(cfg, int(d.year))
+            credit = min(withholding, pfu)
+            topup = max(0.0, pfu - credit)
+            tax = withholding + topup
+            if not cfg.dividend_reinvest:
+                # Adjusted closes already reinvest the gross amount. Move it to
+                # cash by removing the equivalent position value at the prior
+                # mark. This is bookkeeping, not a taxable sale: no fee and no
+                # realized gain is created.
+                px = last_px.get(ticker)
+                if px is None or px <= 0:
+                    px = float(pxe[ticker].loc[d])
+                if np.isfinite(px) and px > 0:
+                    sold = min(shares, gross / px)
+                    _reduce_lots(lots.setdefault(ticker, []), sold, shares)
+                    cash += sold * px
+                    pos[ticker] = shares - sold
+                    if pos[ticker] <= 1e-12:
+                        pos.pop(ticker, None)
+            cash -= tax
+            dividends_gross += gross
+            dividend_withholding += withholding
+            dividend_tax_credit += credit
+            dividend_tax_topup += topup
+            dividend_tax_total += tax
+            dividend_events += 1
 
         group = by_date.get(d)
         if group is not None:
@@ -248,4 +392,12 @@ def replay(
         loss_carry=carry_left,
         reconcile_gap=reconcile_gap,
         config=cfg,
+        dividends_gross=dividends_gross,
+        dividend_withholding=dividend_withholding,
+        dividend_tax_credit=dividend_tax_credit,
+        dividend_tax_topup=dividend_tax_topup,
+        dividend_tax_total=dividend_tax_total,
+        dividends_net=dividends_gross - dividend_tax_total,
+        dividend_events=dividend_events,
+        dividend_reinvest=bool(cfg.dividend_reinvest),
     )
