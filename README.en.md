@@ -3,7 +3,8 @@
 [Version française](README.md)
 
 Paper-only systematic long-only equity portfolio (US by default, tested across 39 markets)
-with a constrained LLM news overlay. No broker connection, no orders, no keys.
+with a constrained LLM news overlay. No real broker connection, no real orders, no keys;
+the optional IBKR adapter is a DU paper/read-only path.
 
 > **Accounting note.** For a French CTO, the real-life number is the **EUR ledger**
 > (`results/eur_ledger.md`): annual PFU on EUR gains, EUR cost basis at trade-date FX,
@@ -91,8 +92,8 @@ Data guard: names with more than 2 daily moves over 50% in a year are excluded f
 selection (`max_extreme=2`). This filters Yahoo ticker collisions (old S&P symbols reused
 by penny stocks) without changing the shipped result.
 
-Known bias: ~18% of 2015–2026 index members have no Yahoo history (mostly acquired/delisted
-names). They are dropped. Results are survivor-biased; treat them as a sanity check, not a
+Known bias: 16.2% of 2014+ index members have no Yahoo history (mostly acquired/delisted
+names). They are dropped (`results/eval_survivorship.md`). Results are survivor-biased; treat them as a sanity check, not a
 promise. A point-in-time Nasdaq-100 sleeve check retains **95%** of the static-49 TECH
 EUR-ledger terminal (50.3x vs 53.0x), so the sleeve is not mainly a survivorship
 artifact; the US all-PIT book is still better on return and drawdown. An EUR/USD
@@ -100,7 +101,10 @@ hedge was rejected: at 100% the US book falls to 45.4x and maxDD deepens to -67%
 USD acted as a 2022 cushion. Tax-loss harvesting was also rejected after fees:
 it is mostly tax deferral plus round-trip costs.
 
-## Results (paper backtest, 10 bps, month-end rebalance, next-open fill, 2.5x gross)
+## Legacy gross USD backtest (pre-tax, 10 bps; not the EUR ledger)
+
+This table is the old pre-tax USD path from `results/summary.md` / `results/leverage.md`.
+It is **not** comparable to the after-tax EUR-ledger headline above (66.17x US).
 
 | $10,000 from | Bot | SPY | Bot max DD | SPY max DD |
 |---|---:|---:|---:|---:|
@@ -171,7 +175,7 @@ On €10k after tax and real tariffs (`results/france.md`, `results/brokers.md`)
 | TECH core-only tax book | 34.7x | 39.5x | 48.8x EUR ledger | 5.4x QQQ |
 | French CTO (CAC + SMH core) | 6.4x | 12.5x | — | 2.1x CAC |
 | French PEA (sleeve only) | 1.47x | 1.61x | — | 2.3x CAC |
-| PEA Nasdaq-100 proxy (PUST.PA) | 4.96x | 5.08x | — | 5.4x QQQ |
+| PEA Nasdaq-100 proxy (PUST.PA) | 5.76x | 5.77x | — | 5.4x QQQ |
 
 At €10k the best book+broker is **monthly US at Interactive Brokers: 66.17x in the
 EUR ledger** (70.9x terminal-FX headline, €28.8k fees, €132k PFU + €210k exit tax).
@@ -216,8 +220,8 @@ the core-only tax book (39.47x at 25 bps).
 
 Bourse Direct's €8.50 US ticket still makes it the wrong broker for a €10k US book.
 No pure semiconductor UCITS is PEA-eligible (the fund must hold >75% EU/EEA
-companies), so the best 1x PEA tech proxy (PUST.PA) makes 5.08x after tax, and even
-the 2x Nasdaq PEA ETF (LQQ) is 14.4x, versus 66.17x for the best CTO. The PEA is not
+companies), so the best 1x PEA tech proxy (PUST.PA) makes 5.77x after tax, and even
+the 2x Nasdaq PEA ETF (LQQ) is 13.73x, versus 66.17x for the best CTO. The PEA is not
 a substitute for the US core. Keep the 200-day signal in the asset's own currency:
 translating the price series to EUR before the rule changes the trend timing and
 hurts. `results/france.md`, `results/brokers.md`, `results/pea_ucits.md`,
@@ -346,7 +350,8 @@ momentum-only, the report says so. The forward paper ledger is the only uncontam
 Private repo: `github.com/iguanacucumber/stonks-bot` (orchestration issue #5).
 Branches: `agent/forward`, `agent/pea-ucits`, `agent/execution`, `agent/risk`.
 Plan and merge protocol: `docs/agents.md`. Merge order: forward, PEA, execution,
-risk. CI runs `tests/test_core.py` plus the CLI help on `master` and `agent/**`.
+risk. CI runs all `tests/test_*.py`, the cache-aware reproduction/acceptance smoke,
+and the CLI help.
 
 ## Layout
 

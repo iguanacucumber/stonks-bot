@@ -11,6 +11,7 @@
 | Daily paper plan | `uv run python scripts/live.py plan --book monthly` | ready | dry-run |
 | Paper ledger | `uv run python scripts/live.py run --book monthly --paper` | ready | pre-tax/average-cost |
 | IBKR paper adapter | add `--broker ibkr-paper` | ready | DU paper account, gateway required |
+| IBKR read-only inspection | add `--broker ibkr-paper --read-only` to `status`/`reconcile` | ready | GET-only; no submit/cancel/replace |
 | Investor questionnaire | `uv run python scripts/advise.py --interactive` | ready | not investment advice |
 | Withdrawal projection | `uv run python scripts/advise.py --profile balanced ...` | ready | deterministic scenarios |
 | Ops status/doctor | `uv run python scripts/ops.py status` / `doctor` | ready | paper state |
@@ -42,6 +43,6 @@
 ## Non-negotiables
 
 - No real orders, no keys in the repo.
-- Backtests are not forward evidence; the forward gate is US 0/5, TECH 1/5.
+- Backtests are not forward evidence; the forward gate is US 0/5, TECH 1/5, tax 0/5.
 - The 2.5x book can lose more than half; balanced is a risk preference, not a free lunch.
 - Short-horizon trading was tested and rejected after costs.

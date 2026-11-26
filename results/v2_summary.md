@@ -54,9 +54,10 @@ It is post-hoc and paper-only; it gives up about half the terminal wealth for
 - **Short-horizon reversal/momentum/overnight: reject.** Best close-to-close OOS
   2.64x; at 2x costs 1.13x, below BIL 1.20x. Overnight 1.01x optimistic, 0.82x
   all-in, 0.60x doubled. No satellite allocation.
-- **TECH sleeve survivorship: robust, not default.** PIT S&P IT retains ~107% of
-  the static headline (EUR ledger 57.90x vs 52.98x), but US all-PIT is better on
-  return and drawdown. TECH remains forward-only; PIT membership is `paper`.
+- **TECH sleeve survivorship: robust, not default.** The later PIT Nasdaq-100
+  check retains **95%** of the static TECH EUR ledger (50.29x vs 52.98x), but US
+  all-PIT is better on return and drawdown. TECH remains forward-only; PIT
+  membership is `paper`. See `results/v4_summary.md`, `results/pit_tech.md`.
 - **Risk rules: no max-growth pass.** Vol targeting, drawdown ladders, VIX/trend
   overlays, trend 250/300 and tail hedges all fail the return/drawdown/control
   gates. The 200-day trend stays. Balanced A6/V8 pass but are post-hoc `paper`.

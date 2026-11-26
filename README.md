@@ -15,7 +15,7 @@
 </div>
 
 > [!WARNING]
-> C'est un backtest, pas une promesse de rendement. Le livre US a perdu 56,4 % au pire creux (grand livre EUR) et 32,8 % en 2022. À 2,5x, la baisse peut aller plus vite que ta capacité à couper. N'investis pas de l'argent dont tu as besoin.
+> C'est un backtest, pas une promesse de rendement. Le livre US a perdu 56,9 % au pire creux (grand livre EUR) et 33,7 % en 2022. À 2,5x, la baisse peut aller plus vite que ta capacité à couper. N'investis pas de l'argent dont tu as besoin.
 
 > [!NOTE]
 > Le grand livre EUR compte l'impôt français sur les gains en EUR chaque année, avec une base de coût en EUR au taux de change du jour. Il donne 66,17x pour le livre US et 53,0x pour le livre TECH, contre 70,9x/57,0x pour l'ancienne méthode qui ne convertit qu'à la fin. Voir `docs/accounting.md`. Le livre TECH reste le suivi forward ; le livre US devient le défaut pour un nouvel investisseur.
@@ -58,7 +58,7 @@ Testé et rejeté. Le rebalancement hebdomadaire/quotidien du même livre, le re
 |---|---:|---:|---:|
 | **US mensuel (défaut)** | **66,17x** | **-56,9 %** | **-33,7 %** |
 | TECH mensuel (forward) | 53,0x | -65,6 % | -52,4 % |
-| CORE SMH seul | 49,0x | -64,2 % | -54,2 % |
+| CORE SMH seul | 49,0x | -64,5 % | -55,0 % |
 
 <sub>Grand livre EUR : impôt annuel sur les gains en EUR, base de coût au taux du jour. Les tableaux brokers ci-dessous restent en mesure terminale, pour comparer les frais.</sub>
 
@@ -122,12 +122,12 @@ La stratégie française combine le CAC 40 et le cœur SMH. Elle finit à 6,4x c
 ## Le risque, sans filtre
 
 - Pire creux : **-56,9 %** sur le livre US (grand livre EUR). En 2022 : -33,7 %. En 2018 : -31,1 %. Le livre TECH fait -65,6 % au pire, -52,4 % en 2022 et -10,5 % en 2018.
-- Queue de risque : dans le bootstrap US (blocs de 10 jours), 5 % des trajectoires finissent sous **2,58x** après impôt proportionnel, médiane 64,4x. Le livre TECH reste plus fragile : p5 1,93x, creux p5 -90,9 %.
+- Queue de risque : dans le bootstrap US (blocs de 10 jours), 5 % des trajectoires finissent sous **2,53x** après impôt proportionnel (`results/v4_summary.md`). Le livre TECH reste plus fragile : p5 1,93x, creux p5 -90,9 %.
 - Régularité : le livre US bat SPY après impôt sur **7 fenêtres de 5 ans sur 7**, médiane 6,83x contre 1,74x. Le livre TECH bat QQQ sur 84 fenêtres sur 84, médiane 5,67x contre 1,97x.
-- Biais de survie : TECH utilise une liste statique de 49 valeurs NASDAQ choisies aujourd'hui. Le contrôle PIT Nasdaq-100 retient **95 %** du grand livre EUR statique (50,3x vs 53,0x) ; le sleeve n'est donc pas principalement un artefact de survie, mais il reste derrière le livre US all-PIT. US utilise la composition historique du S&P, mais environ 18 % des membres 2015-2026 n'ont pas d'historique Yahoo et sont exclus. Le backtest est un contrôle de cohérence, pas une preuve.
+- Biais de survie : TECH utilise une liste statique de 49 valeurs NASDAQ choisies aujourd'hui. Le contrôle PIT Nasdaq-100 retient **95 %** du grand livre EUR statique (50,3x vs 53,0x) ; le sleeve n'est donc pas principalement un artefact de survie, mais il reste derrière le livre US all-PIT. US utilise la composition historique du S&P, mais 16,2 % des membres 2014+ n'ont pas d'historique Yahoo et sont exclus (`results/eval_survivorship.md`). Le backtest est un contrôle de cohérence, pas une preuve.
 - Hedge EUR/USD : **rejeté**. À 100 %, le livre US tombe à 45,4x et le pire creux se creuse à -67 % ; le dollar a servi d'amortisseur en 2022. Rester non couvert. `results/fx_hedge.md`.
 - Tax-loss harvesting : **rejeté** après frais. C'est surtout du report d'impôt ; le basis plus bas revient en taxe de sortie. `results/tax_harvest.md`.
-- Validation : le suivi forward papier TECH est à 1 date valide sur les 5 demandées. Le suivi forward US vient de démarrer ; il n'a pas encore de date clôturée.
+- Validation : le suivi forward papier est à **US 0/5, TECH 1/5, tax 0/5** dates valides ; aucune preuve forward. Prochaine date requise : 2026-11-27 (`results/forward_gate.md`).
 
 Ce n'est pas un conseil en investissement. C'est un backtest reproductible, avec ses hypothèses et ses erreurs possibles.
 

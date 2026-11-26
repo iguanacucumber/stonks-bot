@@ -4,7 +4,7 @@
 GitHub release; this branch only prepares the acceptance evidence and documentation.
 This is **not** a claim of a proven forward edge: the gate is still WAIT.
 
-**Data snapshot:** 2026-11-25, `master`/`v8/release` base. No real orders, no broker
+**Data snapshot:** 2026-11-25, v10 review base `dd2890e`. No real orders, no broker
 keys, no network calls in the release check.
 
 ## Headline: what a French CTO keeps
@@ -52,8 +52,8 @@ gate report; WAIT is the honest state, BLOCKED would be a release failure.
 ## What is not done
 
 - **Forward gate is 0/5 US, 1/5 TECH, 0/5 tax.** No book has five verified dates.
-- **Short3 report is not merged into this base.** The v8/short3 workstream's report is
-  a `reject`; the release check marks it WAIT until that file is on the release branch.
+- **Short3 report is merged and rejected.** `results/short3.md` is present on this
+  base and the release check records `short3 verdict=reject`; no short satellite.
 - **No real-money broker path.** IBKR is a paper/DU adapter with read-only
   reconciliation; there is no production order adapter or live keys.
 - **Alerts/backups need operator configuration.** Delivery endpoints and off-site
@@ -71,7 +71,7 @@ gate report; WAIT is the honest state, BLOCKED would be a release failure.
   after tax over two years vs QQQ 1.26x; at 2x costs it falls to 0.92x. The 5-minute
   sample is only ~60 days and is execution-quality, not evidence; daily gap-fade and
   cross-sectional reversal are below QQQ after tax. No satellite. The report is
-  `results/short3.md` (pending merge of the v8/short3 branch).
+  `results/short3.md`.
 - **PIT Nasdaq-100: paper robustness, not a replacement.** EUR ledger 50.29x vs 52.98x
   static; retains ~95% of the static TECH terminal. US all-PIT remains the default.
   `results/pit_tech.md`.
@@ -91,7 +91,7 @@ gate report; WAIT is the honest state, BLOCKED would be a release failure.
 - **Futures leverage: reject.** ES/NQ 2.5x lose to ETF+margin after financing/roll/tail;
   futures won 0/88 five-year windows. `results/futures.md`.
 - **Covered calls: paper income opt-in only.** The 40% IV / 10% OTM model is 75.96x vs
-  66.17x and maxDD -48.5% vs -56.4%, but option quotes, assignment and the volatility
+  66.17x and maxDD -48.5% vs -56.9%, but option quotes, assignment and the volatility
   smile are not observed. Not default. `results/covered_calls.md`.
 - **Assurance-vie: conditional opt-in only.** Tax-age modelling can show 126.72x at 0.50%
   fees vs 66.17x CTO, but a standard contract cannot borrow; only use if the contract
@@ -133,7 +133,7 @@ uv run python scripts/forward_daily.py --paper --tax
 | `docs/ops.md`, `docs/dashboard.md` | operations and static cockpit |
 | `results/v2_summary.md` … `v6_summary.md` | wave evidence and decisions |
 | `results/forward_gate.md` | current US/TECH/tax WAIT gate and next required session |
-| `results/short3.md` | v8 intraday/cross-section short study verdict (pending merge) |
+| `results/short3.md` | v8 intraday/cross-section short study verdict (reject) |
 | `results/release_check.md` | regenerated release acceptance table |
 | `scripts/acceptance.py`, `scripts/release_check.py` | end-to-end and release checks |
 | `scripts/reproduce.py` | baseline/EUR-ledger reproduction |
@@ -143,25 +143,26 @@ uv run python scripts/forward_daily.py --paper --tax
 
 ## Release checklist
 
-- [ ] `uv run python scripts/release_check.py` passes (tests, acceptance, reproduce,
+- [x] `uv run python scripts/release_check.py` passes (tests, acceptance, reproduce,
   plans, gate, dashboard, no-secrets).
 - [ ] CI green on the merge commit; no open PRs or release-blocking issues.
 - [ ] Commit, tag, release notes and GitHub release created by the **main session**
   after merge; this branch does not tag.
-- [ ] Data snapshot 2026-11-25 and cache checksum/retention recorded.
-- [ ] Forward gate remains honest: **WAIT US 0/5, TECH 1/5, tax 0/5**; next required
+- [x] Data snapshot 2026-11-25 and cache checksum/retention recorded.
+- [x] Forward gate remains honest: **WAIT US 0/5, TECH 1/5, tax 0/5**; next required
   2026-11-27; no forward edge claimed.
-- [ ] Short3 report/verdict reviewed (currently WAIT in release_check until the
-  `results/short3.md` workstream file is merged; the study verdict is reject).
+- [x] Short3 report/verdict reviewed: `results/short3.md` is present; verdict is
+  **reject** and release_check records PASS.
 - [ ] Paper-only boundary re-checked: no real broker credentials, no `.env`, no orders.
-- [ ] README/RELEASE headline numbers and source links reviewed.
-- [ ] Known risks communicated: survivorship, -56.9% drawdown, pre-tax paper ledger,
+- [x] README/RELEASE headline numbers and source links reviewed
+  (`results/review_release.md`).
+- [x] Known risks communicated: survivorship, -56.9% drawdown, pre-tax paper ledger,
   IBKR paper only, no assurance-vie/futures/UCITS switch.
 
 ## Known risks
 
 - **Forward evidence is thin.** US 0/5, TECH 1/5, tax 0/5; next required 2026-11-27;
-  no forward edge. Short3 is still pending merge in this release base.
+  no forward edge. Short3 is merged and rejected (`results/short3.md`).
 - **Survivorship.** Static-49 TECH is chosen today; US PIT drops 16.2% of 2014+ members
   with no Yahoo history. Treat stock-sleeve alpha as unproven.
 - **Drawdown.** The 2.5x growth book lost 56.9% peak-to-trough in the EUR ledger and
