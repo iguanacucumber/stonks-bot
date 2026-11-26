@@ -369,11 +369,22 @@ tests/test_core.py
 ```
 
 
-## Release v8 / v1.1
+## Current status (post-v10 audits)
 
-One-screen status: EUR-ledger backtest **66.17x US / 52.98x TECH**, but the
-forward gate is **WAIT US 0/5, TECH 1/5, tax 0/5** (next required 2026-11-27)
-and short3 is **reject**. This is not forward evidence.
+EUR-ledger backtest: **66.17x US / 52.98x TECH / 48.80x CORE**. Forward gate
+remains **WAIT US 0/5, TECH 1/5, tax 0/5**; next real session **2026-11-27**,
+ETA 5/5 **2026-12-02/03** if no session is missed. No forward evidence.
+
+Short horizon: every tested family is rejected, including actual intraday
+(1h 2y, 5m 60d), pairs/lead-lag, 8-K event drift, seasonality and breakout.
+Best 1h SPY gap fade **1.04x** vs QQQ **1.26x**; best intraday pair **1.053x**
+vs QQQ **1.247x** (0.912x at 2x costs); sector OOS **1.29x** vs QQQ **2.80x**.
+No satellite. See `results/short_horizon_conclusion.md`,
+`results/v9_summary.md` and `results/review_short.md`.
+
+The v10 audits corrected stale README numbers and fixed two gate/paper bugs
+(non-session dates, half-day sessions); see `results/review_release.md` and
+`results/review_live.md`.
 
 [RELEASE.md](RELEASE.md) is the release acceptance sheet: headline, profiles,
 paper-only boundaries, research verdicts, what is not done, quick start, file map

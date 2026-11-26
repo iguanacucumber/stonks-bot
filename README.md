@@ -166,11 +166,15 @@ uv run python scripts/ops.py backup --out /var/backups/stonks-bot
 
 `advise.py` transforme le profil, l'horizon et la tolérance au risque en allocation et liste d'ordres papier, avec un simulateur de retrait sur 15 ans. `ops.py` donne le status, le diagnostic, les sauvegardes vérifiées et le runbook. Aucun ordre réel.
 
-Les détails techniques sont dans le [README anglais](README.en.md), les [résultats brokers](results/brokers.md), les [résultats France](results/france.md), le [test de robustesse](results/robustness_best.md) et le [résumé v2](results/v2_summary.md), le [résumé v3](results/v3_summary.md), les [résumés v4](results/v4_summary.md), [v5](results/v5_summary.md), [v6](results/v6_summary.md), la [matrice des commandes](docs/feature_matrix.md) et la [fiche de release v8/v1.1](RELEASE.md).
+Les détails techniques sont dans le [README anglais](README.en.md), les [résultats brokers](results/brokers.md), les [résultats France](results/france.md), le [test de robustesse](results/robustness_best.md) et le [résumé v2](results/v2_summary.md), le [résumé v3](results/v3_summary.md), les [résumés v4](results/v4_summary.md), [v5](results/v5_summary.md), [v6](results/v6_summary.md), la [matrice des commandes](docs/feature_matrix.md) et le [résumé v9](results/v9_summary.md), la [fiche de release](RELEASE.md) et les [audits v10](results/review_release.md).
 
-## Release v8 / v1.1
+## Statut courant (post-audits v10)
 
-Statut en une ligne : backtest EUR ledger **66,17x US / 52,98x TECH**, mais gate forward **WAIT US 0/5, TECH 1/5, tax 0/5** (prochaine date requise 2026-11-27) et short3 **reject**. Ce n'est pas une preuve forward.
+Backtest EUR ledger : **66,17x US / 52,98x TECH / 48,80x CORE**. Le gate forward reste **WAIT US 0/5, TECH 1/5, tax 0/5** ; prochaine séance réelle **2026-11-27**, ETA 5/5 **2026-12-02/03** si aucune séance n'est manquée. Aucune preuve forward.
+
+Court terme : toutes les familles testées sont rejetées, y compris l'intraday réel (1h 2 ans, 5m 60 jours), les paires/lead-lag, le drift 8-K, la saisonnalité et le breakout. Meilleur 1h SPY gap-fade **1,04x** vs QQQ **1,26x** ; meilleure paire intraday **1,053x** vs QQQ **1,247x** (0,912x à 2x coûts) ; secteur OOS **1,29x** vs QQQ **2,80x**. Pas de satellite. Voir `results/short_horizon_conclusion.md`, `results/v9_summary.md` et `results/review_short.md`.
+
+Les audits v10 ont corrigé des chiffres README obsolètes et deux bugs de gate/paper (dates non-session, demi-journées) ; voir `results/review_release.md` et `results/review_live.md`.
 
 La fiche [RELEASE.md](RELEASE.md) rassemble les chiffres, les verdicts, ce qui n'est pas fait et la checklist. Pour vérifier une copie locale avant tag :
 
