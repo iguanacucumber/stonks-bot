@@ -132,6 +132,12 @@ FX stress: at **3 bps** still **84/84** (median 5.60x, full 55.6x); at **25 bps*
 the monthly book wins **99%** of windows (median 4.38x, full 31.9x) and the tax
 fallback wins **96%** (median 4.98x, full 39.5x). The win rate is robust to FX;
 the level is not. `results/robustness_fx.md`.
+
+Leverage after French tax at IBKR: 1.5x **20.2x** (DD -50%), 2.0x **37.2x**
+(-60%), 2.5x **57.0x** (-68%), 3.0x **75.2x** (-74%). The 3x lever passes the
+return bar but fails the tail: 2018/2022 worse and bootstrap p5 **1.71x** vs
+2.39x at 2.5x. Keep 2.5x; 3x is a risk-on option, not the default.
+`results/leverage_fr.md`.
 The optimum depends on the broker's cost structure. `--country fr` now defaults to
 **TECH + monthly + IBKR**; `--profile tax` selects the core-only book. Pass your actual
 `--fx-bps` (per side) to let the CLI choose: at **≥15 bps** it switches the default to
