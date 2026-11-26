@@ -10,16 +10,16 @@ trade-date FX, HIFO lots, 31.4% PFU on annual net EUR gains, loss carry,
 tickets. Signals and share quantities stay USD-native, so this is the same
 strategy, not a different one.
 
-| market | book | USD-native | headline EUR | EUR ledger | CAGR | maxDD | tax paid | exit tax | fees |
+| market | book | USD-native | headline EUR | EUR ledger | CAGR | maxDD | 2018 | 2022 | worst 12m |
 |---|---|---:|---:|---:|---:|---:|---:|---:|---:|
-| TECH | monthly | 51.82x | 57.01x | **52.89x** | 39.7% | -66.0% | €119,328 | €160,980 | €22,090 |
-| CORE | tax | 46.26x | 50.89x | **49.02x** | 38.8% | -64.2% | €58,736 | €210,907 | €8,206 |
-| US | monthly | 64.41x | 70.86x | **66.02x** | 42.3% | -57.5% | €138,086 | €210,493 | €23,971 |
+| TECH | monthly | 51.82x | 57.01x | **52.89x** | 39.7% | -66.0% | -9.8% | -52.3% | -64.3% |
+| CORE | tax | 46.26x | 50.89x | **49.02x** | 38.8% | -64.2% | -30.1% | -54.2% | -63.1% |
+| US | monthly | 64.41x | 70.86x | **66.02x** | 42.3% | -57.5% | -30.1% | -33.3% | -48.6% |
 
 `USD-native` is the after-tax result in the asset currency. `headline EUR` is
 the current README method: USD-native after tax multiplied by terminal FX.
-`EUR ledger` is the annual EUR tax/accounting replay. The gap is the currency
-and tax-timing correction; it is not a strategy change.
+`EUR ledger` is the annual EUR tax/accounting replay. 2018, 2022 and worst
+rolling 12m are computed on the EUR daily equity curve, not the USD engine.
 
 ## Reading
 
