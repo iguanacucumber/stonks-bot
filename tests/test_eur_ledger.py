@@ -183,7 +183,22 @@ def main() -> None:
     )
     assert abs(out.tax_paid - 3.0) < 1e-9, out.tax_paid
 
-    print("ok: EUR ledger HIFO, FX, PFU by year, loss carry, fees, flat cash")
+    # 10. final-year realization is settled in the exit tax at 2026 31.4%.
+    d = ["2026-01-02", "2026-06-01", "2026-12-31"]
+    r = Res(
+        {x: 1.0 for x in d},
+        [trade(d[0], "BUY", 0.1, 1.0), trade(d[1], "SELL", 0.1, 2.0)],
+    )
+    out = eur_ledger.replay(
+        r,
+        panel(d, [1.0, 2.0, 2.0]),
+        "FR",
+        free(capital=100.0, tax_rate=None),
+    )
+    assert abs(out.tax_paid) < 1e-12
+    assert abs(out.exit_tax - 3.14) < 1e-9
+
+    print("ok: EUR ledger HIFO, FX, PFU by year, exit year, loss carry, fees")
 
 
 if __name__ == "__main__":

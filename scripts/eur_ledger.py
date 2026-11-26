@@ -16,7 +16,15 @@ sys.path.insert(0, str(ROOT / "scripts"))
 
 import pandas as pd  # noqa: E402
 
-from bot import backtest, dividends as dividend_events, eur_ledger, france, markets, strategy, universe  # noqa: E402
+from bot import (
+    backtest,
+    dividends as dividend_events,
+    eur_ledger,
+    france,
+    markets,
+    strategy,
+    universe,
+)  # noqa: E402
 from paper_daily import BOOKS  # noqa: E402
 from scripts.france import BASE  # noqa: E402
 
@@ -127,8 +135,9 @@ def main() -> None:
         "`USD-native` is the after-tax result in the asset currency. `headline EUR` is",
         "the current README method: USD-native after tax multiplied by terminal FX.",
         "`EUR ledger` is the annual EUR tax/accounting replay, including cached",
-        "dividend withholding/PFU where available. 2018, 2022 and worst rolling 12m",
-        "are computed on the EUR daily equity curve, not the USD engine.",
+        "dividend withholding/PFU and the reinvested-dividend basis adjustment.",
+        "2018, 2022 and worst rolling 12m are computed on the EUR daily equity",
+        "curve, not the USD engine.",
         "",
         "## Reading",
         "",
@@ -142,9 +151,10 @@ def main() -> None:
         "",
         "## Caveats",
         "",
-        "- Dividends are still gross in this base report (adjusted closes). See",
-        "  `results/dividends.md` for the 15% withholding, year-dependent PFU credit",
-        "  and the corrected multiples; the drag is small for SMH, larger for bonds.",
+        "- This report includes cached dividend events, the 15% withholding/PFU",
+        "  credit and the reinvested-dividend basis adjustment. Missing dividend",
+        "  cache entries are omitted, not silently treated as zero. See",
+        "  `results/dividends.md` for coverage and the cross-asset stress.",
         "- The fee model is an approximation of IBKR at €10k; the engine's exact fee",
         "  total can differ by a few hundred euros. The tax/FX effect dominates.",
         "- This is a reporting overlay. It does not change `bot/backtest.py`, the CLI",

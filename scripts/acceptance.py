@@ -45,7 +45,7 @@ import reproduce as reproduce_cli  # noqa: E402
 
 CACHE = ROOT / "cache"
 EXPECTED_SNAPSHOT = "2026-11-25"
-EXPECTED_EUR = {"US": 66.17, "TECH": 52.98}
+EXPECTED_EUR = {"US": 66.69, "TECH": 53.42}
 TOL = 0.05
 
 
@@ -443,11 +443,11 @@ def run_checks(
             raise AssertionError(
                 f"reproduce exit {proc.returncode}: {proc.stderr[-400:]}"
             )
-        if "US   monthly" not in proc.stdout or "66.17x" not in proc.stdout:
-            raise AssertionError("reproduce output missing US monthly 66.17x")
-        if "TECH monthly" not in proc.stdout or "52.98x" not in proc.stdout:
-            raise AssertionError("reproduce output missing TECH monthly 52.98x")
-        return "US=66.17x TECH=52.98x (strict baseline, no write)"
+        if "US   monthly" not in proc.stdout or "66.69x" not in proc.stdout:
+            raise AssertionError("reproduce output missing US monthly 66.69x")
+        if "TECH monthly" not in proc.stdout or "53.42x" not in proc.stdout:
+            raise AssertionError("reproduce output missing TECH monthly 53.42x")
+        return "US=66.69x TECH=53.42x (strict baseline, no write)"
 
     checks.append(_run("reproduce_baseline", reproduce))
     return checks

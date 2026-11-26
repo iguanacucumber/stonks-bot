@@ -60,8 +60,10 @@ class EurLedgerConfig:
     loss_carry_years: int = 10
     # Dividend treatment. Adjusted closes already reinvest the gross distribution,
     # so the default replay only charges withholding/PFU and leaves the gross
-    # dividend inside the total-return position. Set dividend_reinvest=False to
-    # move the gross amount to cash as an accounting transformation (see report).
+    # dividend inside the total-return position. Because adjusted closes also make
+    # the reinvested dividend look like future price gain, the same gross amount is
+    # added to the lot basis to avoid taxing it twice. Set dividend_reinvest=False
+    # to move the gross amount to cash as an accounting transformation (see report).
     withholding_rate: float = 0.15
     # None -> year-dependent French PFU (30% through 2025, 31.4% from 2026),
     # unless tax_rate forces a flat stressed rate. A float overrides only dividends.
@@ -110,6 +112,7 @@ class EurLedgerResult:
     dividend_tax_total: float = 0.0
     dividends_net: float = 0.0
     dividend_events: int = 0
+    dividend_basis_added: float = 0.0
     dividend_reinvest: bool = True
     harvest_trades: pd.DataFrame = field(default_factory=pd.DataFrame)
     harvest_notional: float = 0.0
@@ -360,6 +363,7 @@ def replay(
     dividend_tax_topup = 0.0
     dividend_tax_total = 0.0
     dividend_events = 0
+    dividend_basis_added = 0.0
     hedge_period: HedgePeriod | None = None
     hedge_logs: list[dict] = []
     fx_hedge_pnl = 0.0
@@ -439,6 +443,17 @@ def replay(
                     if pos[ticker] <= 1e-12:
                         pos.pop(ticker, None)
             cash -= tax
+            if cfg.dividend_reinvest:
+                # Adjusted closes already reinvest the gross distribution. Raise
+                # the tax basis by the same gross amount so a later sale does not
+                # tax the reinvested dividend again as a capital gain.
+                ticker_lots = lots.get(ticker, [])
+                lot_shares = sum(float(lot[0]) for lot in ticker_lots)
+                if lot_shares > 1e-12:
+                    add = gross / lot_shares
+                    for lot in ticker_lots:
+                        lot[1] += add
+                    dividend_basis_added += gross
             dividends_gross += gross
             dividend_withholding += withholding
             dividend_tax_credit += credit
@@ -654,6 +669,7 @@ def replay(
         dividend_tax_total=dividend_tax_total,
         dividends_net=dividends_gross - dividend_tax_total,
         dividend_events=dividend_events,
+        dividend_basis_added=dividend_basis_added,
         dividend_reinvest=bool(cfg.dividend_reinvest),
         fx_hedge_pnl=fx_hedge_pnl,
         fx_hedge_cost=fx_hedge_cost,

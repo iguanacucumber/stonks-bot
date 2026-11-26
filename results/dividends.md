@@ -18,8 +18,11 @@ adding the gross dividend a second time.
 - Dividend tax is separate from capital-gains PFU and does not consume the
   capital-loss carry. A loss carried forward still offsets future capital gains.
 - Default `dividend_reinvest=True` keeps the gross dividend inside the adjusted
-  total-return position. `dividend_reinvest=False` moves the gross amount to cash
-  with a synthetic share reduction (no fee, no realized gain); the tests cover it.
+  total-return position. The same gross amount is added to the lot basis,
+  because adjusted closes otherwise make the reinvested dividend look like
+  future price gain and tax it twice. `dividend_reinvest=False` moves the
+  gross amount to cash with a synthetic share reduction (no fee, no realized
+  gain); the tests cover both treatments.
 - PEA wrapper skips US dividend tax entirely (a PEA cannot hold US names).
 
 Acceptance written before this report: US/TECH/CORE should move only by a small
@@ -30,9 +33,9 @@ documented drag; a bond-heavy TLT/IEF/BIL/GLD book should show a gross yield abo
 
 | book | base EUR x | corrected EUR x | change | base CAGR | corrected CAGR | annual drag | gross yield (avg NAV) | tax drag (avg NAV) | gross dividends | withholding | PFU top-up | total dividend tax |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
-| US monthly | 66.72x | **66.17x** | -0.8% | 42.4% | 42.3% | 0.10 pp | 0.74%/yr | 0.23%/yr | €14,953 | €2,243 | €2,312 | €4,554 |
-| TECH monthly | 53.45x | **52.98x** | -0.9% | 39.8% | 39.7% | 0.10 pp | 0.74%/yr | 0.23%/yr | €12,491 | €1,874 | €1,948 | €3,822 |
-| CORE tax | 49.32x | **48.80x** | -1.1% | 38.9% | 38.7% | 0.12 pp | 0.75%/yr | 0.23%/yr | €13,652 | €2,048 | €2,119 | €4,167 |
+| US monthly | 66.72x | **66.69x** | -0.0% | 42.4% | 42.4% | 0.00 pp | 0.74%/yr | 0.22%/yr | €14,953 | €2,243 | €2,312 | €4,554 |
+| TECH monthly | 53.45x | **53.42x** | -0.1% | 39.8% | 39.8% | 0.01 pp | 0.74%/yr | 0.23%/yr | €12,491 | €1,874 | €1,948 | €3,822 |
+| CORE tax | 49.32x | **49.27x** | -0.1% | 38.9% | 38.8% | 0.01 pp | 0.74%/yr | 0.23%/yr | €13,652 | €2,048 | €2,119 | €4,167 |
 
 `base EUR x` is the merged EUR ledger without dividend events (gross dividends
 implicit in adjusted closes). `corrected EUR x` applies withholding, PFU and the
@@ -45,8 +48,8 @@ a 66x book would make an initial-capital yield look artificially large. The
 
 | book | base EUR x | corrected EUR x | change | base CAGR | corrected CAGR | annual drag | gross yield (avg NAV) | tax drag (avg NAV) | gross dividends | withholding | PFU top-up | total dividend tax |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
-| Cross-asset 50/25/15/10 | 1.05x | **0.96x** | -8.4% | 0.4% | -0.3% | 0.74 pp | 2.39%/yr | 0.74%/yr | €2,838 | €426 | €456 | €882 |
-| Cross-asset 2023-2026 | 1.03x | **0.99x** | -3.9% | 0.7% | -0.3% | 1.02 pp | 3.46%/yr | 1.05%/yr | €1,314 | €197 | €201 | €398 |
+| Cross-asset 50/25/15/10 | 1.05x | **0.98x** | -6.3% | 0.4% | -0.2% | 0.55 pp | 2.39%/yr | 0.74%/yr | €2,838 | €426 | €456 | €882 |
+| Cross-asset 2023-2026 | 1.03x | **1.00x** | -3.0% | 0.7% | -0.1% | 0.78 pp | 3.46%/yr | 1.05%/yr | €1,314 | €197 | €201 | €398 |
 
 The full-window cross-asset drag is lower because 2015-2021 had low bond/cash
 yields. In 2023-2026 the same book earns a gross distribution yield above 3%/yr
@@ -61,11 +64,11 @@ would be the withholding amount again:
 
 | book | total dividend tax | no-credit tax | extra if double-taxed | no-credit x |
 |---|---:|---:|---:|---:|
-| US monthly | €4,554 | €6,797 | €2,243 | 65.94x |
-| TECH monthly | €3,822 | €5,696 | €1,874 | 52.79x |
-| CORE tax | €4,167 | €6,215 | €2,048 | 48.59x |
-| Cross-asset 50/25/15/10 | €882 | €1,307 | €426 | 0.92x |
-| Cross-asset 2023-2026 | €398 | €596 | €197 | 0.97x |
+| US monthly | €4,554 | €6,797 | €2,243 | 66.47x |
+| TECH monthly | €3,822 | €5,696 | €1,874 | 53.24x |
+| CORE tax | €4,167 | €6,215 | €2,048 | 49.07x |
+| Cross-asset 50/25/15/10 | €882 | €1,307 | €426 | 0.94x |
+| Cross-asset 2023-2026 | €398 | €596 | €197 | 0.98x |
 
 The difference is the same 15% that was already withheld: the French PFU is not
 charged a second time on the same gross dividend.
