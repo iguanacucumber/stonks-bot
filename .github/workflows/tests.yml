@@ -18,6 +18,8 @@ jobs:
         run: uv sync --frozen
       - name: Core accounting and French tax tests
         run: uv run python tests/test_core.py
+      - name: PEA audit tests
+        run: uv run python tests/test_pea.py
       - name: CLI smoke
         run: |
           uv run python -m bot.cli --help >/dev/null
