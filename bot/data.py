@@ -108,21 +108,34 @@ def _parse(res: dict) -> pd.DataFrame:
         }
     )
     df = df.dropna(subset=["adjclose", "close"])
-    df = df[df["adjclose"] > 0].drop_duplicates("date").sort_values("date")
+    # Both the raw close and adjusted close must be positive. A zero raw close
+    # with a positive adjusted close would make the adjusted OHLC factor infinite
+    # in _panel_rows.
+    df = df[(df["adjclose"] > 0) & (df["close"] > 0)]
+    df = df.drop_duplicates("date").sort_values("date")
     return df.reset_index(drop=True)
 
 
 def target_session(now: datetime | None = None) -> pd.Timestamp:
-    """Last completed US session date at 16:30 ET, else the prior business day.
+    """Last completed US session using the actual close and NYSE holidays.
 
-    The 16:30 cutoff is a data-safety delay, not the market close: it gives
-    Yahoo time to publish the final daily bar. Weekends always roll back.
+    The 16:30 delay is for a normal session; a half-day is complete at 13:30 ET.
+    Holidays never become a target date. This delegates to the shared live
+    calendar at call time (avoiding an import cycle while ``bot.data`` initialises)
+    and falls back to the old business-day rule only if that module is unavailable.
     """
-    et = (now or datetime.now(timezone.utc)).astimezone(ZoneInfo("America/New_York"))
-    d = pd.Timestamp(et.date())
-    if d.weekday() >= 5 or et.hour < 16 or (et.hour == 16 and et.minute < 30):
-        d -= pd.offsets.BDay(1)
-    return d
+    try:
+        from .live import calendar
+
+        return calendar.target_session(now)
+    except Exception:  # pragma: no cover - defensive fallback for standalone data use
+        et = (now or datetime.now(timezone.utc)).astimezone(
+            ZoneInfo("America/New_York")
+        )
+        d = pd.Timestamp(et.date())
+        if d.weekday() >= 5 or et.hour < 16 or (et.hour == 16 and et.minute < 30):
+            d -= pd.offsets.BDay(1)
+        return d
 
 
 def _last_date(path: Path, target: pd.Timestamp | None = None) -> pd.Timestamp | None:
@@ -206,7 +219,13 @@ def _since_start(since: pd.Timestamp) -> int:
 
 
 def _overlap_changed(old: pd.DataFrame, new: pd.DataFrame, tol: float = 1e-5) -> bool:
-    """True when Yahoo restated cached bars (split or dividend adjustment)."""
+    """True when Yahoo restated any cached price/volume field on the overlap.
+
+    Adjusted close is the usual split/dividend signal, but a corrected open,
+    high, low or volume outside the recent window is also a restatement. If we
+    only compare close/adjclose, the incremental merge can leave old OHLCV values
+    in place forever.
+    """
     if old.empty or new.empty:
         return False
     common = set(old["date"]) & set(new["date"])
@@ -214,12 +233,18 @@ def _overlap_changed(old: pd.DataFrame, new: pd.DataFrame, tol: float = 1e-5) ->
         return False
     a = old[old["date"].isin(common)].set_index("date")
     b = new[new["date"].isin(common)].set_index("date")
-    for col in ("adjclose", "close"):
+    for col in ("open", "high", "low", "close", "adjclose", "volume"):
         if col not in a.columns or col not in b.columns:
             continue
-        ratio = b[col] / a[col]
-        if ((ratio - 1.0).abs() > tol).any():
-            return True
+        av = pd.to_numeric(a[col], errors="coerce")
+        bv = pd.to_numeric(b[col], errors="coerce")
+        if col == "volume":
+            if not np.allclose(av, bv, rtol=1e-9, atol=1.0, equal_nan=True):
+                return True
+        else:
+            ratio = bv / av
+            if ((ratio - 1.0).abs() > tol).any():
+                return True
     return False
 
 
