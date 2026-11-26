@@ -48,12 +48,29 @@ def target_diff(live: dict, shadow: dict) -> dict:
 
 def verified_mask(df: pd.DataFrame) -> pd.Series:
     """A forward date counts only when returns, weights and fills all match."""
-    parts = df["fills"].astype(str).str.split("/", n=1, expand=True)
-    full_fills = parts[0] == parts[1]
-    nonempty = pd.to_numeric(parts[0], errors="coerce").fillna(0) > 0
+    fills = (
+        df["fills"].fillna("0/0").astype(str)
+        if "fills" in df.columns
+        else pd.Series("0/0", index=df.index)
+    )
+    parts = fills.str.split("/", n=1, expand=True)
+    filled = parts[0]
+    total = parts[1] if 1 in parts.columns else filled
+    full_fills = filled == total
+    nonempty = pd.to_numeric(filled, errors="coerce").fillna(0) > 0
+    diff = (
+        pd.to_numeric(df["diff_bps"], errors="coerce")
+        if "diff_bps" in df.columns
+        else pd.Series(float("nan"), index=df.index)
+    )
+    weight_diff = (
+        pd.to_numeric(df["max_w_diff_bps"], errors="coerce")
+        if "max_w_diff_bps" in df.columns
+        else pd.Series(float("nan"), index=df.index)
+    )
     return (
-        (df["diff_bps"].abs() <= MAX_RETURN_DIFF_BPS)
-        & (df["max_w_diff_bps"] <= MAX_WEIGHT_DIFF_BPS)
+        (diff.abs() <= MAX_RETURN_DIFF_BPS)
+        & (weight_diff <= MAX_WEIGHT_DIFF_BPS)
         & full_fills
         & nonempty
     )

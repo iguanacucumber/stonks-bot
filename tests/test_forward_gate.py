@@ -122,6 +122,80 @@ def test_nonverified_and_duplicate_dates():
         assert report.books[0].rejected == 1
 
 
+def test_verified_audit_needs_real_session_and_close_valid_paper():
+    with TemporaryDirectory() as tmp:
+        root = Path(tmp)
+        # Sunday date: never a session, never increments.
+        _write(
+            root,
+            _audit([("monthly", "TECH", "2026-11-29", True)]),
+            pd.DataFrame(
+                [("TECH", "2026-11-29", True, 10000.0)],
+                columns=["market", "quote_date", "close_valid", "equity"],
+            ),
+        )
+        bad = fg.collect_gate(
+            results_dir=root,
+            books=[("monthly", "TECH")],
+            now="2026-12-01T22:00:00+00:00",
+            bench_last="2026-11-30",
+        )
+        assert bad.status == fg.BLOCKED
+        assert bad.books[0].verified == 0
+        assert any("non-session" in x for x in bad.books[0].issues)
+
+    with TemporaryDirectory() as tmp:
+        root = Path(tmp)
+        # A verified audit row without a close-valid paper row is not evidence.
+        _write(
+            root,
+            _audit([("monthly", "TECH", "2026-11-25", True)]),
+            pd.DataFrame(
+                [("TECH", "2026-11-25", False, 9990.0)],
+                columns=["market", "quote_date", "close_valid", "equity"],
+            ),
+        )
+        missing = fg.collect_gate(
+            results_dir=root,
+            books=[("monthly", "TECH")],
+            now="2026-11-26T22:00:00+00:00",
+            bench_last="2026-11-25",
+        )
+        assert missing.status == fg.BLOCKED
+        assert missing.books[0].verified == 1
+        assert any("close-valid paper" in x for x in missing.books[0].issues)
+
+
+def test_gate_uses_compounded_audit_equity():
+    with TemporaryDirectory() as tmp:
+        root = Path(tmp)
+        audit = pd.DataFrame(
+            [
+                ("monthly", "TECH", "2026-11-25", True, 10000.0),
+                ("monthly", "TECH", "2026-11-27", True, 10150.0),
+            ],
+            columns=["book", "market", "date", "verified", "live_equity"],
+        )
+        paper = pd.DataFrame(
+            [
+                ("TECH", "2026-11-25", True, 10000.0),
+                ("TECH", "2026-11-27", True, 10150.0),
+            ],
+            columns=["market", "quote_date", "close_valid", "equity"],
+        )
+        _write(root, audit, paper)
+        report = fg.collect_gate(
+            results_dir=root,
+            books=[("monthly", "TECH")],
+            now="2026-11-27T22:00:00+00:00",
+            bench_last="2026-11-27",
+        )
+        b = report.books[0]
+        assert b.verified == 2
+        assert b.equity == 10150.0
+        assert "compounded" in b.equity_source
+
+
 def test_missing_files_block_required_book():
     with TemporaryDirectory() as tmp:
         root = Path(tmp)
@@ -424,6 +498,8 @@ def test_cli_json_and_exit_codes():
 if __name__ == "__main__":
     test_pass_and_wait_counts()
     test_nonverified_and_duplicate_dates()
+    test_verified_audit_needs_real_session_and_close_valid_paper()
+    test_gate_uses_compounded_audit_equity()
     test_missing_files_block_required_book()
     test_holiday_and_missed_session_logic()
     test_stale_benchmark_blocks()

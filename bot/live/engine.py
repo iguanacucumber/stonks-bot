@@ -14,6 +14,7 @@ import json
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from typing import Any
+from zoneinfo import ZoneInfo
 
 import pandas as pd
 
@@ -119,19 +120,32 @@ def _plan_id(
 
 
 def resolve_session(now: str | datetime | None, as_of: str | None) -> pd.Timestamp:
+    now_dt = (
+        datetime.now(timezone.utc)
+        if now is None
+        else now.astimezone(timezone.utc)
+        if isinstance(now, datetime)
+        else pd.Timestamp(now).to_pydatetime().astimezone(timezone.utc)
+    )
+    latest = calendar.target_session(now_dt)
     if as_of:
         d = pd.Timestamp(as_of).normalize()
-        latest = data.target_session(
-            None if now is None else pd.Timestamp(now).to_pydatetime()
-        )
-        if d > latest:
+        # A holiday/weekend replay is allowed through so build_snapshot can
+        # return the explicit "market closed" blocked result (CLI exit 2),
+        # rather than an unexpected future-session error.
+        if d > latest and calendar.is_session(d):
             raise EngineError(
                 f"--as-of {d.date()} is after the last completed session {latest.date()}"
             )
         return d
-    return data.target_session(
-        None if now is None else pd.Timestamp(now).to_pydatetime()
-    )
+    et = now_dt.astimezone(ZoneInfo("America/New_York"))
+    if et.date().weekday() < 5 and not calendar.is_session(et.date()):
+        # Keep the holiday date so LiveEngine's build_snapshot fails with the
+        # explicit "market closed" blocked result, not a silent replay of the
+        # prior session. The forward_gate uses calendar.target_session directly
+        # and correctly reports the last completed session (11-25).
+        return pd.Timestamp(et.date())
+    return latest
 
 
 def _fx_rate(fx: dict[str, Any] | None) -> float | None:
