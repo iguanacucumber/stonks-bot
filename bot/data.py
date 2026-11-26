@@ -336,9 +336,6 @@ def update_panel(membership: pd.DataFrame, workers: int = 12) -> pd.DataFrame:
         return build_panel(membership, force=True, workers=workers)
     existing = pd.read_parquet(path)
     panel_last = existing["date"].max() if not existing.empty else None
-    if panel_last is not None and panel_last >= target:
-        print(f"data: panel already at {panel_last.date()}; no fetch")
-        return existing
     tickers = sorted(membership["ticker"].unique())
     canonical = {t: universe.canonical(t) for t in tickers}
     symbols = sorted(set(canonical.values()) | {"SPY", "QQQ", "SOXX", "SMH"})
@@ -402,7 +399,9 @@ def update_panel(membership: pd.DataFrame, workers: int = 12) -> pd.DataFrame:
             _empty_missing(sym)
     _save_missing()
     if not frames:
-        print(f"data: panel already at {target.date()}; no fetch")
+        print(
+            f"data: panel already at {target.date()}; {attempted} requested, no write"
+        )
         return existing
     new = pd.concat([_panel_rows(s, df) for s, df in frames.items()], ignore_index=True)
     keep = existing[~existing["ticker"].isin(frames)]
@@ -412,12 +411,16 @@ def update_panel(membership: pd.DataFrame, workers: int = 12) -> pd.DataFrame:
         .sort_values(["date", "ticker"])
     )
     if len(panel) == len(existing) and panel["date"].max() == existing["date"].max():
-        print(f"data: {len(frames)} symbols checked, no new bars; panel unchanged")
+        print(
+            f"data: {len(frames)} symbols checked ({attempted} requested), "
+            "no new bars; panel unchanged"
+        )
         return existing
     panel.to_parquet(path, index=False)
     print(
-        f"data: updated {len(frames)} symbols; panel {panel['ticker'].nunique()} "
-        f"tickers, {panel['date'].nunique()} dates, last {panel['date'].max().date()}"
+        f"data: updated {len(frames)} symbols ({attempted} requested); panel "
+        f"{panel['ticker'].nunique()} tickers, {panel['date'].nunique()} dates, "
+        f"last {panel['date'].max().date()}"
     )
     return panel
 
