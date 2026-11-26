@@ -83,3 +83,19 @@ a deterministic withdrawal simulator with tax and a report, no return promises.
 - #24 IBKR paper broker adapter
 - #25 investor profiles and withdrawal simulator
 - #26 ops dashboard, backups, alerts, runbook
+
+
+## Completed wave 3 (2026-11-26)
+
+- #22 EUR-native ledger: merged.
+- #23 dividends/withholding: merged #34; exact ledger US 66.17x / TECH 52.98x / CORE 48.80x.
+- #24 IBKR paper adapter: merged #33; DU paper only, fake-transport evidence.
+- #25 investor profiles + withdrawal: merged #32; `scripts/advise.py`.
+- #26 ops/backups/alerts/runbook: merged #31; `scripts/ops.py`.
+
+## Active wave 4
+
+- #35 point-in-time NASDAQ tech universe
+- #36 tax-loss harvesting
+- #37 forward paper loop
+- #38 EUR/USD hedge study
