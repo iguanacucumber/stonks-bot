@@ -1,11 +1,13 @@
 """Compare the live paper rows with the shadow backtest of the same book.
 
-Reads results/paper_daily.csv, compounds the recorded day moves, and prints the
-same days from the TECH backtest. With fewer than five rows the sample is too
-small to conclude anything; the point is that the comparison is ready and runs
-after every scheduled paper entry.
+Reads results/paper_daily.csv for the monthly book, or paper_daily_tax.csv for
+the tax book, compounds the recorded day moves, and prints the same days from
+the shadow backtest. With fewer than five rows the sample is too small to
+conclude anything; the point is that the comparison is ready and runs after
+every scheduled paper entry.
 
 Run: uv run python scripts/paper_report.py --market TECH
+     uv run python scripts/paper_report.py --book tax --market TECH
 """
 
 from __future__ import annotations
@@ -14,27 +16,31 @@ import argparse
 import sys
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+ROOT = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(ROOT))
+sys.path.insert(0, str(ROOT / "scripts"))
 
 import pandas as pd  # noqa: E402
 
-from bot import backtest, markets, strategy, universe  # noqa: E402
+from paper_daily import book_paths, load  # noqa: E402
 
-ROOT = Path(__file__).resolve().parent.parent
-DAILY = ROOT / "results" / "paper_daily.csv"
+BOOKS = ("monthly", "tax")
 
 
 def main():
     ap = argparse.ArgumentParser()
+    ap.add_argument("--book", choices=BOOKS, default="monthly")
     ap.add_argument("--market", default="TECH")
     ap.add_argument("--capital", type=float, default=10000.0)
     ap.add_argument("--min-rows", type=int, default=5)
     args = ap.parse_args()
 
-    if not DAILY.exists():
-        print("no paper rows yet")
+    daily = book_paths(args.book)[0]
+    if not daily.exists():
+        print(f"no paper rows yet ({daily.name}, book {args.book})")
+        print(f"GATE: WAIT 0/{args.min_rows} distinct dates (book {args.book})")
         return
-    live = pd.read_csv(DAILY)
+    live = pd.read_csv(daily)
     live = live[live.market == args.market].copy()
     live["quote_date"] = pd.to_datetime(live["quote_date"])
     if "close_valid" in live.columns:
@@ -58,27 +64,16 @@ def main():
     if live.empty:
         print(
             f"no complete close-valid paper rows for {args.market} "
-            f"({skipped} intraday, {incomplete} incomplete skipped)"
+            f"({skipped} intraday, {incomplete} incomplete skipped, "
+            f"book {args.book})"
         )
-        print(f"GATE: WAIT 0/{args.min_rows} distinct dates")
+        print(f"GATE: WAIT 0/{args.min_rows} distinct dates (book {args.book})")
         return
     live = live.sort_values("time").drop_duplicates("quote_date", keep="last")
     live = live.set_index("quote_date").sort_index()
 
-    panel, mem = markets.build(args.market)
-    if args.market != "US":
-        universe.canonical = lambda t: t
-    cfg = strategy.Config(
-        rebalance_mode="calendar",
-        exec_price="open",
-        start="2015-01-01",
-        leverage=2.5,
-        financing_bps=500.0,
-        trend_ma=200,
-        trend_scale=0.5,
-    )
-    mkt = strategy.Market(panel, mem, cfg)
-    eq = backtest.run(mkt).equity
+    _, _, res, _ = load(args.market, 2.5, 200, 0.5, args.book)
+    eq = res.equity
 
     rows = []
     live_val, shadow_val = args.capital, args.capital
@@ -117,6 +112,7 @@ def main():
     df = pd.DataFrame(rows)
     if df.empty:
         print(f"no comparable rows yet ({pending} waiting for a completed close)")
+        print(f"GATE: WAIT 0/{args.min_rows} distinct dates (book {args.book})")
         return
     print(df.round(4).to_string(index=False))
     print(
@@ -132,7 +128,8 @@ def main():
         print(f"{pending} row(s) waiting for the completed daily bar")
     gate = len(df) >= args.min_rows
     print(
-        f"GATE: {'PASS' if gate else 'WAIT'} {len(df)}/{args.min_rows} distinct dates"
+        f"GATE: {'PASS' if gate else 'WAIT'} {len(df)}/{args.min_rows} distinct dates "
+        f"(book {args.book})"
     )
     if not gate:
         print("not a track record yet; do not draw conclusions from this table")

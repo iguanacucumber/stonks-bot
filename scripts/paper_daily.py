@@ -1,7 +1,10 @@
-"""Daily paper logger for the shipped book. No orders, no broker.
+"""Daily paper logger for the shipped monthly book and the tax book. No orders.
 
 One run appends a row to results/paper_ledger.csv (targets, prices) and to
-results/paper_daily.csv (book move vs the prior close, gross, risk state).
+results/paper_daily.csv (book move vs the prior close, gross, risk state). The
+tax book writes its own pair: results/paper_ledger_tax.csv and
+results/paper_daily_tax.csv. Marks are pre-tax engine marks; French tax is not
+deducted here.
 
 `--replay N` re-runs the last N sessions from panel closes and compares the
 paper book's daily return with the backtest's, which is how we check that the
@@ -9,6 +12,7 @@ forward logger uses the same fill assumption (signal at close d, hold from
 close d+1, marked at close d+2).
 
 Run: uv run python scripts/paper_daily.py --market TECH
+     uv run python scripts/paper_daily.py --book tax --market TECH
      uv run python scripts/paper_daily.py --replay 5
 """
 
@@ -28,9 +32,40 @@ import pandas as pd  # noqa: E402
 from bot import backtest, data, markets, overlay, strategy, universe  # noqa: E402
 
 ROOT = Path(__file__).resolve().parent.parent
-LEDGER = ROOT / "results" / "paper_ledger.csv"
-DAILY = ROOT / "results" / "paper_daily.csv"
-REPLAY = ROOT / "results" / "paper_replay.csv"
+RESULTS = ROOT / "results"
+LEDGER = RESULTS / "paper_ledger.csv"
+DAILY = RESULTS / "paper_daily.csv"
+REPLAY = RESULTS / "paper_replay.csv"
+LEDGER_TAX = RESULTS / "paper_ledger_tax.csv"
+DAILY_TAX = RESULTS / "paper_daily_tax.csv"
+REPLAY_TAX = RESULTS / "paper_replay_tax.csv"
+
+# Monthly is the shipped book and must stay the default. The tax book is the
+# core-only shape: no sleeve, always hold SMH, wider leverage band, HIFO lots.
+# Paper rows are pre-tax marks, so no French rate is set here.
+BOOKS = {
+    "monthly": {},
+    "tax": {
+        "core": "SMH",
+        "core_mode": "always",
+        "leverage_band": 0.30,
+        "tax_lots": "hifo",
+    },
+}
+BOOK_FILES = {
+    "monthly": (DAILY, LEDGER, REPLAY),
+    "tax": (DAILY_TAX, LEDGER_TAX, REPLAY_TAX),
+}
+
+
+def book_config(book: str) -> dict:
+    """Config overrides for a book; no data access, safe for tests."""
+    return dict(BOOKS[book])
+
+
+def book_paths(book: str) -> tuple[Path, Path, Path]:
+    """(daily, ledger, replay) files for a book."""
+    return BOOK_FILES[book]
 
 
 def refresh(market: str) -> None:
@@ -40,7 +75,13 @@ def refresh(market: str) -> None:
     data.fetch_all(syms, force=True)
 
 
-def load(market: str, leverage: float, trend_ma: int, trend_scale: float):
+def load(
+    market: str,
+    leverage: float,
+    trend_ma: int,
+    trend_scale: float,
+    book: str = "monthly",
+):
     panel, mem = markets.build(market)
     if market != "US":
         universe.canonical = lambda t: t
@@ -52,6 +93,7 @@ def load(market: str, leverage: float, trend_ma: int, trend_scale: float):
         financing_bps=500.0,
         trend_ma=trend_ma,
         trend_scale=trend_scale,
+        **book_config(book),
     )
     mkt = strategy.Market(panel, mem, cfg)
     res = backtest.run(mkt)
@@ -73,15 +115,11 @@ def current_weights(res, date) -> dict[str, float]:
     return {t: float(x) for t, x in w.items() if x > 1e-9}
 
 
-def replay(mkt, res, cfg, n: int, panel):
+def replay(mkt, res, cfg, n: int, panel, path: Path = REPLAY):
     """Daily P&L split at the open: prior book overnight, post-fill book intraday."""
     dates = list(res.equity.index)
     now_et = datetime.now(timezone.utc).astimezone(ZoneInfo("America/New_York"))
-    if (
-        len(dates) > n + 2
-        and dates[-1].date() == now_et.date()
-        and now_et.hour < 16
-    ):
+    if len(dates) > n + 2 and dates[-1].date() == now_et.date() and now_et.hour < 16:
         dates = dates[:-1]  # today's bar is still forming
     raw_close = panel.pivot(index="date", columns="ticker", values="close")
     raw_open = (
@@ -149,25 +187,33 @@ def replay(mkt, res, cfg, n: int, panel):
             }
         )
     df = pd.DataFrame(rows)
-    df.to_csv(REPLAY, index=False)
+    df.to_csv(path, index=False)
     if len(df):
         med = float(df["diff_bps"].abs().median())
         mx = float(df["diff_bps"].abs().max())
-        print(f"replay tracking: median {med:.2f} bps, max {mx:.2f} bps over {len(df)} sessions")
+        print(
+            f"replay tracking: median {med:.2f} bps, max {mx:.2f} bps over {len(df)} sessions"
+        )
         if med > 2.0 or mx > 50.0:
-            print("WARNING: tracking exceeds tolerance; forward comparison not trustworthy")
+            print(
+                "WARNING: tracking exceeds tolerance; forward comparison not trustworthy"
+            )
     return df
 
 
-def reconcile(market, capital, leverage, trend_ma, trend_scale):
+def reconcile(market, capital, leverage, trend_ma, trend_scale, book="monthly"):
     """Recompute the last close-valid row from final bars, keeping its live prices.
 
     This is for a row whose log-time panel was missing closes (Yahoo publishes the
     final daily bar after the 16:00 ET close). The live prices recorded in the row
     are preserved; the weights and the shadow are rebuilt from the completed panel.
     """
-    panel, mkt, res, cfg = load(market, leverage, trend_ma, trend_scale)
-    df = pd.read_csv(DAILY)
+    daily_path = book_paths(book)[0]
+    if not daily_path.exists():
+        print(f"no {daily_path.name} rows to reconcile")
+        return
+    panel, mkt, res, cfg = load(market, leverage, trend_ma, trend_scale, book)
+    df = pd.read_csv(daily_path)
     for c in ("data_complete", "reconciled"):
         if c not in df.columns:
             df[c] = False
@@ -214,7 +260,11 @@ def reconcile(market, capital, leverage, trend_ma, trend_scale):
     move = (1.0 + overnight) * (1.0 + intraday) - 1.0
     shadow = float(res.equity.loc[dm] / res.equity.loc[dprev] - 1.0)
     old_move = float(df.loc[idx, "day_move"])
-    old_shadow = float(df.loc[idx, "shadow_move"]) if pd.notna(df.loc[idx, "shadow_move"]) else float("nan")
+    old_shadow = (
+        float(df.loc[idx, "shadow_move"])
+        if pd.notna(df.loc[idx, "shadow_move"])
+        else float("nan")
+    )
     df.loc[idx, "day_move"] = move
     df.loc[idx, "equity"] = capital * (1.0 + move)
     df.loc[idx, "gross"] = float(sum(new.values()))
@@ -223,7 +273,7 @@ def reconcile(market, capital, leverage, trend_ma, trend_scale):
     df.loc[idx, "reconciled"] = True
     df.loc[idx, "shadow_move"] = shadow
     df.loc[idx, "shadow_gross"] = float(sum(new.values()))
-    df.to_csv(DAILY, index=False)
+    df.to_csv(daily_path, index=False)
     print(
         f"reconciled {dm.date()}: live {old_move:+.2%} -> {move:+.2%}, "
         f"shadow {old_shadow:+.2%} -> {shadow:+.2%}, "
@@ -233,6 +283,7 @@ def reconcile(market, capital, leverage, trend_ma, trend_scale):
 
 def main():
     ap = argparse.ArgumentParser()
+    ap.add_argument("--book", choices=tuple(BOOKS), default="monthly")
     ap.add_argument("--market", default="TECH")
     ap.add_argument("--leverage", type=float, default=2.5)
     ap.add_argument("--trend-ma", type=int, default=200)
@@ -246,20 +297,26 @@ def main():
         help="recompute the last close-valid row from final bars (keeps live prices)",
     )
     args = ap.parse_args()
+    daily_path, ledger_path, replay_path = book_paths(args.book)
 
     panel, mkt, res, cfg = load(
-        args.market, args.leverage, args.trend_ma, args.trend_scale
+        args.market, args.leverage, args.trend_ma, args.trend_scale, args.book
     )
     d = mkt.dates[-1]
 
     if args.reconcile:
         reconcile(
-            args.market, args.capital, args.leverage, args.trend_ma, args.trend_scale
+            args.market,
+            args.capital,
+            args.leverage,
+            args.trend_ma,
+            args.trend_scale,
+            args.book,
         )
         return
 
     if args.replay:
-        df = replay(mkt, res, cfg, args.replay, panel)
+        df = replay(mkt, res, cfg, args.replay, panel, replay_path)
         print(df.round(4).to_string(index=False))
         a = df.diff_bps.abs()
         print(
@@ -267,7 +324,7 @@ def main():
             f"p95 {a.quantile(0.95):.1f} bps, max {a.max():.1f} bps "
             f"across {len(df)} sessions"
         )
-        print(f"wrote {REPLAY}")
+        print(f"wrote {replay_path}")
         return
 
     # the box runs at UTC+4; use UTC/ET explicitly or the quote date rolls over
@@ -322,13 +379,22 @@ def main():
     if total_w < 0.1 or total_w > cfg.leverage * 1.2 or len(w) < 0.6 * len(old):
         w = old
         move = sum(
-            x * (float(prices.get(t) or raw_close[t].loc[dprev]) / raw_close[t].loc[dprev] - 1.0)
+            x
+            * (
+                float(prices.get(t) or raw_close[t].loc[dprev])
+                / raw_close[t].loc[dprev]
+                - 1.0
+            )
             for t, x in old.items()
             if t in raw_close.columns
             and pd.notna(raw_close[t].loc[dprev])
             and raw_close[t].loc[dprev] > 0
         )
-        px = {t: float(prices.get(t) or raw_close[t].loc[dprev]) for t in w if t in raw_close.columns}
+        px = {
+            t: float(prices.get(t) or raw_close[t].loc[dprev])
+            for t in w
+            if t in raw_close.columns
+        }
         prev = {t: float(raw_close[t].loc[dprev]) for t in w if t in raw_close.columns}
     else:
         move = (1.0 + overnight) * (1.0 + intraday) - 1.0
@@ -348,9 +414,7 @@ def main():
     }
     held = set(old) | set(w)
     missing_close = [
-        t
-        for t in held
-        if t not in raw_close.columns or pd.isna(raw_close[t].loc[dm])
+        t for t in held if t not in raw_close.columns or pd.isna(raw_close[t].loc[dm])
     ]
     rebalanced = set(w) != set(old) or abs(sum(w.values()) - sum(old.values())) > (
         0.05 * max(1.0, sum(old.values()))
@@ -383,13 +447,13 @@ def main():
             f"(missing closes {missing_close}, missing opens {missing_open})"
         )
 
-    if DAILY.exists():
-        old = pd.read_csv(DAILY)
+    if daily_path.exists():
+        old = pd.read_csv(daily_path)
         pd.concat([old, pd.DataFrame([daily])], ignore_index=True).to_csv(
-            DAILY, index=False
+            daily_path, index=False
         )
     else:
-        pd.DataFrame([daily]).to_csv(DAILY, index=False)
+        pd.DataFrame([daily]).to_csv(daily_path, index=False)
     row = {
         "time": str(now),
         "signal_date": str(d.date()),
@@ -400,15 +464,18 @@ def main():
         "stops": json.dumps({t: False for t in w}),
     }
     pd.DataFrame([row]).to_csv(
-        LEDGER, mode="a", header=not LEDGER.exists(), index=False
+        ledger_path, mode="a", header=not ledger_path.exists(), index=False
     )
-    print(f"paper {args.market} signal {d.date()} quote {quote_date.date()} held-from {ref.date()}")
+    print(
+        f"paper {args.book} {args.market} signal {d.date()} "
+        f"quote {quote_date.date()} held-from {ref.date()}"
+    )
     print(
         f"  gross {sum(w.values()):.0%}  risk scale {scale:.0%}  day move {move:+.2%}"
     )
     for t, x in sorted(w.items(), key=lambda kv: -kv[1]):
         print(f"  {t:6s} {x:6.2%}  {px[t]:9.2f}  vs close {px[t] / prev[t] - 1:+.2%}")
-    print(f"appended {DAILY} and {LEDGER}")
+    print(f"appended {daily_path} and {ledger_path}")
 
 
 if __name__ == "__main__":

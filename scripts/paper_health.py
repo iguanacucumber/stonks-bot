@@ -2,8 +2,10 @@
 
 Fails (exit 2) when a weekday has closed and there is still no close-valid row for
 that date. Reads only local files, so it works even if the automation API is down.
+Each book has its own file and is checked separately.
 
 Run: uv run python scripts/paper_health.py
+     uv run python scripts/paper_health.py --book tax
 """
 
 from __future__ import annotations
@@ -14,31 +16,33 @@ from datetime import datetime, timezone
 from pathlib import Path
 from zoneinfo import ZoneInfo
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+ROOT = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(ROOT))
+sys.path.insert(0, str(ROOT / "scripts"))
 
 import pandas as pd  # noqa: E402
 
-ROOT = Path(__file__).resolve().parent.parent
-DAILY = ROOT / "results" / "paper_daily.csv"
+from paper_daily import BOOKS, book_paths  # noqa: E402
+
 ET = ZoneInfo("America/New_York")
 
 
 def main() -> int:
     ap = argparse.ArgumentParser()
+    ap.add_argument("--book", choices=tuple(BOOKS), default="monthly")
     ap.add_argument("--as-of", default=None, help="ISO timestamp, for testing")
     args = ap.parse_args()
+    daily = book_paths(args.book)[0]
     now = (
-        datetime.fromisoformat(args.as_of)
-        if args.as_of
-        else datetime.now(timezone.utc)
+        datetime.fromisoformat(args.as_of) if args.as_of else datetime.now(timezone.utc)
     )
     et = now.astimezone(ET)
-    if not DAILY.exists():
-        print("HEALTH STALE: no paper_daily.csv")
+    if not daily.exists():
+        print(f"HEALTH STALE: no {daily.name} (book {args.book})")
         return 2
-    df = pd.read_csv(DAILY)
+    df = pd.read_csv(daily)
     if df.empty:
-        print("HEALTH STALE: empty paper_daily.csv")
+        print(f"HEALTH STALE: empty {daily.name} (book {args.book})")
         return 2
     if "close_valid" in df.columns:
         valid = df["close_valid"].astype(str).str.lower().isin(["true", "1"])
@@ -59,8 +63,9 @@ def main() -> int:
     stale = bool(weekday and after_close and (last_valid_et != et.date()))
 
     print(
-        f"HEALTH {'STALE' if stale else 'OK'}  rows={len(df)}  close_valid={int(valid.sum())}  "
-        f"valid_dates={n_valid_dates}  last_valid={last_valid_et}  now_et={et:%Y-%m-%d %H:%M}"
+        f"HEALTH {'STALE' if stale else 'OK'}  book={args.book}  rows={len(df)}  "
+        f"close_valid={int(valid.sum())}  valid_dates={n_valid_dates}  "
+        f"last_valid={last_valid_et}  now_et={et:%Y-%m-%d %H:%M}"
     )
     if stale:
         print("no close-valid row for today's session; check results/paper_daily.log")
