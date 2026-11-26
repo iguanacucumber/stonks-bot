@@ -172,7 +172,7 @@ On €10k after tax and real tariffs (`results/france.md`, `results/brokers.md`)
 |---|---:|---:|---:|---:|
 | **US monthly sleeve (default)** | — | — | **66.69x EUR ledger** | 5.4x QQQ |
 | TECH monthly sleeve (forward) | 11.7x | 31.9x | **53.4x EUR ledger** | 5.4x QQQ |
-| TECH core-only tax book | 34.7x | 39.5x | 48.8x EUR ledger | 5.4x QQQ |
+| TECH core-only tax book | 34.7x | 39.5x | 49.27x EUR ledger | 5.4x QQQ |
 | French CTO (CAC + SMH core) | 6.4x | 12.5x | — | 2.1x CAC |
 | French PEA (sleeve only) | 1.47x | 1.61x | — | 2.3x CAC |
 | PEA Nasdaq-100 proxy (PUST.PA) | 5.76x | 5.77x | — | 5.4x QQQ |
@@ -180,7 +180,7 @@ On €10k after tax and real tariffs (`results/france.md`, `results/brokers.md`)
 At €10k the best book+broker is **monthly US at Interactive Brokers: 66.69x in the
 EUR ledger** (70.9x terminal-FX headline, €28.8k fees, €132k PFU + €210k exit tax).
 The TECH monthly book is 53.4x EUR ledger (57.0x terminal-FX) and remains the
-forward-validation track. The core-only tax book at IBKR is 48.8x EUR ledger; at Trade Republic and Bourse Direct the tax
+forward-validation track. The core-only tax book at IBKR is 49.27x EUR ledger; at Trade Republic and Bourse Direct the tax
 book wins (39.5x/34.7x versus 31.9x/11.7x monthly), because their 25 bps FX makes
 ~1,800 sleeve trades expensive. At 25 bps IBKR monthly falls to 31.9x, so the
 core-only tax book at Trade Republic (39.5x) is the fallback if spot FX is not
