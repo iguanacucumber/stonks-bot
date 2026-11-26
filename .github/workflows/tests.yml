@@ -64,7 +64,7 @@ jobs:
 
       - name: Cache-less reproduction skip
         if: steps.cache.outputs.full != 'true'
-        run: echo "core cache incomplete or stale: full-cache reproduction skipped"
+        run: echo "core cache incomplete or stale - full-cache reproduction skipped"
 
       - name: CLI smoke
         run: |
