@@ -355,7 +355,12 @@ def run(
     calendar_set: set[pd.Timestamp] = set()
     if cfg.rebalance_mode == "calendar":
         ds = pd.Series(dates)
-        calendar_set = set(ds.groupby([ds.dt.year, ds.dt.month]).max())
+        ends = ds.groupby([ds.dt.year, ds.dt.month]).max()
+        if cfg.rebalance_months > 1:
+            ends = ends[
+                (ends.dt.month - 1 - cfg.rebalance_offset) % cfg.rebalance_months == 0
+            ]
+        calendar_set = set(ends)
 
     trades: list[tuple] = []
     eqs = np.zeros(n)

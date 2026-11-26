@@ -502,6 +502,42 @@ def main():
     assert abs(td["max_w_diff"] - 0.5) < 1e-12
     assert abs(td["gross_shadow"] - 1.0) < 1e-12
 
+    # calendar cadence: 1 month unchanged, 2 months keeps six dates
+    dts3 = pd.bdate_range("2020-01-01", periods=260)
+    p3 = pd.DataFrame(
+        [(d, "A", 100.0 + i, 1_000_000) for i, d in enumerate(dts3)],
+        columns=["date", "ticker", "adjclose", "volume"],
+    )
+    p3 = pd.concat(
+        [
+            p3,
+            pd.DataFrame(
+                [(d, "SPY", 100.0, 9_000_000) for d in dts3],
+                columns=["date", "ticker", "adjclose", "volume"],
+            ),
+        ]
+    )
+    m3 = pd.DataFrame({"date": [dts3[0]], "ticker": ["A"]})
+    r1 = backtest.run(
+        strategy.Market(
+            p3, m3, strategy.Config(start=str(dts3[0].date()), core=None, leverage=1)
+        )
+    )
+    r2 = backtest.run(
+        strategy.Market(
+            p3,
+            m3,
+            strategy.Config(
+                start=str(dts3[0].date()),
+                core=None,
+                leverage=1,
+                rebalance_mode="calendar",
+                rebalance_months=2,
+            ),
+        )
+    )
+    assert len(r1.trades) >= len(r2.trades), "bimonthly should trade no more"
+
     print(
         f"ok: {len(res.equity)} days, final {res.equity.iloc[-1]:.3f}, "
         f"{len(res.trades)} trades, sharpe {backtest.metrics(res.equity, mkt.spy)['sharpe']:.2f}"

@@ -49,6 +49,8 @@ class Config:
     end: str | None = None
     top_n: int = 6
     rebalance_days: int = 21
+    rebalance_months: int = 1  # calendar mode: every N months
+    rebalance_offset: int = 0  # 0 = Jan/Mar..., 1 = Feb/Apr...
     rebalance_mode: str = "days"  # "days" (every N) or "calendar" (last trading day)
     lookback: int = 126
     skip: int = 10
