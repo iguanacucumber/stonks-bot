@@ -23,6 +23,10 @@
 | UCITS core study | `uv run python scripts/research_ucits_core.py` | rejected | return gap > tax saving |
 | PEA semis recheck | `uv run python scripts/pea_semis.py` | rejected | no pure semis PEA; PUST 5.77x |
 | Covered-call study | `uv run python scripts/covered_calls.py` | paper opt-in | model-only; 40% IV conditional |
+| End-to-end acceptance | `uv run python scripts/acceptance.py` | ready | 12/12 checks, temp state |
+| Dashboard | `uv run python scripts/dashboard.py` | ready | static HTML/MD |
+| Assurance-vie study | `uv run python scripts/assurance_vie.py` | conditional | only if contract can hold exposure below break-even |
+| Futures leverage | `uv run python scripts/research_futures.py` | rejected | worse after financing/roll |
 | Full tests | `for t in tests/test_*.py; do uv run python "$t"; done` | ready | no network |
 
 ## Read first
