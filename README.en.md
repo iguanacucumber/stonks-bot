@@ -57,9 +57,10 @@ the balanced book. See `docs/profiles.md`.
 Weekly/daily rebalancing of the same book, 1/5-day reversal, 20-day momentum and
 the close-to-open overnight effect were tested with walk-forward folds, realistic
 5 bps/side costs, French PFU and a 2x-cost run. The best close-to-close signal made
-**2.64x after tax out-of-sample versus QQQ 5.49x**; the overnight family made 1.01x,
-and 0.70x at 2x costs. The always-overnight comparator loses 88% on SPY before tax
-at a 10 bps daily round trip. Verdict: **reject**. No short-horizon satellite; the
+**2.64x after tax out-of-sample versus QQQ 5.49x**; at 2x costs it drops to 1.13x,
+below BIL (1.20x). The overnight family made 1.01x under optimistic costs, 0.82x
+all-in, and 0.60x at 2x costs. The always-overnight comparator loses 88% on SPY
+before tax at a 10 bps per side (20 bps round trip) daily cost. Verdict: **reject**. No short-horizon satellite; the
 monthly book remains the only production strategy. A market maker with sub-bp
 spreads might find a gross overnight edge, but that is not a French retail CTO.
 See `results/alpha_short.md` after merge.

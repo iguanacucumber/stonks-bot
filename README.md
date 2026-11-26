@@ -46,7 +46,7 @@ Les ordres partent à l'ouverture suivante. La stratégie française paie 5 bps 
 
 ## Et le court terme ?
 
-Testé et rejeté. Le rebalancement hebdomadaire/quotidien du même livre, le reversal 1/5 jours, le momentum 20 jours et l'effet overnight close-to-open ne survivent pas aux coûts et au PFU. En walk-forward 2019-2026, le meilleur signal close-to-close fait **2,64x après impôt contre 5,49x pour QQQ** ; l'overnight fait 1,01x, et 0,70x à coûts doublés. Le comparator always-overnight perd 88 % sur SPY avant impôt avec 10 bps de round trip. Il n'y a pas de satellite court terme à allouer : le livre mensuel reste la seule stratégie de production. Voir `results/alpha_short.md` après merge.
+Testé et rejeté. Le rebalancement hebdomadaire/quotidien du même livre, le reversal 1/5 jours, le momentum 20 jours et l'effet overnight close-to-open ne survivent pas aux coûts et au PFU. En walk-forward 2019-2026, le meilleur signal close-to-close fait **2,64x après impôt contre 5,49x pour QQQ** ; à coûts doublés il tombe à 1,13x, sous BIL (1,20x). L'overnight fait 1,01x en hypothèse optimiste, 0,82x tous frais, 0,60x à coûts doublés. Le comparator always-overnight perd 88 % sur SPY avant impôt avec 10 bps par côté (20 bps aller-retour). Il n'y a pas de satellite court terme à allouer : le livre mensuel reste la seule stratégie de production. Voir `results/alpha_short.md` après merge.
 
 ## Le broker
 
