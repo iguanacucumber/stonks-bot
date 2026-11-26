@@ -50,6 +50,35 @@ def main() -> None:
     assert data.target_session(
         datetime(2026, 11, 29, 23, 0, tzinfo=utc)
     ) == pd.Timestamp("2026-11-27")
+    # Thanksgiving 11-26 is never a target; half-day 11-27 closes at 13:00 ET.
+    assert data.target_session(
+        datetime(2026, 11, 26, 22, 0, tzinfo=utc)
+    ) == pd.Timestamp("2026-11-25")
+    assert data.target_session(
+        datetime(2026, 11, 27, 18, 29, tzinfo=utc)
+    ) == pd.Timestamp("2026-11-25")
+    assert data.target_session(
+        datetime(2026, 11, 27, 18, 30, tzinfo=utc)
+    ) == pd.Timestamp("2026-11-27")
+
+    parsed = data._parse(
+        {
+            "timestamp": [1_764_086_400, 1_764_172_800],
+            "indicators": {
+                "quote": [
+                    {
+                        "open": [100.0, 100.0],
+                        "high": [101.0, 101.0],
+                        "low": [99.0, 99.0],
+                        "close": [100.0, 0.0],
+                        "volume": [1_000_000, 1_000_000],
+                    }
+                ],
+                "adjclose": [{"adjclose": [100.0, 100.0]}],
+            },
+        }
+    )
+    assert len(parsed) == 1 and float(parsed["close"].iloc[0]) == 100.0
 
     with TemporaryDirectory() as tmp:
         tmp = Path(tmp)
@@ -215,6 +244,9 @@ def main() -> None:
             assert float(fixed["high"].iloc[-1]) == corrected["high"].iloc[-1]
             saved = pd.read_csv(bars_dir / "MSFT4.csv")
             assert float(saved["volume"].iloc[-1]) == 9_000_000
+            assert data._overlap_changed(old_bars, corrected), (
+                "OHLC/volume-only restatement was not detected"
+            )
 
             # panel slices with the same shape but restated values are not equal
             pa = data._panel_rows("A", old_bars)
