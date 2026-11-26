@@ -46,7 +46,7 @@ Les ordres partent à l'ouverture suivante. La stratégie française paie 5 bps 
 
 ## Et le court terme ?
 
-Testé et rejeté. Le rebalancement hebdomadaire/quotidien du même livre, le reversal 1/5 jours, le momentum 20 jours et l'effet overnight close-to-open ne survivent pas aux coûts et au PFU. En walk-forward 2019-2026, le meilleur signal close-to-close fait **2,64x après impôt contre 5,49x pour QQQ** ; à coûts doublés il tombe à 1,13x, sous BIL (1,20x). L'overnight fait 1,01x en hypothèse optimiste, 0,82x tous frais, 0,60x à coûts doublés. Le comparator always-overnight perd 88 % sur SPY avant impôt avec 10 bps par côté (20 bps aller-retour). Il n'y a pas de satellite court terme à allouer : le livre mensuel reste la seule stratégie de production. Voir `results/alpha_short.md` après merge.
+Testé et rejeté. Le rebalancement hebdomadaire/quotidien du même livre, le reversal 1/5 jours, le momentum 20 jours et l'effet overnight close-to-open ne survivent pas aux coûts et au PFU. En walk-forward 2019-2026, le meilleur signal close-to-close fait **2,64x après impôt contre 5,49x pour QQQ** ; à coûts doublés il tombe à 1,13x, sous BIL (1,20x). L'overnight fait 1,01x en hypothèse optimiste, 0,82x tous frais, 0,60x à coûts doublés. Le comparator always-overnight perd 88 % sur SPY avant impôt avec 10 bps par côté (20 bps aller-retour). Le short III (intraday 1h/5m, gap fade, reversal cross-section) confirme : **reject**, meilleur 1h SPY gap-fade 1,04x après impôt contre QQQ 1,26x sur 2 ans, et 0,92x à coûts doublés. Il n'y a pas de satellite court terme à allouer : le livre mensuel reste la seule stratégie de production. Voir `results/alpha_short.md`, `results/short2.md` et `results/short3.md` (après merge v8/short3).
 
 ## Le broker
 
@@ -78,7 +78,7 @@ Interactive Brokers gagne parce que la stratégie convertit souvent USD/EUR. À 
 
 DEGIRO reste à 46,3x avec l'hypothèse de 10 bps, mais tombe à 39,2x avec son AutoFX publié de 25 bps. Saxo (36,4x), Bourse Direct (34,7x), Fortuneo (24,9x) et BoursoBank (22,7x) restent derrière sur la variante core-only. À 10 000 €, les commissions fixes et la conversion pèsent plus que le taux de courtage affiché.
 
-La stratégie US mensuelle chez IBKR est le meilleur backtest et le défaut pour un nouvel investisseur : **66,17x après impôt dans le grand livre EUR** (70,9x en mesure terminale), maxDD -56,9 %, 7 fenêtres de 5 ans sur 7 battent SPY. Le livre TECH reste le suivi forward (1/5 dates validées) ; `--market TECH` le restaure.
+La stratégie US mensuelle chez IBKR est le meilleur backtest et le défaut pour un nouvel investisseur : **66,17x après impôt dans le grand livre EUR** (70,9x en mesure terminale), maxDD -56,9 %, 7 fenêtres de 5 ans sur 7 battent SPY. Le livre TECH reste le suivi forward (1/5 dates validées ; US 0/5, tax 0/5) ; `--market TECH` le restaure.
 
 ## Les impôts
 
@@ -166,16 +166,18 @@ uv run python scripts/ops.py backup --out /var/backups/stonks-bot
 
 `advise.py` transforme le profil, l'horizon et la tolérance au risque en allocation et liste d'ordres papier, avec un simulateur de retrait sur 15 ans. `ops.py` donne le status, le diagnostic, les sauvegardes vérifiées et le runbook. Aucun ordre réel.
 
-Les détails techniques sont dans le [README anglais](README.en.md), les [résultats brokers](results/brokers.md), les [résultats France](results/france.md), le [test de robustesse](results/robustness_best.md) et le [résumé v2](results/v2_summary.md), le [résumé v3](results/v3_summary.md), les [résumés v4](results/v4_summary.md), [v5](results/v5_summary.md), [v6](results/v6_summary.md), la [matrice des commandes](docs/feature_matrix.md) et la [fiche de release v7](RELEASE.md).
+Les détails techniques sont dans le [README anglais](README.en.md), les [résultats brokers](results/brokers.md), les [résultats France](results/france.md), le [test de robustesse](results/robustness_best.md) et le [résumé v2](results/v2_summary.md), le [résumé v3](results/v3_summary.md), les [résumés v4](results/v4_summary.md), [v5](results/v5_summary.md), [v6](results/v6_summary.md), la [matrice des commandes](docs/feature_matrix.md) et la [fiche de release v8/v1.1](RELEASE.md).
 
-## Release v7
+## Release v8 / v1.1
 
-La fiche [RELEASE.md](RELEASE.md) rassemble les chiffres, les verdicts et la checklist de release. Pour vérifier une copie locale avant tag :
+Statut en une ligne : backtest EUR ledger **66,17x US / 52,98x TECH**, mais gate forward **WAIT US 0/5, TECH 1/5, tax 0/5** (prochaine date requise 2026-11-27) et short3 **reject**. Ce n'est pas une preuve forward.
+
+La fiche [RELEASE.md](RELEASE.md) rassemble les chiffres, les verdicts, ce qui n'est pas fait et la checklist. Pour vérifier une copie locale avant tag :
 
 ```bash
 uv run python scripts/release_check.py
 ```
 
-Le contrôle lance tous les tests, l'acceptance, le baseline EUR, les plans papier US/TECH, le gate forward et le dashboard, puis écrit `results/release_check.md`. Le gate reste **WAIT US 0/5, TECH 1/5** : c'est une information de suivi, pas une preuve forward. Aucun tag ni release GitHub n'est créé par cette branche.
+Le contrôle lance tous les tests, l'acceptance, le baseline EUR, les plans papier US/TECH, le gate `forward_gate.md`, le verdict short3 et le dashboard, puis écrit `results/release_check.md`. `WAIT` est autorisé pour un paper release ; `BLOCKED` ou un vrai échec est un FAIL. Aucun tag ni release GitHub n'est créé par cette branche.
 
 <sub>Les performances passées ne préjugent pas des performances futures. Dernière mise à jour : 26 novembre 2026, données au 25 novembre 2026. Résumé v2 et tests : `results/v2_summary.md`.</sub>

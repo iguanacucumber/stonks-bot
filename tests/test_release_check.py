@@ -39,6 +39,20 @@ monthly,TECH,2026-11-25,true
 monthly,US,2026-11-24,false
 """
 
+GATE = """\
+# Forward gate status
+
+Generated: 2026-11-26T16:46:27+00:00
+Session: 2026-11-25
+Overall: **WAIT**
+
+| book | market | status | verified | next required | equity | drawdown | data | reconcile |
+|---|---|---|---|---|---:|---:|---|---|
+| monthly | US | WAIT | 0/5 | 2026-11-27 | 10,000.00 | n/a | fresh | no state |
+| monthly | TECH | WAIT | 1/5 | 2026-11-27 | 10,009.46 | +0.0% | fresh | OK |
+| tax | TECH | WAIT | 0/5 | 2026-11-27 | n/a | n/a | fresh | no state |
+"""
+
 
 def test_parse_baseline_numbers() -> None:
     rows = rc.parse_baseline_numbers(SAMPLE)
@@ -81,6 +95,55 @@ def test_gate_parser_and_cross_checks() -> None:
             forward, audit, {("monthly", "US"): 0, ("monthly", "TECH"): 1}
         )
         assert bad == "FAIL" and "audit 0 != status 1" in why
+
+
+def test_forward_gate_wait_and_blocked() -> None:
+    with TemporaryDirectory() as td:
+        tmp = Path(td)
+        gate = tmp / "forward_gate.md"
+        audit = tmp / "paper_audit.csv"
+        gate.write_text(GATE)
+        audit.write_text(AUDIT)
+        expected = {
+            ("monthly", "US"): 0,
+            ("monthly", "TECH"): 1,
+            ("tax", "TECH"): 0,
+        }
+        status, detail = rc.check_forward_gate(gate, audit, expected)
+        assert status == "WAIT", detail
+        assert "monthly/US=WAIT 0/5" in detail
+        assert "next=2026-11-27" in detail
+
+        # An explicit BLOCKED status is a release failure even with a 0/5 count.
+        gate.write_text(
+            GATE.replace("| monthly | US | WAIT |", "| monthly | US | BLOCKED |")
+        )
+        status, detail = rc.check_forward_gate(gate, audit, expected)
+        assert status == "FAIL" and "BLOCKED" in detail
+
+        # A positive count must be backed by the same audit dates.
+        gate.write_text(
+            GATE.replace(
+                "| monthly | US | WAIT | 0/5 |", "| monthly | US | WAIT | 1/5 |"
+            )
+        )
+        status, detail = rc.check_forward_gate(gate, audit, expected)
+        assert status == "FAIL" and "audit 0 != status 1" in detail
+
+
+def test_short3_verdict_missing_pending_and_reject() -> None:
+    with TemporaryDirectory() as td:
+        path = Path(td) / "short3.md"
+        status, detail = rc.check_short3(path)
+        assert status == "WAIT" and "not present" in detail
+        path.write_text("# Short III\n\n**Verdict: reject.** No satellite.\n")
+        status, detail = rc.check_short3(path)
+        assert status == "PASS" and "reject" in detail
+        path.write_text("# Short III\n\nNo conclusion.\n")
+        status, detail = rc.check_short3(path)
+        assert status == "FAIL" and "no explicit verdict" in detail
+    assert rc.parse_short3_verdict("**Verdict:** paper") == "paper"
+    assert rc.parse_short3_verdict("nothing") is None
 
 
 def test_release_exit_codes_and_markdown() -> None:

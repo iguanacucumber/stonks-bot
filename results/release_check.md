@@ -1,21 +1,22 @@
-# Release check — v7
+# Release check — v8 / v1.1
 
 - Overall: **PASS**
-- Generated: 2026-11-26T16:58:33+00:00
-- Commit: `4082c18`
+- Generated: 2026-11-26T17:08:45+00:00
+- Commit: `23bfb91`
 - Data snapshot: **2026-11-25**
-- Checks: 9 PASS · 1 WAIT · 0 SKIP · 0 FAIL
+- Checks: 9 PASS · 2 WAIT · 0 SKIP · 0 FAIL
 
 | check | status | detail | seconds | command |
 |---|---|---|---:|---|
 | cache | **PASS** | snapshot=2026-11-25 | 0.0 | `cache/bars` |
-| tests | **PASS** | 30/30 test scripts passed | 19.7 | `for t in tests/test_*.py; do python $t; done` |
-| acceptance | **PASS** | 12/12 checks pass | 12.6 | `python scripts/acceptance.py --json` |
+| tests | **PASS** | 30/30 test scripts passed | 20.1 | `for t in tests/test_*.py; do python $t; done` |
+| acceptance | **PASS** | 12/12 checks pass | 12.8 | `python scripts/acceptance.py --json` |
 | reproduce_baseline | **PASS** | 4/4 baseline rows; exit 0 | 5.0 | `python scripts/reproduce.py baseline --no-write` |
 | eur_ledger | **PASS** | TECH/monthly=52.98x, TECH/tax=48.80x, US/monthly=66.17x, US/tax=48.80x | 0.0 | `parsed from reproduce_baseline` |
-| live_plan_us | **PASS** | orders=6 status=OK | 1.3 | `python scripts/live.py plan --book monthly --market US --as-of 2026-11-25 --state-dir /tmp/opencode/stonks-release-34105nyq --json` |
-| live_plan_tech | **PASS** | orders=6 status=OK | 0.6 | `python scripts/live.py plan --book monthly --market TECH --as-of 2026-11-25 --state-dir /tmp/opencode/stonks-release-34105nyq --json` |
-| forward_gate | **WAIT** | next_session=2026-11-27; monthly/TECH=1/5, monthly/US=0/5 | 0.0 | `results/forward_status.md + paper_audit.csv` |
+| live_plan_us | **PASS** | orders=6 status=OK | 1.3 | `python scripts/live.py plan --book monthly --market US --as-of 2026-11-25 --state-dir /tmp/opencode/stonks-release-zgyisk0h --json` |
+| live_plan_tech | **PASS** | orders=6 status=OK | 0.6 | `python scripts/live.py plan --book monthly --market TECH --as-of 2026-11-25 --state-dir /tmp/opencode/stonks-release-zgyisk0h --json` |
+| forward_gate | **WAIT** | monthly/TECH=WAIT 1/5, monthly/US=WAIT 0/5, tax/TECH=WAIT 0/5; next=2026-11-27 | 0.0 | `results/forward_gate.md + paper_audit.csv` |
+| short3 | **WAIT** | short3.md not present; v8 short3 workstream pending | 0.0 | `results/short3.md verdict` |
 | dashboard_check | **PASS** | DASHBOARD CHECK OK  books=2  warnings=1  failures=0  synthetic=False | 0.3 | `python scripts/dashboard.py --check` |
 | no_secrets | **PASS** | 299 tracked text files scanned; no obvious secrets | 0.1 | `git ls-files + pattern scan` |
 
@@ -25,18 +26,20 @@
 - [x] committed data snapshot 2026-11-25 present
 - [ ] CI green on the merged commit (GitHub Actions)
 - [ ] no open PRs / release-blocking issues
-- [x] forward gate honesty: US 0/5, TECH 1/5 is WAIT, not an edge
+- [x] forward gate honesty: US 0/5, TECH 1/5, tax 0/5 is WAIT, not an edge
+- [x] short3 report/verdict reviewed (WAIT is allowed if the workstream is not merged)
 - [ ] paper-only; no real orders, broker keys or secrets
 - [ ] README/RELEASE links and headline numbers reviewed
 - [ ] main session tags/creates the GitHub release after merge
 
 ## Known risks
 
-- Backtests are consistency checks, not forward evidence. US has 0/5 verified dates, TECH 1/5.
+- Backtests are consistency checks, not forward evidence. US has 0/5 verified dates, TECH 1/5, tax 0/5.
 - Static-49 TECH is survivor-biased; US PIT drops 16.2% of 2014+ members without a Yahoo history.
 - The 2.5x growth book can lose more than half; balanced/conservative are post-hoc `paper` opt-ins.
 - The live paper ledger is pre-tax/average-cost, not the after-tax EUR ledger.
-- IBKR paper adapter is opt-in; no live-money order path exists here.
+- IBKR paper/read-only adapter is opt-in; no live-money order path exists here.
+- Short3 evidence may be pending in this release branch; never upgrade a missing/pending short study into a production allocation.
 
 ## Commands
 
