@@ -195,6 +195,13 @@ Eleven years is one path; 2026 is eleven months. The report includes bootstrap i
 a random-portfolio null so a lucky run is not mistaken for skill. If the LLM arm does not beat
 momentum-only, the report says so. The forward paper ledger is the only uncontaminated test.
 
+## Agent workstreams
+
+Private repo: `github.com/iguanacucumber/stonks-bot` (orchestration issue #5).
+Branches: `agent/forward`, `agent/pea-ucits`, `agent/execution`, `agent/risk`.
+Plan and merge protocol: `docs/agents.md`. Merge order: forward, PEA, execution,
+risk. CI runs `tests/test_core.py` plus the CLI help on `master` and `agent/**`.
+
 ## Layout
 
 ```
