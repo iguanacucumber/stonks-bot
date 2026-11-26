@@ -19,6 +19,7 @@ withholding credited against the PFU.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from typing import Callable, Iterable
 
 import numpy as np
 import pandas as pd
@@ -57,6 +58,9 @@ class EurLedgerConfig:
     dividend_tax_rate: float | None = None
     dividend_reinvest: bool = True
     wrapper: str = "cto"  # "cto" | "pea"; PEA skips US dividend tax
+    # Multiplier on every trading fee (spread + FX + broker + fixed ticket).
+    # 2.0 is the 2x-cost sensitivity; it does not change the market price.
+    fee_multiplier: float = 1.0
 
     def __post_init__(self) -> None:
         if not 0.0 <= float(self.withholding_rate) < 1.0:
@@ -67,6 +71,8 @@ class EurLedgerConfig:
             raise ValueError("dividend_tax_rate must be None or in [0, 1)")
         if str(self.wrapper).lower() not in ("cto", "pea"):
             raise ValueError("wrapper must be 'cto' or 'pea'")
+        if not 0.0 <= float(self.fee_multiplier):
+            raise ValueError("fee_multiplier must be >= 0")
 
 
 @dataclass
@@ -95,6 +101,10 @@ class EurLedgerResult:
     dividends_net: float = 0.0
     dividend_events: int = 0
     dividend_reinvest: bool = True
+    harvest_trades: pd.DataFrame = field(default_factory=pd.DataFrame)
+    harvest_notional: float = 0.0
+    harvest_fees: float = 0.0
+    harvest_count: int = 0
 
 
 def _pfu_rate(cfg: EurLedgerConfig, year: int) -> float:
@@ -126,7 +136,7 @@ def _fee(notional: float, cfg: EurLedgerConfig) -> float:
     if notional <= 0:
         return 0.0
     rate = (cfg.spread_bps + cfg.fx_bps + cfg.broker_bps) / 1e4
-    return notional * rate + cfg.broker_fixed_eur
+    return (notional * rate + cfg.broker_fixed_eur) * float(cfg.fee_multiplier)
 
 
 def _fx_series(market: str, dates: pd.DatetimeIndex) -> pd.Series:
@@ -188,22 +198,40 @@ def _reduce_lots(lots: list[list[float]], sold: float, shares: float) -> None:
     lots[:] = [lot for lot in lots if lot[0] > 1e-12]
 
 
+HarvestDecision = Callable[
+    [pd.Timestamp, dict[str, float], dict[str, list[list[float]]], pd.Series, float],
+    list[dict],
+]
+
+
 def replay(
     res,
     panel: pd.DataFrame,
     market: str,
     config: EurLedgerConfig | None = None,
     dividends: pd.DataFrame | None = None,
+    harvest: HarvestDecision | None = None,
+    harvest_dates: Iterable[pd.Timestamp] | None = None,
 ) -> EurLedgerResult:
     """Replay `res.trades` in EUR with HIFO lots, PFU and margin interest.
 
     `res` is a `bot.backtest.Result` (or any object with `.equity` and `.trades`).
-    `panel` is the native long panel used by the engine (date, ticker, adjclose).
-    `dividends` is an optional long frame (date/ex_date, ticker, amount) of gross
-    native-currency dividends per current share. Because adjusted closes already
-    reinvest gross dividends, the default only deducts dividend taxes. With
-    `cfg.dividend_reinvest=False`, the gross amount is also moved from the
-    position to cash by a synthetic share reduction (no fee, no realized gain).
+    `panel` is the native long panel used by the engine (date, ticker, adjclose,
+    and optionally open). `dividends` is an optional long frame (date/ex_date,
+    ticker, amount) of gross native-currency dividends per current share.
+    Because adjusted closes already reinvest gross dividends, the default only
+    deducts dividend taxes. With `cfg.dividend_reinvest=False`, the gross amount
+    is also moved from the position to cash by a synthetic share reduction (no
+    fee, no realized gain).
+
+    `harvest` is an optional callback for tax-loss harvesting. It receives the
+    session, current EUR positions, HIFO lots, the session's EUR open prices and
+    cash, and returns synthetic trades (``ticker``, ``side``, ``shares`` in
+    ledger units, ``price`` in EUR). It runs before the engine's own trades on
+    that session, so a sell/re-entry pair can reset the EUR basis without
+    changing the intended target weight. `harvest_dates` limits the callback to
+    the supplied sessions (normally the monthly rebalance dates); None means
+    every session.
     """
     cfg = config or EurLedgerConfig()
     dates = pd.DatetimeIndex(res.equity.index)
@@ -221,6 +249,23 @@ def replay(
     pxe = px.pivot(index="date", columns="ticker", values="px_eur").sort_index().ffill()
     # only need the dates we mark
     pxe = pxe.reindex(index=pxe.index.union(dates)).ffill().reindex(dates)
+    pxo = None
+    if harvest is not None and "open" in panel.columns:
+        po = panel[["date", "ticker", "open"]].copy()
+        po["px_eur"] = (
+            pd.to_numeric(po["open"], errors="coerce").to_numpy(dtype=float)
+            * fx.reindex(po["date"]).to_numpy()
+        )
+        pxo = (
+            po.pivot(index="date", columns="ticker", values="px_eur")
+            .sort_index()
+            .ffill()
+            .reindex(index=dates)
+            .ffill()
+        )
+    hdates: set[pd.Timestamp] | None = None
+    if harvest_dates is not None:
+        hdates = {pd.Timestamp(x).normalize() for x in harvest_dates}
 
     trades = res.trades.copy()
     if len(trades):
@@ -246,6 +291,9 @@ def replay(
     dividend_tax_topup = 0.0
     dividend_tax_total = 0.0
     dividend_events = 0
+    harvest_rows: list[dict] = []
+    harvest_notional = 0.0
+    harvest_fees = 0.0
     eq: list[float] = []
     cashs: list[float] = []
 
@@ -315,6 +363,58 @@ def replay(
             dividend_tax_topup += topup
             dividend_tax_total += tax
             dividend_events += 1
+
+        # Tax-loss harvesting runs before the engine's own fills on the same
+        # session: sell a losing lot, immediately rebuy if requested, then let
+        # the normal target rebalance continue. The callback sees the live EUR
+        # lots, so its threshold and band use the same basis as the tax replay.
+        if harvest is not None and (hdates is None or d.normalize() in hdates):
+            if pxo is not None:
+                price_row = pxo.loc[d]
+            else:
+                price_row = pxe.loc[d]
+            synthetic = harvest(d, pos, lots, price_row, cash) or []
+            for tr in synthetic:
+                ticker = str(tr["ticker"])
+                side = str(tr["side"]).upper()
+                shares = float(tr["shares"])
+                price = float(tr["price"])
+                if shares <= 1e-12 or not np.isfinite(price) or price <= 0:
+                    continue
+                notional = shares * price
+                fee = _fee(notional, cfg)
+                total_fees += fee
+                harvest_fees += fee
+                harvest_notional += notional
+                ls = lots.setdefault(ticker, [])
+                if side == "BUY":
+                    cash -= notional + fee
+                    ls.append([shares, (notional + fee) / shares])
+                    pos[ticker] = pos.get(ticker, 0.0) + shares
+                else:
+                    held = float(pos.get(ticker, 0.0))
+                    if held <= 1e-12:
+                        continue
+                    shares = min(shares, held)
+                    notional = shares * price
+                    gain, sold = _consume_hifo(ls, shares, price)
+                    cash += sold * price - fee
+                    realized_year += gain - fee
+                    pos[ticker] = max(0.0, pos.get(ticker, 0.0) - sold)
+                    if pos[ticker] <= 1e-12:
+                        pos.pop(ticker, None)
+                harvest_rows.append(
+                    {
+                        "date": d,
+                        "ticker": ticker,
+                        "side": side,
+                        "shares": shares,
+                        "price": price,
+                        "notional": notional,
+                        "reason": "harvest",
+                        "fee_eur": fee,
+                    }
+                )
 
         group = by_date.get(d)
         if group is not None:
@@ -400,4 +500,23 @@ def replay(
         dividends_net=dividends_gross - dividend_tax_total,
         dividend_events=dividend_events,
         dividend_reinvest=bool(cfg.dividend_reinvest),
+        harvest_trades=(
+            pd.DataFrame(harvest_rows)
+            if harvest_rows
+            else pd.DataFrame(
+                columns=[
+                    "date",
+                    "ticker",
+                    "side",
+                    "shares",
+                    "price",
+                    "notional",
+                    "reason",
+                    "fee_eur",
+                ]
+            )
+        ),
+        harvest_notional=harvest_notional,
+        harvest_fees=harvest_fees,
+        harvest_count=len(harvest_rows),
     )
