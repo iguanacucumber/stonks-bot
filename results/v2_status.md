@@ -16,10 +16,10 @@
 
 | issue | branch | state |
 |---|---|---|
-| #17 live autopilot | `v2/live-autopilot` | code + tests committed (`bff38c6`), reviewer running |
-| #18 alpha lab | `v2/alpha-lab` | cross-asset reject + sleeve report drafted; short study running |
-| #19 risk & allocation | `v2/risk-alloc` | pre-registered; primitives committed; experiments running |
-| #20 data & evaluation | `v2/data-eval` | package + reports committed; CI/currency finalizing |
+| #17 live autopilot | `v2/live-autopilot` | PR #27 open, CI green; safety-review fixes in progress |
+| #18 alpha lab | `v2/alpha-lab` | final: cross-asset reject, PIT IT retains 107%, short horizon reject, no new allocation |
+| #19 risk & allocation | `v2/risk-alloc` | pre-registered; runner/tests/gate fixes in progress |
+| #20 data & evaluation | `v2/data-eval` | package + reports committed; reviewer P1 fixes in progress |
 
 Each branch is in its own worktree; they merge after main-session review. Four
 independent reviewer sessions are auditing idempotency, methodology, risk math and
@@ -34,8 +34,8 @@ metrics before merge.
   vs QQQ 3.15x); reject, despite lower drawdown.
 - PIT S&P IT sleeve retains ~107% of the static-49 headline, so the TECH sleeve is
   not mainly a survivorship artifact; US all-PIT is still the better book.
-- Short-horizon daily/weekly trading remains unproven; the existing evidence says
-  faster trading of the monthly book is a cost pump.
+- Short-horizon daily/weekly trading is rejected: best OOS close-to-close 2.64x vs
+  QQQ 5.49x; overnight 1.01x (0.70x at 2x costs); no satellite allocation.
 
 ## Next
 
