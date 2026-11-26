@@ -46,3 +46,19 @@ core-only tax book is behind on terminal wealth but cheaper to run.
 - The overlay does not change `bot/backtest.py`, the CLI defaults, or the forward book.
 
 See `results/eur_ledger.md` for the full table and reproduction command.
+
+## Deferred exit tax (do not compare pre-exit wealth to a liquidated benchmark)
+
+The EUR-ledger multiple is a **liquidation** value: it subtracts the tax due if the
+whole book were sold at the end. A long-term holder does not pay that tax today.
+
+| book | EUR ledger (liquidated) | pre-exit equity | latent exit tax |
+|---|---:|---:|---:|
+| US monthly | 66.02x (€660,221) | 87.07x (€870,714) | €210,493 |
+| TECH monthly | 52.89x (€528,939) | 68.99x (€689,919) | €160,980 |
+| CORE tax | 49.02x (€490,218) | 70.11x (€701,125) | €210,907 |
+
+`pre-exit equity` already includes all tax paid in prior years; it is not "tax-free".
+The latent exit tax is a real liability when you sell. Deferral is valuable, but
+concentrating a portfolio to avoid tax is not free: it keeps the same market risk.
+Do not quote pre-exit wealth as an after-tax result.
