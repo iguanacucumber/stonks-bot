@@ -49,6 +49,11 @@ def synthetic(days: int = 420, n: int = 30, seed: int = 3):
 
 
 def main():
+    # alias graph must be idempotent: the terminal symbol is what the panel stores
+    assert universe.canonical("FI") == "FISV"
+    assert universe.canonical("FISV") == "FISV"
+    assert universe.canonical(universe.canonical("FI")) == "FISV"
+
     panel, mem, dates = synthetic()
     cfg = strategy.Config(start=str(dates[250].date()), top_n=5, rebalance_days=5)
     mkt = strategy.Market(panel, mem, cfg)

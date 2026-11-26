@@ -28,7 +28,6 @@ ALIASES = {
     "ANTM": "ELV",
     "PKI": "RVTY",
     "WLTW": "WTW",
-    "FISV": "FI",
     "FBHS": "FBIN",
     "RE": "EG",
     "ABC": "COR",
