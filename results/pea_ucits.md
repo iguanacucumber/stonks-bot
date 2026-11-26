@@ -3,7 +3,7 @@
 **Verdict: the CTO still wins.** As of 2026-11-26, no pure
 semiconductor UCITS ETF is PEA-eligible. The best 1x listed PEA tech
 fund, Amundi PEA Nasdaq-100 (PUST), turns €10k into **5.08x after
-tax** over 2015-2026; the CTO 2.5x SMH book turns it into **38.80x**.
+tax** over 2015-2026; the CTO 2.5x SMH book turns it into **57.01x** (monthly, IBKR) or **39.50x** (core-only, Trade Republic) after the real-open fix; the table below keeps the pre-fix 38.80x comparator.
 Even a PEA-eligible 2x Nasdaq ETF (LQQ) reaches only 14.42x. The PEA
 wrapper is cheaper on tax (18.6% social vs 31.4% PFU) but it cannot
 buy the US semiconductor index, and without a daily-reset 2x wrapper

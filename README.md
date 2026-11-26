@@ -104,28 +104,36 @@ the low-turnover tax book. A tax-sheltered account should run the monthly book.
 **France (2026 rules):** `--country fr` models the CTO: PFU on the annual net
 gain (34.5% before 2018, 30% 2018-2025, **31.4% in 2026**: 12.8% IR + 18.6% social),
 10-year loss carry, 0.4% FTT on French purchases since April 2025, real broker ticket
-grids, 0.25% EUR/USD, and EUR translation. The $2,191,762 headline is pre-tax,
-pre-fee, USD. On €10k after tax and real tariffs (`results/france.md`):
+grids, EUR/USD conversion (2 bps at Interactive Brokers, 25 bps at the retail
+brokers), and EUR translation. The $2,191,762 headline is pre-tax, pre-fee, USD.
+On €10k after tax and real tariffs (`results/france.md`, `results/brokers.md`):
 
-| book (€10k) | Bourse Direct | Trade Republic | index after tax |
-|---|---:|---:|---:|
-| TECH core-only tax book | 34.0x | **38.8x** | 5.4x QQQ |
-| TECH monthly sleeve | 8.3x | 27.2x | 5.4x QQQ |
-| French CTO (CAC + SMH core) | 6.4x | 12.5x | 2.1x CAC |
-| French PEA (sleeve only) | 1.47x | 1.61x | 2.3x CAC |
-| PEA Nasdaq-100 proxy (PUST.PA) | 4.96x | 5.08x | 5.4x QQQ |
+| book (€10k) | Bourse Direct | Trade Republic | Interactive Brokers | index after tax |
+|---|---:|---:|---:|---:|
+| TECH monthly sleeve | 11.7x | 31.9x | **57.0x** | 5.4x QQQ |
+| TECH core-only tax book | 34.7x | 39.5x | 50.9x | 5.4x QQQ |
+| French CTO (CAC + SMH core) | 6.4x | 12.5x | — | 2.1x CAC |
+| French PEA (sleeve only) | 1.47x | 1.61x | — | 2.3x CAC |
+| PEA Nasdaq-100 proxy (PUST.PA) | 4.96x | 5.08x | — | 5.4x QQQ |
 
-The core-only book is the only French product that survives a €10k account at
-Bourse Direct; its €8.50 US ticket plus 0.25% FX leaves the monthly sleeve 18.9x of
-terminal wealth behind Trade Republic. No pure semiconductor UCITS is PEA-eligible
-(the fund must hold >75% EU/EEA companies), so the best 1x PEA tech proxy
-(PUST.PA) makes 5.08x after tax, and even the 2x Nasdaq PEA ETF (LQQ) is 14.4x,
-versus 38.8x for the CTO. The PEA is not a substitute for the US core. Translating
-the price series to EUR **before** the 200-day rule hurts (24.6x vs 38.8x): measure
-the P&L in EUR, but keep the signal in the asset's own currency.
-`results/france.md`, `results/pea_ucits.md`, `scripts/france.py`, `scripts/pea_ucits.py`.
-CLI: `backtest --country fr` prints the after-tax block; `pnl` adds the same line;
-`report` appends the France section.
+At €10k the best book+broker is **monthly TECH at Interactive Brokers: 57.0x after
+tax** (pre-tax 75.0x, €26k fees, €135k PFU). The core-only tax book at IBKR is
+50.9x; at Trade Republic and Bourse Direct the tax book wins (39.5x/34.7x versus
+31.9x/11.7x monthly), because their 25 bps FX makes ~1,800 sleeve trades expensive.
+The optimum depends on the broker's cost structure. `--country fr` now defaults to
+monthly + IBKR; `--profile tax` selects the core-only book.
+
+Bourse Direct's €8.50 US ticket still makes it the wrong broker for a €10k US book.
+No pure semiconductor UCITS is PEA-eligible (the fund must hold >75% EU/EEA
+companies), so the best 1x PEA tech proxy (PUST.PA) makes 5.08x after tax, and even
+the 2x Nasdaq PEA ETF (LQQ) is 14.4x, versus 57.0x for the best CTO. The PEA is not
+a substitute for the US core. Keep the 200-day signal in the asset's own currency:
+translating the price series to EUR before the rule changes the trend timing and
+hurts. `results/france.md`, `results/brokers.md`, `results/pea_ucits.md`,
+`scripts/france.py`, `scripts/brokers.py`, `scripts/pea_ucits.py`.
+CLI: `backtest --country fr` defaults to monthly + Interactive Brokers and prints
+the after-tax block; `--profile tax` selects the core-only book; `pnl` adds the same
+line; `report` appends the France section.
 
 **Cross-market:** the same config on **39 markets** (9 stock-level including a 49-name
 NASDAQ tech book, 30 country/tech ETFs) is profitable in **39/39** and beats the local

@@ -8,6 +8,12 @@ the whole panel, including the trend, to EUR first. The difference is the
 FX path changing the trend timing, not a tax effect. 5 bps spread is
 charged on top of the broker tariff.
 
+> **Post-fix (2026-11-26):** US/TECH core opens are now real. TECH monthly at
+> Trade Republic is 31.90x, core-only tax 39.50x; at Interactive Brokers monthly
+> is 57.01x and core-only 50.89x. The table below keeps the pre-fix close-fill
+> rows for Bourse Direct and the French book; `results/brokers.md` is the
+> corrected broker matrix.
+
 ## French rules used
 
 | item | rule |

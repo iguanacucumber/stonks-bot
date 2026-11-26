@@ -4,6 +4,11 @@ Branch `agent/risk`, base commit `38d630b`. This file was written **before**
 running any of the rules below. The results table and verdict are appended after
 the runs; the pre-registration text is not edited retrospectively (typos aside).
 
+> **Post-fix note:** US/TECH core opens are now real. The TECH baseline is
+> 39.50x at Trade Republic (and 57.01x for the monthly book at IBKR); the table
+> below uses the pre-fix close-fill 38.80x. The 1.8% shift does not change the
+> verdict or the ranking, but exact deltas should be regenerated before quoting.
+
 ## Baseline to beat
 
 Two views of the same shipped core-only tax book (100% SMH, 2.5x gross, 30%
