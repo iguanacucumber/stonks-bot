@@ -8,6 +8,7 @@ from __future__ import annotations
 import sys
 from dataclasses import dataclass
 from pathlib import Path
+from unittest.mock import patch
 
 import numpy as np
 import pandas as pd
@@ -143,8 +144,10 @@ def test_eur_ledger_option_tax_and_income() -> None:
         broker_bps=0.0,
         broker_fixed_eur=0.0,
     )
-    base = eur_ledger.replay(res, panel, "US", cfg)
-    led = eur_ledger.replay(res, panel, "US", cfg, option_overlay=cc.daily)
+    fixed_fx = lambda market: pd.Series(0.91, index=res.equity.index)
+    with patch.object(eur_ledger.france, "eur_per_unit", fixed_fx):
+        base = eur_ledger.replay(res, panel, "US", cfg)
+        led = eur_ledger.replay(res, panel, "US", cfg, option_overlay=cc.daily)
     assert led.option_rolls == 1
     assert led.option_premium_eur > 0
     assert led.option_payoff_eur > 0
