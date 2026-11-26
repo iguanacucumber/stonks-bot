@@ -80,9 +80,12 @@ by penny stocks) without changing the shipped result.
 
 Known bias: ~18% of 2015–2026 index members have no Yahoo history (mostly acquired/delisted
 names). They are dropped. Results are survivor-biased; treat them as a sanity check, not a
-promise. A point-in-time S&P IT sleeve check retains ~107% of the static-49 TECH headline,
-so the TECH sleeve is not mainly a survivorship artifact; the US all-PIT book is still
-better on return and drawdown.
+promise. A point-in-time Nasdaq-100 sleeve check retains **95%** of the static-49 TECH
+EUR-ledger terminal (50.3x vs 53.0x), so the sleeve is not mainly a survivorship
+artifact; the US all-PIT book is still better on return and drawdown. An EUR/USD
+hedge was rejected: at 100% the US book falls to 45.4x and maxDD deepens to -67%;
+USD acted as a 2022 cushion. Tax-loss harvesting was also rejected after fees:
+it is mostly tax deferral plus round-trip costs.
 
 ## Results (paper backtest, 10 bps, month-end rebalance, next-open fill, 2.5x gross)
 
