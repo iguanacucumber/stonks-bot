@@ -188,6 +188,7 @@ def test_secret_scan_and_cache_detection() -> None:
         clean.write_text("STONKS_ALERT_WEBHOOK_URL=\n")
         placeholder.write_text(
             "STONKS_SMTP_PASSWORD=changeme\nSTONKS_ALERT_TELEGRAM_BOT_TOKEN=<token>\n"
+            "Example: `STONKS_SMTP_PASSWORD=changeme`.\n"
         )
         dirty.write_text("token=ghp_" + "a" * 36 + "\n")
         assert rc.scan_for_secrets([clean, placeholder]) == []

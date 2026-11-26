@@ -77,7 +77,9 @@ PLACEHOLDER_VALUES = re.compile(
 
 def _placeholder(value: str) -> bool:
     """True for documented placeholders, false for a real-looking value."""
-    cleaned = value.strip().strip("'\"")
+    # Markdown/report text often wraps the value in backticks or ends the
+    # sentence with punctuation; those are not part of the secret.
+    cleaned = value.strip().strip("'\"`").rstrip(".,;:)]'\"`")
     return not cleaned or bool(PLACEHOLDER_VALUES.match(cleaned))
 
 
