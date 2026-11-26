@@ -30,6 +30,7 @@ import json
 import os
 from pathlib import Path
 import re
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -62,8 +63,22 @@ SECRET_PATTERNS = (
     r"\bgh[pousr]_[A-Za-z0-9]{20,}\b",
     r"\bAKIA[0-9A-Z]{16}\b",
     r"\bxox[baprs]-[A-Za-z0-9-]{10,}\b",
-    r"(?:STONKS_SMTP_PASSWORD|STONKS_ALERT_TELEGRAM_BOT_TOKEN|IBKR_PAPER_PASSWORD)\s*=\s*[^\s#]+",
 )
+ENV_SECRET_PATTERN = re.compile(
+    r"(?:STONKS_SMTP_PASSWORD|STONKS_ALERT_TELEGRAM_BOT_TOKEN|"
+    r"IBKR_PAPER_PASSWORD)\s*=\s*([^\s#\\]+)"
+)
+PLACEHOLDER_VALUES = re.compile(
+    r"^(?:changeme|change[-_]me|example|dummy|test|xxx+|<[^>]*>|\$\{[^}]*\}|"
+    r"\*+|\.\.\.|your[-_].*)$",
+    re.I,
+)
+
+
+def _placeholder(value: str) -> bool:
+    """True for documented placeholders, false for a real-looking value."""
+    cleaned = value.strip().strip("'\"")
+    return not cleaned or bool(PLACEHOLDER_VALUES.match(cleaned))
 
 
 @dataclass
@@ -152,6 +167,18 @@ def _cache_snapshot() -> str:
         )
     except Exception:  # noqa: BLE001
         return "unknown"
+
+
+def _make_state_dir(
+    tmp: Path | None = None, base: Path | None = None
+) -> tuple[Path, bool]:
+    """Return (state_dir, owned). Use a writable base and clean owned dirs."""
+    if tmp is not None:
+        return Path(tmp), False
+    parent = Path(base) if base is not None else Path("/tmp/opencode")
+    if not parent.exists():
+        parent = Path(tempfile.gettempdir())
+    return Path(tempfile.mkdtemp(prefix="stonks-release-", dir=parent)), True
 
 
 def _git_head() -> str:
@@ -351,7 +378,11 @@ def check_forward_gate(
     expected: dict[tuple[str, str], int] | None = None,
 ) -> tuple[str, str]:
     """Validate actual forward gate status. WAIT is allowed; BLOCKED is not."""
-    expected = expected or {("monthly", "US"): 0, ("monthly", "TECH"): 1}
+    expected = expected or {
+        ("monthly", "US"): 0,
+        ("monthly", "TECH"): 1,
+        ("tax", "TECH"): 0,
+    }
     gate, warnings = parse_forward_gate(gate_path)
     gates, audit_warnings = gates_from_audit(audit_path)
     rows = {
@@ -363,11 +394,12 @@ def check_forward_gate(
     overall = str(gate.get("overall", "")).upper()
     if overall in {"BLOCKED", "FAIL", "ERROR"}:
         hard.append(f"forward gate overall={overall}")
-    for key in {("monthly", "US"), ("monthly", "TECH")} | set(expected):
+    # Ordered: the JSON/markdown detail must not depend on set hash order.
+    keys = list(dict.fromkeys([("monthly", "US"), ("monthly", "TECH"), *expected]))
+    for key in keys:
         row = rows.get(key)
         if row is None:
-            if key in {("monthly", "US"), ("monthly", "TECH")}:
-                hard.append(f"forward gate missing {key[0]}/{key[1]}")
+            hard.append(f"forward gate missing {key[0]}/{key[1]}")
             continue
         status = str(row.get("status", "")).upper()
         if status in {"BLOCKED", "FAIL", "ERROR"}:
@@ -466,10 +498,12 @@ def scan_for_secrets(paths: list[Path]) -> list[str]:
             text = path.read_text(errors="ignore")
         except Exception:  # noqa: BLE001
             continue
-        for pattern in SECRET_PATTERNS:
-            if re.search(pattern, text):
-                hits.append(str(path))
-                break
+        if any(re.search(pattern, text) for pattern in SECRET_PATTERNS):
+            hits.append(str(path))
+            continue
+        values = [m.group(1) for m in ENV_SECRET_PATTERN.finditer(text)]
+        if any(not _placeholder(value) for value in values):
+            hits.append(str(path))
     return hits
 
 
@@ -508,6 +542,22 @@ def _tracked_text_files() -> list[Path]:
         return out
     except Exception:  # noqa: BLE001
         return []
+
+
+def validate_acceptance_payload(payload: dict) -> str:
+    """A full release check must never accept skipped acceptance work."""
+    if not payload.get("ok"):
+        raise AssertionError("acceptance payload ok=false")
+    checks = payload.get("checks") or []
+    if not checks:
+        raise AssertionError("acceptance payload has no checks")
+    failed = [c for c in checks if c.get("status") == "FAIL"]
+    if failed:
+        raise AssertionError(f"acceptance failures: {failed[:3]}")
+    skipped = [c for c in checks if c.get("status") != "PASS"]
+    if skipped:
+        raise AssertionError(f"acceptance checks not run: {skipped[:3]}")
+    return f"{len(checks)}/{len(checks)} checks pass"
 
 
 def _run(
@@ -622,14 +672,7 @@ def run_checks(
     if not skip_cache:
 
         def acceptance_validator(proc) -> str:
-            payload = json.loads(proc.stdout)
-            if not payload.get("ok"):
-                raise AssertionError("acceptance payload ok=false")
-            checks = payload.get("checks") or []
-            failed = [c for c in checks if c.get("status") == "FAIL"]
-            if failed:
-                raise AssertionError(f"acceptance failures: {failed[:3]}")
-            return f"{len(checks)}/{len(checks)} checks pass"
+            return validate_acceptance_payload(json.loads(proc.stdout))
 
         command_check(
             "acceptance", ["scripts/acceptance.py", "--json"], acceptance_validator
@@ -676,9 +719,7 @@ def run_checks(
             )
         )
 
-        state_dir = tmp or Path(
-            tempfile.mkdtemp(prefix="stonks-release-", dir="/tmp/opencode")
-        )
+        state_dir, owns_state_dir = _make_state_dir(tmp)
 
         def plan_validator(market: str):
             def validate(proc) -> str:
@@ -694,25 +735,29 @@ def run_checks(
 
             return validate
 
-        for market in ("US", "TECH"):
-            command_check(
-                f"live_plan_{market.lower()}",
-                [
-                    "scripts/live.py",
-                    "plan",
-                    "--book",
-                    "monthly",
-                    "--market",
-                    market,
-                    "--as-of",
-                    EXPECTED_SNAPSHOT,
-                    "--state-dir",
-                    str(state_dir),
-                    "--json",
-                ],
-                plan_validator(market),
-                timeout=180,
-            )
+        try:
+            for market in ("US", "TECH"):
+                command_check(
+                    f"live_plan_{market.lower()}",
+                    [
+                        "scripts/live.py",
+                        "plan",
+                        "--book",
+                        "monthly",
+                        "--market",
+                        market,
+                        "--as-of",
+                        EXPECTED_SNAPSHOT,
+                        "--state-dir",
+                        str(state_dir),
+                        "--json",
+                    ],
+                    plan_validator(market),
+                    timeout=180,
+                )
+        finally:
+            if owns_state_dir:
+                shutil.rmtree(state_dir, ignore_errors=True)
 
     def gate_check() -> tuple[str, str]:
         return check_forward_gate(

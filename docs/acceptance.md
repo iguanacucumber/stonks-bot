@@ -43,6 +43,18 @@ uv run python scripts/acceptance.py --allow-missing-cache --json
 Without the cache and without that flag, the harness fails loudly. With the flag,
 all checks are `SKIP` and the command exits 0; it does not fabricate a run. On a
 cache-bearing checkout the same command runs the full ~15-second acceptance.
+A partial cache is never treated as complete: the required bar set, panel,
+membership and the expected snapshot must all be present.
+
+The workflow uses a stricter readiness guard before any full baseline:
+
+```bash
+uv run python scripts/acceptance.py --check-cache --json
+```
+
+It exits 0 only for a complete, fresh cache and 3 otherwise. A complete cache
+runs full acceptance and 100-path reproduction; a partial or stale cache runs
+only the cache-less skip path and never reaches Yahoo or the engine.
 
 ## Scope
 
@@ -55,6 +67,7 @@ prove forward edge; the forward gate remains in `results/forward_status.md`.
 
 ```bash
 uv run python tests/test_acceptance.py
+uv run python tests/test_release_check.py
 uv run python tests/test_live.py
 uv run python tests/test_ops.py
 uv run python tests/test_forward.py
