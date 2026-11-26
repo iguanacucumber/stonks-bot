@@ -106,6 +106,7 @@ def run_variant(
         "headline": tax["after_tax_multiple_eur"],
         "divadj": float(eq_div.iloc[-1] - res.unrealized_tax),
         "ledger": led.multiple,
+        "ledger_maxdd": led.maxdd,
         "ledger_divadj": float((led_div.iloc[-1] - led.exit_tax) / 10_000.0),
         "total": s["total_return"],
         "cagr": s["cagr"],
@@ -242,17 +243,17 @@ def main() -> None:
         "",
         "## Variants",
         "",
-        "| book | headline | div-tax adj | EUR ledger | ledger+div | CAGR | maxDD | 2018 | 2022 | worst 12m | trades |",
-        "|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|",
+        "| book | headline | div-tax adj | EUR ledger | ledger+div | CAGR | maxDD USD | maxDD ledger | 2018 | 2022 | worst 12m | trades |",
+        "|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|",
     ]
     for v in variants:
         lines.append(
             f"| {v['name']} | **{format_multiple(v['headline'])}** | "
             f"{format_multiple(v['divadj'])} | {format_multiple(v['ledger'])} | "
             f"{format_multiple(v['ledger_divadj'])} | {format_pct(v['cagr'])} | "
-            f"{format_pct(v['maxdd'])} | {format_pct(v['y2018'])} | "
-            f"{format_pct(v['y2022'])} | {format_pct(v['worst_12m'])} | "
-            f"{v['trades']} |"
+            f"{format_pct(v['maxdd'])} | {format_pct(v['ledger_maxdd'])} | "
+            f"{format_pct(v['y2018'])} | {format_pct(v['y2022'])} | "
+            f"{format_pct(v['worst_12m'])} | {v['trades']} |"
         )
     lines += [
         "",

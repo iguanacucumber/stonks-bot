@@ -322,8 +322,10 @@ def main() -> None:
 
     # H1 verdict.
     x1 = oos_rows[0]
-    q5 = x1["summary"]["five_year"]
-    beat_qqq_share = q5.get("share_beat_benchmark", 0.0)
+    full_qqq = summarize_equity(
+        full["1x"]["equity"], qqq["equity"].reindex(full["1x"]["equity"].index).ffill()
+    )
+    beat_qqq_share = full_qqq["five_year"].get("share_beat_benchmark", 0.0)
     fold_multiples = [f["after_tax_multiple_divadj"] for f in x1["folds"]]
     total = x1["divadj"]
     max_fold_share = max(fold_multiples) / total if total > 0 else float("inf")
