@@ -1,0 +1,13 @@
+# Runs after the US close and after the daily cache update. Not enabled by default.
+[Unit]
+Description=Daily stonks-bot paper live loop
+Documentation=file:/opt/stonks-bot/docs/ops.md
+
+[Timer]
+OnCalendar=Mon..Fri 21:45 UTC
+Persistent=true
+RandomizedDelaySec=120
+Unit=stonks-live.service
+
+[Install]
+WantedBy=timers.target

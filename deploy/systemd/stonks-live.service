@@ -1,0 +1,20 @@
+# Paper live loop. Install but do not enable until the operator has read docs/ops.md.
+[Unit]
+Description=stonks-bot paper live loop
+Documentation=file:/opt/stonks-bot/docs/ops.md
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+WorkingDirectory=/opt/stonks-bot
+User=stonks
+Group=stonks
+UMask=0077
+ExecStart=/usr/bin/env uv run python scripts/live.py run --book monthly --market US --paper
+# Optional alerting: put STONKS_ALERT_* in a root-owned EnvironmentFile, never git.
+# EnvironmentFile=/etc/stonks-bot/alerts.env
+# Fail the unit when the live command reports BLOCKED (exit 2).
+SuccessExitStatus=0
+TimeoutStartSec=15min
+Nice=10

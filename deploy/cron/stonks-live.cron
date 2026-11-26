@@ -1,0 +1,4 @@
+# Example only. Do not install automatically.
+# Server timezone UTC. 21:45 UTC is 16:45 ET in EST and 17:45 ET in EDT.
+# flock prevents overlapping runs; the live loop itself is idempotent.
+45 21 * * 1-5 stonks cd /opt/stonks-bot && mkdir -p state/live && flock -n state/live/cron.lock uv run python scripts/live.py run --book monthly --market US --paper >> state/live/cron.log 2>&1
