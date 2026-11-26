@@ -226,6 +226,7 @@ their membership window is covered, and a closed/holiday session costs one bench
 request instead of a universe sweep. The US panel parquet is rewritten only when a new bar
 arrives; a current cache does zero network fetches. Splits and dividends are detected from
 the overlap and trigger one full-history refetch for that symbol only.
+Measured request counts and the test matrix: `results/cache.md`.
 
 Tests:
 
