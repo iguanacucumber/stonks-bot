@@ -64,7 +64,7 @@ plan state dir now follows the same ownership rule and is cleaned in `finally`.
 `uv run python scripts/release_check.py --no-write` after the fixes:
 
 - overall **PASS**, **36/36** test scripts, acceptance 12/12
-- EUR ledger US 66.17x / TECH 52.98x / CORE 48.80x
+- EUR ledger US 66.69x / TECH 53.42x / CORE 49.27x (after the merged dividend-basis fix; the audit ran on 66.17/52.98/48.80)
 - forward gate **WAIT** US 0/5, TECH 1/5, tax 0/5
 - short3 **PASS** verdict=reject
 - secret scan **PASS** over tracked text files
