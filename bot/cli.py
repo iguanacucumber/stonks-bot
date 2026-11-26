@@ -615,7 +615,6 @@ def _eur_ledger(res, panel, market, cfg, broker, capital):
         market,
         eur_ledger.EurLedgerConfig(
             capital=capital,
-            tax_rate=0.314,
             financing_bps=cfg.financing_bps,
             spread_bps=cfg.cost_bps,
             fx_bps=cfg.fx_bps,

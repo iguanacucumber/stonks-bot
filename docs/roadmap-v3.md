@@ -73,3 +73,10 @@ a deterministic withdrawal simulator with tax and a report, no return promises.
 - No default change without the research protocol (`docs/research-protocol.md`).
 - Every wave ends with a merged PR, a test run, and an updated README/decision tree.
 - Keep four orchestrators active; when one merges, launch the next backlog item.
+
+## Backlog issues
+
+- #23 dividends and withholding tax
+- #24 IBKR paper broker adapter
+- #25 investor profiles and withdrawal simulator
+- #26 ops dashboard, backups, alerts, runbook
