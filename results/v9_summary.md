@@ -30,7 +30,7 @@ sample. **Reject.**
 
 ## Daily sector / calendar / breakout (walk-forward 2019-2026)
 
-| family | OOS 5bps | OOS 10bps | OQQ OOS | maxDD | positive folds |
+| family | OOS 5bps | OOS 10bps | QQQ OOS | maxDD | positive folds |
 |---|---:|---:|---:|---:|---:|
 | sector reversal | 1.29x | 1.12x | 2.80x | -35.9% | 6/8 |
 | calendar | 1.01x | 0.91x | 2.80x | -21.2% | 5/8 |
