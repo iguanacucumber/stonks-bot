@@ -199,6 +199,17 @@ use completed bars; entry is next bar open; 5/10 bps per side; annual French
 PFU. Pass only if after-tax beats BIL and QQQ with 2x-cost survival and no
 single-year dependence; intraday sample limits are stated.
 
+### H10 — Intraday pairs and lead-lag (v9)
+
+Actual Yahoo 1h 2y and 5m 60d bars (SPY/QQQ/SMH/SOXX/XLK), 09:30-16:00 ET.
+Test SMH->QQQ/SPY lead-lag at lags 1-3 in both directions (threshold and
+rolling-beta regression), intraday log-spread pairs (SMH/SOXX, QQQ/SPY) with
+z-score entry/time stop, and cross-sectional reversal on the liquid ETF set.
+Signals use completed bars; entry is the next bar open; 5/10 bps per side;
+annual French PFU. Pass only if after-tax beats BIL and QQQ on the same 2-year
+sample, survives 2x costs and has an implementable order path; otherwise
+reject. 5m is a 60-day execution-quality sample, not robustness evidence.
+
 ## File ownership
 
 - `bot/research/`: harness (orchestrator).
@@ -218,6 +229,9 @@ single-year dependence; intraday sample limits are stated.
   `tests/test_short2.py`, `results/short2.md`, `results/short2_trials.csv`.
 - v8 short-horizon III: `bot/research/short3/`, `scripts/research_short3.py`,
   `tests/test_short3.py`, `results/short3.md`, `results/short3_trials.csv`.
+- v9 intraday pairs: `bot/research/intra_pairs/`,
+  `scripts/research_intraday_pairs.py`, `tests/test_intraday_pairs.py`,
+  `results/intraday_pairs.md`, `results/intraday_pairs_trials.csv`.
 
 Workers do not edit shared earnings code (`bot/backtest.py`, `bot/strategy.py`)
 and do not commit. The orchestrator reviews and commits.
