@@ -432,7 +432,8 @@ def cmd_report(args):
         lines += [
             "",
             "The US table above is pre-tax. This section is after French PFU/PEA, "
-            "FTT, broker tickets and EUR translation; see `results/france.md`.",
+            "FTT, broker tickets and EUR translation. These are the last CLI runs; "
+            "`results/brokers.md` is the corrected full matrix.",
             "",
         ]
 
