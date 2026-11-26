@@ -112,7 +112,7 @@ def test_secret_scan_and_cache_detection() -> None:
         clean = tmp / "clean.md"
         dirty = tmp / "dirty.env"
         clean.write_text("STONKS_ALERT_WEBHOOK_URL=\n")
-        dirty.write_text("token=ghp_abcdefghijklmnopqrstuvwxyz123456\n")
+        dirty.write_text("token=ghp_" + "a" * 36 + "\n")
         assert rc.scan_for_secrets([clean]) == []
         assert rc.scan_for_secrets([dirty]) == [str(dirty)]
         assert rc.cache_missing(tmp)
