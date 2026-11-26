@@ -2,7 +2,7 @@ name: tests
 
 on:
   push:
-    branches: ["master", "v2/**", "agent/**", "fix/**", "v3/**"]
+    branches: ["master", "v2/**", "v3/**", "v6/**", "agent/**", "fix/**"]
   pull_request:
     branches: ["master"]
 
@@ -54,3 +54,4 @@ jobs:
           uv run python -m bot.cli backtest --help >/dev/null
           uv run python scripts/ops.py --help >/dev/null
           uv run python scripts/ops_drill.py >/dev/null
+          uv run python scripts/dashboard.py --check >/dev/null
