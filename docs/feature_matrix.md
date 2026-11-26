@@ -19,6 +19,10 @@
 | PIT NASDAQ tech universe | `uv run python scripts/research_pit_tech.py` | ready | retains 95% of static; US still primary |
 | Tax-loss harvesting | `uv run python scripts/tax_harvest.py` | rejected | deferral + fees; keep off |
 | EUR/USD hedge study | `uv run python scripts/fx_hedge.py` | rejected | unhedged EUR path is better |
+| US estate-tax calculator | `uv run python scripts/estate_tax.py --capital 660000` | ready | not tax/legal advice |
+| UCITS core study | `uv run python scripts/research_ucits_core.py` | rejected | return gap > tax saving |
+| PEA semis recheck | `uv run python scripts/pea_semis.py` | rejected | no pure semis PEA; PUST 5.77x |
+| Covered-call study | `uv run python scripts/covered_calls.py` | wave 5 | pending merge |
 | Full tests | `for t in tests/test_*.py; do uv run python "$t"; done` | ready | no network |
 
 ## Read first
