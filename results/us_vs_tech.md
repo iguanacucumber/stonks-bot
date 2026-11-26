@@ -22,6 +22,8 @@ US wins the full window and 2 of 3 five-year windows, with lower full-window
 drawdown. The 2015 window favours TECH. The US book is the original 219x
 pre-tax headline, now re-priced after French tax and IBKR fees.
 
+US also wins **7/7 five-year starts** (2015-2021) after tax, median 6.83x vs SPY 1.74x; `results/us_robustness.md`.
+
 **Decision:** US is the best backtest. The default stays **TECH** until the
 current 1/5 forward gate completes; switching now would reset the only live
 validation. Use `--market US` for the best book today. Switch after 5/5.
