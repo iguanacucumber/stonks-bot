@@ -77,4 +77,58 @@ failures.
 
 # Results
 
-(To be appended after the runs.)
+## Benchmarks and walk-forward summary
+
+QQQ OOS (2019-2026): **2.80x** after tax; BIL **1.16x**. Full window QQQ **3.79x**, BIL **1.18x**.
+
+| family | OOS 5bps | OOS 10bps | OOS CAGR | OOS maxDD | OOS hit | positive folds |
+|---|---:|---:|---:|---:|---:|---:|
+| sector | **1.29x** | **1.12x** | 3.3% | -35.9% | 52.4% | 6/8 |
+| calendar | **1.01x** | **0.91x** | 0.1% | -21.2% | 53.2% | 5/8 |
+| breakout | **0.91x** | **0.87x** | -1.2% | -14.8% | 49.0% | 2/8 |
+
+## Walk-forward folds
+
+### sector
+
+| fold | selected | test return | test maxDD | active days | train Sharpe |
+|---|---|---:|---:|---:|---:|
+| 2019 | lb5 h5 n2 neutral | -0.1% | -5.7% | 252 | 0.07 |
+| 2020 | lb1 h5 n5 long_only | +4.1% | -35.9% | 253 | 0.92 |
+| 2021 | lb5 h5 n2 long_only | +3.8% | -11.5% | 252 | 0.47 |
+| 2022 | lb1 h5 n5 long_only | -21.2% | -29.2% | 251 | 0.71 |
+| 2023 | lb5 h10 n5 long_only | +15.7% | -9.8% | 250 | 0.46 |
+| 2024 | lb5 h10 n5 long_only | +9.7% | -8.1% | 252 | 0.53 |
+| 2025 | lb5 h10 n5 long_only | +18.2% | -15.0% | 250 | 0.55 |
+| 2026 | lb5 h10 n5 long_only | +13.9% | -9.9% | 226 | 0.60 |
+
+### calendar
+
+| fold | selected | test return | test maxDD | active days | train Sharpe |
+|---|---|---:|---:|---:|---:|
+| 2019 | SMH post_holiday k1 | -7.1% | -7.9% | 9 | 0.63 |
+| 2020 | QQQ dow2 | +9.0% | -12.3% | 52 | 0.39 |
+| 2021 | QQQ tom k3 | -5.9% | -6.6% | 72 | 0.50 |
+| 2022 | SMH tom k3 | +2.6% | -13.2% | 72 | 0.38 |
+| 2023 | QQQ tom k2 | +17.2% | -2.5% | 48 | 0.52 |
+| 2024 | QQQ tom k2 | -12.7% | -12.0% | 48 | 0.67 |
+| 2025 | QQQ tom k2 | +0.8% | -6.4% | 48 | 0.46 |
+| 2026 | QQQ tom k2 | +4.5% | -8.3% | 44 | 0.44 |
+
+### breakout
+
+| fold | selected | test return | test maxDD | active days | train Sharpe |
+|---|---|---:|---:|---:|---:|
+| 2019 | SPY w50 h3 volon | +0.9% | -0.1% | 5 | 0.55 |
+| 2020 | SPY w50 h3 volon | -1.3% | -5.6% | 25 | 0.61 |
+| 2021 | SMH w50 h3 volon | -1.5% | -2.3% | 3 | 0.63 |
+| 2022 | SMH w50 h3 volon | -0.7% | -1.5% | 3 | 0.52 |
+| 2023 | SMH w50 h3 volon | +0.0% | 0.0% | 0 | 0.46 |
+| 2024 | SMH w50 h3 volon | -3.9% | -9.8% | 27 | 0.43 |
+| 2025 | SPY w20 h5 voloff | -6.2% | -6.7% | 101 | 0.36 |
+| 2026 | SPY w20 h5 volon | +4.3% | -2.2% | 34 | 0.26 |
+
+## All variants
+
+See `results/short_daily_tables.md` for all 105 variants, including failures. The CSV is `results/short_daily_trials.csv`.
+
