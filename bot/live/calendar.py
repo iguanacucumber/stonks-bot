@@ -143,6 +143,31 @@ def last_session_of_month(year: int, month: int) -> date:
     return _roll_back(d)
 
 
+def is_half_day(day: str | date | pd.Timestamp) -> bool:
+    """NYSE early-close session (13:00 ET).
+
+    Known early closes: the Friday after Thanksgiving, Christmas Eve, and July 3
+    when Independence Day is a weekday. A half-day is a session, but its close is
+    13:00 ET; a 16:00 close-valid check would be wrong.
+    """
+    d = as_date(day)
+    if not is_session(d):
+        return False
+    thanksgiving = _nth_weekday(d.year, 11, 3, 4)
+    if d == thanksgiving + timedelta(days=1):
+        return True
+    if (d.month, d.day) == (12, 24):
+        return True
+    if (d.month, d.day) == (7, 3) and date(d.year, 7, 4).weekday() < 5:
+        return True
+    return False
+
+
+def close_hour(day: str | date | pd.Timestamp) -> int:
+    """Exchange close hour in New York: 13 for a half-day, else 16."""
+    return 13 if is_half_day(day) else 16
+
+
 def is_rebalance_session(
     day: str | date | pd.Timestamp, every_months: int = 1, offset: int = 0
 ) -> bool:

@@ -66,6 +66,7 @@ def test_pass_and_wait_counts():
         book = report.books[0]
         assert book.verified == 5 and book.status == fg.PASS
         assert book.next_required == "2026-11-27"
+        assert book.reconcile == "no state"  # missing state is reported, not faked
         assert book.equity == 10004.0
         assert book.drawdown is not None
 
@@ -81,6 +82,12 @@ def test_pass_and_wait_counts():
         )
         assert report.status == fg.WAIT
         assert report.books[0].verified == 1
+        assert report.books[0].remaining_required == [
+            "2026-11-27",
+            "2026-11-30",
+            "2026-12-01",
+            "2026-12-02",
+        ]
 
 
 def test_nonverified_and_duplicate_dates():
@@ -110,7 +117,7 @@ def test_nonverified_and_duplicate_dates():
         assert report.status == fg.BLOCKED
         assert report.books[0].status == fg.BLOCKED
         assert any("duplicate" in x for x in report.books[0].issues)
-        assert report.books[0].verified == 1
+        assert report.books[0].verified == 0
         assert report.books[0].rejected == 1
 
 
@@ -229,6 +236,63 @@ def test_drawdown_equity_and_since():
         assert b.new_verified == ["2026-11-24"]
 
 
+def test_gate_increments_only_on_new_verified_date():
+    with TemporaryDirectory() as tmp:
+        root = Path(tmp)
+        audit = _audit([("monthly", "TECH", "2026-11-25", True)])
+        paper = pd.DataFrame(
+            [("TECH", "2026-11-25", True, 10000.0)],
+            columns=["market", "quote_date", "close_valid", "equity"],
+        )
+        _write(root, audit, paper)
+        first = fg.collect_gate(
+            results_dir=root,
+            books=[("monthly", "TECH")],
+            now="2026-11-26T22:00:00+00:00",
+            bench_last="2026-11-25",
+        )
+        assert first.books[0].verified == 1
+
+        # A genuinely new verified date increments once.
+        audit = pd.concat(
+            [audit, _audit([("monthly", "TECH", "2026-11-27", True)])],
+            ignore_index=True,
+        )
+        paper = pd.concat(
+            [
+                paper,
+                pd.DataFrame(
+                    [("TECH", "2026-11-27", True, 10010.0)],
+                    columns=["market", "quote_date", "close_valid", "equity"],
+                ),
+            ],
+            ignore_index=True,
+        )
+        _write(root, audit, paper)
+        second = fg.collect_gate(
+            results_dir=root,
+            books=[("monthly", "TECH")],
+            now="2026-11-30T22:00:00+00:00",
+            bench_last="2026-11-30",
+        )
+        assert second.books[0].verified == 2
+
+        # A duplicate of that date never adds another count and blocks.
+        audit = pd.concat(
+            [audit, _audit([("monthly", "TECH", "2026-11-27", True)])],
+            ignore_index=True,
+        )
+        _write(root, audit, paper)
+        dup = fg.collect_gate(
+            results_dir=root,
+            books=[("monthly", "TECH")],
+            now="2026-11-30T22:00:00+00:00",
+            bench_last="2026-11-30",
+        )
+        assert dup.books[0].verified == 1  # the duplicated date is excluded
+        assert dup.status == fg.BLOCKED
+
+
 def test_status_write_is_report_only_and_idempotent():
     with TemporaryDirectory() as tmp:
         root = Path(tmp)
@@ -293,6 +357,7 @@ if __name__ == "__main__":
     test_holiday_and_missed_session_logic()
     test_stale_benchmark_blocks()
     test_drawdown_equity_and_since()
+    test_gate_increments_only_on_new_verified_date()
     test_status_write_is_report_only_and_idempotent()
     test_cli_json_and_exit_codes()
     print("test_forward_gate: all checks passed")

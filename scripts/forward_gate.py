@@ -11,7 +11,7 @@ file (and never the audit/ledgers). ``--check`` is the automation-safe exit-code
 wrapper; ``--since`` reports newly verified dates.
 
 Exit codes:
-  0 PASS, 2 WAIT, 3 BLOCKED, 1 unexpected error.
+  0 PASS or WAIT, 2 BLOCKED, 1 unexpected error.
 
 Run:
   uv run python scripts/forward_gate.py
@@ -45,8 +45,8 @@ WAIT = "WAIT"
 BLOCKED = "BLOCKED"
 EXIT_OK = 0
 EXIT_ERROR = 1
-EXIT_WAIT = 2
-EXIT_BLOCKED = 3
+EXIT_WAIT = 0  # automation-safe: a healthy short track is not an error
+EXIT_BLOCKED = 2
 TARGET_DEFAULT = 5
 
 
@@ -65,6 +65,7 @@ class BookGate:
     last_verified: str | None = None
     last_paper: str | None = None
     next_required: str | None = None
+    remaining_required: list[str] = field(default_factory=list)
     equity: float | None = None
     equity_source: str = "none"
     drawdown: float | None = None
@@ -90,6 +91,7 @@ class BookGate:
             "last_verified": self.last_verified,
             "last_paper": self.last_paper,
             "next_required": self.next_required,
+            "remaining_required": self.remaining_required,
             "equity": self.equity,
             "equity_source": self.equity_source,
             "drawdown": self.drawdown,
@@ -136,7 +138,8 @@ class GateReport:
         for b in self.books:
             rest = (
                 f"{b.book}/{b.market}: {b.status} {b.verified}/{b.target} verified, "
-                f"next={b.next_required}, equity={_fmt(b.equity)}, "
+                f"next={b.next_required}, remaining={b.remaining_required}, "
+                f"equity={_fmt(b.equity)}, "
                 f"dd={_fmt_pct(b.drawdown)}, data={'fresh' if b.data_fresh else 'STALE'}, "
                 f"reconcile={b.reconcile}"
             )
@@ -354,6 +357,11 @@ def collect_gate(
             # date for counting even when the duplicate is identical.
             # A conflicting duplicate is a blocker, but if any copy is verified
             # it still counts once for display; the issue prevents PASS.
+            bad_dates = set(dup[dup > 1].index)
+            # Duplicate dates never count, even when both copies agree. The
+            # conflicting/duplicate issue already blocks the book; this keeps the
+            # verified counter honest.
+            sub = sub[~sub["date"].isin(bad_dates)]
             sub = sub.sort_values(["date", "verified"]).drop_duplicates(
                 "date", keep="last"
             )
@@ -426,6 +434,14 @@ def collect_gate(
             pass
         bg.next_required = str(_next_required(last_seen, today, after_close))
         next_session = date.fromisoformat(bg.next_required)
+        # The remaining sessions are the next real NYSE sessions needed to reach
+        # the target. Do not skip a normal session (for example 11-30) just
+        # because a manual schedule omitted it.
+        need = max(0, target - bg.verified)
+        cursor = next_session
+        for _ in range(need):
+            bg.remaining_required.append(str(cursor))
+            cursor = calendar.next_session(cursor)
         if bg.verified < target:
             if next_session < today or (next_session == today and after_close):
                 if bg.last_verified is None or bg.last_verified < str(next_session):
@@ -471,6 +487,16 @@ def _write_status(report: GateReport, path: Path) -> None:
             f"{b.next_required} | {_fmt(b.equity)} | {_fmt_pct(b.drawdown)} | "
             f"{'fresh' if b.data_fresh else 'STALE'} | {b.reconcile} |"
         )
+    lines += ["", "## Required sessions", ""]
+    lines += [
+        "| book | market | next | remaining |",
+        "|---|---|---|---|",
+    ]
+    for b in report.books:
+        lines.append(
+            f"| {b.book} | {b.market} | {b.next_required} | "
+            f"{', '.join(b.remaining_required) or 'none'} |"
+        )
     lines += ["", "## Checks", ""]
     for b in report.books:
         lines.append(f"### {b.book}/{b.market}")
@@ -480,8 +506,10 @@ def _write_status(report: GateReport, path: Path) -> None:
             f"last verified: {b.last_verified or 'none'}; last paper: {b.last_paper or 'none'}"
         )
         lines.append(
-            f"- next required: {b.next_required}; data last: {b.data_last or 'none'}; "
-            f"equity: {_fmt(b.equity)} ({b.equity_source}); drawdown: {_fmt_pct(b.drawdown)}"
+            f"- next required: {b.next_required}; remaining: "
+            f"{', '.join(b.remaining_required) or 'none'}; data last: "
+            f"{b.data_last or 'none'}; equity: {_fmt(b.equity)} "
+            f"({b.equity_source}); drawdown: {_fmt_pct(b.drawdown)}"
         )
         for issue in b.issues:
             lines.append(f"- **BLOCKED:** {issue}")

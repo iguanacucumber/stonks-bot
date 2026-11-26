@@ -152,17 +152,32 @@ def resolve_forward_session(
 
 
 def _require_close_session(
-    now: str | datetime | None, session: pd.Timestamp, paper: bool, as_of: str | None
+    now: str | datetime | None,
+    session: pd.Timestamp,
+    paper: bool,
+    as_of: str | None,
+    require_close: bool = True,
 ) -> None:
-    """Paper rows may only be written after the close on the session date."""
-    if not paper or as_of:
+    """Paper rows may only be written after the actual session close.
+
+    Half-days close at 13:00 ET, not 16:00. The data-publication delay is 30
+    minutes, so the guard is 13:30 on a half-day and 16:30 on a normal day.
+    Holidays/weekends are rejected earlier by ``resolve_forward_session``.
+    """
+    if not require_close or as_of:
         return
     et = _now_dt(now).astimezone(ET)
-    after_close = et.hour > 16 or (et.hour == 16 and et.minute >= 30)
+    close = calendar.close_hour(session)
+    deadline_hour = close
+    after_close = et.hour > deadline_hour or (
+        et.hour == deadline_hour and et.minute >= 30
+    )
     if not after_close or pd.Timestamp(et.date()) != session:
+        kind = "half-day" if close == 13 else "session"
         raise ForwardBlocked(
-            f"paper mode requires a completed session: now_et={et:%Y-%m-%d %H:%M} "
-            f"session={session.date()}; run after 16:30 ET on a trading day"
+            f"paper mode requires a completed {kind}: now_et={et:%Y-%m-%d %H:%M} "
+            f"session={session.date()} close={close}:00 ET (+30m data delay); "
+            "refusing a close-valid row"
         )
 
 
@@ -362,9 +377,12 @@ def run_forward(
     report_runner=None,
     refresh_fn=None,
     cache_check=None,
+    require_close: bool | None = None,
     write_status: bool | None = None,
 ) -> ForwardReport:
     """Run the daily loop. All runners are injectable for synthetic tests."""
+    if require_close is None:
+        require_close = bool(paper)
     stamp = _now_dt(now).isoformat(timespec="seconds")
     results_dir = Path(results_dir or (ROOT / "results"))
     paper_runner = paper_runner or _run_legacy_paper
@@ -373,7 +391,7 @@ def run_forward(
     cache_check = cache_check or _cache_fresh
     try:
         session = resolve_forward_session(now, as_of)
-        _require_close_session(now, session, paper, as_of)
+        _require_close_session(now, session, paper, as_of, require_close)
     except ForwardBlocked as exc:
         report = ForwardReport(
             session=str(as_of or ""),
@@ -531,6 +549,11 @@ def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--paper", action="store_true", help="write paper state/ledger")
     ap.add_argument(
+        "--require-close",
+        action="store_true",
+        help="refuse to write before the actual close (half-day aware); implied by --paper",
+    )
+    ap.add_argument(
         "--refresh",
         action="store_true",
         help="incrementally refresh stale needed bars before the run",
@@ -562,6 +585,7 @@ def main(argv: list[str] | None = None) -> int:
         as_of=args.as_of,
         now=args.now,
         state_dir=args.state_dir,
+        require_close=bool(args.require_close or args.paper),
     )
     if args.json:
         print(json.dumps(report.to_dict(), indent=2, sort_keys=True))
