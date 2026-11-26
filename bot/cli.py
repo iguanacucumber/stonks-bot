@@ -277,22 +277,7 @@ def cmd_backtest(args):
         if f["currency"] != "EUR":
             print(f"  EUR translation {f['fx'] - 1:+.1%} over the window")
         if args.wrapper != "pea":
-            b = france.BROKERS[france.broker_name(broker)]
-            grid = b.get("us_grid") or ()
-            led = eur_ledger.replay(
-                res,
-                panel,
-                market,
-                eur_ledger.EurLedgerConfig(
-                    capital=args.capital,
-                    tax_rate=0.314,
-                    financing_bps=cfg.financing_bps,
-                    spread_bps=cfg.cost_bps,
-                    fx_bps=cfg.fx_bps,
-                    broker_bps=float(b.get("us_bps", 0.0)),
-                    broker_fixed_eur=float(grid[-1][1]) if grid else 0.0,
-                ),
-            )
+            led = _eur_ledger(res, panel, market, cfg, broker, args.capital)
             print(
                 f"  EUR ledger {led.multiple:.2f}x (€{led.after_tax:,.0f}) · "
                 f"CAGR {led.cagr:.1%} · maxDD {led.maxdd:.1%}"
@@ -620,6 +605,26 @@ def _risk_scale(mkt, date, cfg) -> float:
     return cfg.trend_scale if pd.notna(ma) and px.loc[date] < ma else 1.0
 
 
+def _eur_ledger(res, panel, market, cfg, broker, capital):
+    """Replay the engine's trades in EUR for the real-life French CTO number."""
+    b = france.BROKERS[france.broker_name(broker)]
+    grid = b.get("us_grid") or ()
+    return eur_ledger.replay(
+        res,
+        panel,
+        market,
+        eur_ledger.EurLedgerConfig(
+            capital=capital,
+            tax_rate=0.314,
+            financing_bps=cfg.financing_bps,
+            spread_bps=cfg.cost_bps,
+            fx_bps=cfg.fx_bps,
+            broker_bps=float(b.get("us_bps", 0.0)),
+            broker_fixed_eur=float(grid[-1][1]) if grid else 0.0,
+        ),
+    )
+
+
 def cmd_pnl(args):
     profile = france.best_profile(args.country, args.profile, args.fx_bps)
     market = args.market or (france.DEFAULT_MARKET if args.country == "fr" else "US")
@@ -690,6 +695,12 @@ def cmd_pnl(args):
             f"(€{f['after_tax_eur']:,.0f}), exit tax "
             f"€{f['exit_tax_eur']:,.0f}"
         )
+        if args.wrapper != "pea":
+            led = _eur_ledger(res, panel, market, cfg, broker, args.capital)
+            print(
+                f"  EUR ledger {led.multiple:.2f}x (€{led.after_tax:,.0f}) · "
+                f"CAGR {led.cagr:.1%} · maxDD {led.maxdd:.1%}"
+            )
         print("  horizons above are pre-exit-tax")
 
 
