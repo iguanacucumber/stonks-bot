@@ -17,7 +17,7 @@ is the annual tax-lot replay. These are liquidation values, not promises.
 - `max_growth` maximizes terminal wealth and is the default. It still loses 56.9%
   at the worst peak-to-trough in EUR terms. A -57% drawdown is not unusual; do not
   use this if you would sell at the bottom.
- - `balanced` gives up roughly half the terminal wealth for about 10 pp less
+- `balanced` gives up roughly half the terminal wealth for about 10 pp less
   drawdown and a better 2022. It is the better fit for a real human who needs to
   stay invested. It is **post-hoc** in the v2 sweep (A6), so label it `paper` and
   do not present it as a validated default.

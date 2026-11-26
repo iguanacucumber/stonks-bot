@@ -809,7 +809,7 @@ def render_markdown(report: ReleaseReport) -> str:
         "- [ ] CI green on the merged commit (GitHub Actions)",
         "- [ ] no open PRs / release-blocking issues",
         f"- [{gate_mark}] forward gate honesty: US 0/5, TECH 1/5, tax 0/5 is WAIT, not an edge",
-        f"- [{short3_mark}] short3 report/verdict reviewed (WAIT is allowed if the workstream is not merged)",
+        f"- [{short3_mark}] short3 report/verdict reviewed (merged; verdict=reject)",
         "- [ ] paper-only; no real orders, broker keys or secrets",
         "- [ ] README/RELEASE links and headline numbers reviewed",
         "- [ ] main session tags/creates the GitHub release after merge",
@@ -824,8 +824,8 @@ def render_markdown(report: ReleaseReport) -> str:
         "post-hoc `paper` opt-ins.",
         "- The live paper ledger is pre-tax/average-cost, not the after-tax EUR ledger.",
         "- IBKR paper/read-only adapter is opt-in; no live-money order path exists here.",
-        "- Short3 evidence may be pending in this release branch; never upgrade a "
-        "missing/pending short study into a production allocation.",
+        "- Short3 is merged and rejected (`results/short3.md`); never upgrade a "
+        "failed short study into a production allocation.",
         "",
         "## Commands",
         "",

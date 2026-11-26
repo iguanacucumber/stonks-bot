@@ -51,7 +51,7 @@ ETF+margin. `results/futures.md`.
 ## Covered calls: model-only income opt-in
 
 At 40% IV / 10% OTM the US book model is 75.96x vs the 66.72x gross-dividend
-baseline (66.17x exact), maxDD -48.5% vs -56.4%; at 25/30% IV most variants have
+baseline (66.17x exact), maxDD -48.5% vs -56.9%; at 25/30% IV most variants have
 negative option P&L. European cash settlement, fractional contracts and a flat
 smile are optimistic. Not default; paper income experiment only.
 `results/covered_calls.md`.
@@ -75,4 +75,5 @@ experiment. Handle US estate tax with treaty filings/beneficiary planning.
 
 ## Tests
 
-All 27 `tests/test_*.py` suites pass on master.
+All `tests/test_*.py` suites pass on master (the suite has grown since this wave;
+run `for t in tests/test_*.py; do uv run python "$t"; done` for the current count).

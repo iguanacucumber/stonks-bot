@@ -64,7 +64,7 @@ Plus `scripts/reproduce.py baseline --no-write` -> 52.98/48.80/66.17.
 ## Remaining risks
 
 - No real money, no live broker orders; IBKR adapter is paper-only.
-- Forward evidence is still thin: TECH 1/5 verified dates, US just starting.
+- Forward evidence is still thin: **US 0/5, TECH 1/5, tax 0/5** verified dates.
 - Balanced/conservative are post-hoc; 2.5x gap risk and -57% drawdowns remain.
 - Dividend events cover the traded US/TECH tickers; foreign/PEA dividends are
   not fully modeled.
