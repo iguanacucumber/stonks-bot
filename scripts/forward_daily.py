@@ -237,7 +237,19 @@ def paper_dates(book: str, market: str, results_dir: Path) -> list[str]:
         return []
 
 
-def gate_text(book: str, market: str, results_dir: Path, target: int = 5) -> str:
+def gate_text(
+    book: str,
+    market: str,
+    results_dir: Path,
+    target: int = 5,
+    session: str | None = None,
+) -> str:
+    """Display-only count; ``forward_gate.py`` remains the authority.
+
+    The status table must not print PASS because a fabricated weekend/future
+    row is in the audit. Filter to real NYSE sessions on/before the completed
+    session before counting. Duplicate/conflict checks stay in the gate.
+    """
     path = results_dir / "paper_audit.csv"
     if not path.exists():
         return f"WAIT 0/{target} verified"
@@ -247,7 +259,14 @@ def gate_text(book: str, market: str, results_dir: Path, target: int = 5) -> str
         if df.empty:
             return f"WAIT 0/{target} verified"
         verified = df["verified"].astype(str).str.lower().isin(["true", "1"])
-        n = int(df.loc[verified, "date"].astype(str).nunique())
+        dates = pd.to_datetime(df.loc[verified, "date"], errors="coerce").dt.date
+        cutoff = pd.Timestamp(session).date() if session else None
+        valid = {
+            d
+            for d in dates.dropna()
+            if calendar.is_session(d) and (cutoff is None or d <= cutoff)
+        }
+        n = len(valid)
         return f"{'PASS' if n >= target else 'WAIT'} {n}/{target} verified"
     except Exception as exc:  # noqa: BLE001 - status must not crash
         return f"WAIT 0/{target} verified (audit unreadable: {exc})"
@@ -461,7 +480,13 @@ def run_forward(
             session=str(session.date()),
             state_path=str(cfg.state_path),
             live_status="not-run",
-            gate=gate_text(book, market, results_dir, cfg.forward_gate),
+            gate=gate_text(
+                book,
+                market,
+                results_dir,
+                cfg.forward_gate,
+                session=str(session.date()),
+            ),
             paper_dates=len(paper_dates(book, market, results_dir)),
         )
         try:
@@ -525,7 +550,13 @@ def run_forward(
             item.live_status = "error"
             item.error = str(exc)
             report.errors.append(f"{book}/{market}: {exc}")
-        item.gate = gate_text(book, market, results_dir, cfg.forward_gate)
+        item.gate = gate_text(
+            book,
+            market,
+            results_dir,
+            cfg.forward_gate,
+            session=str(session.date()),
+        )
         report.books.append(item)
 
     if not report.books:

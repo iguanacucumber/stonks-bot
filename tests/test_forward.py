@@ -238,6 +238,23 @@ def test_gate_and_separate_books() -> None:
         assert fd.gate_text("monthly", "US", results) == "WAIT 1/5 verified"
         assert fd.gate_text("monthly", "TECH", results, target=1) == "PASS 1/1 verified"
         assert fd.gate_text("tax", "TECH", results) == "WAIT 0/5 verified"
+        # A future/non-session audit row cannot make the status table claim PASS.
+        assert (
+            fd.gate_text("monthly", "US", results, session="2026-11-24")
+            == "WAIT 0/5 verified"
+        )
+        pd.DataFrame(
+            {
+                "book": ["monthly"],
+                "market": ["US"],
+                "date": ["2026-11-27"],
+                "verified": [True],
+            }
+        ).to_csv(results / "paper_audit.csv", index=False)
+        assert (
+            fd.gate_text("monthly", "US", results, session="2026-11-25")
+            == "WAIT 0/5 verified"
+        )
 
 
 def test_refresh_is_opt_in_and_injected() -> None:

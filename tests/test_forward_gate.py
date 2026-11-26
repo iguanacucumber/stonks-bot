@@ -494,6 +494,54 @@ def test_cli_json_and_exit_codes():
         assert json.loads((root / "snapshot.json").read_text())["books"][0]["eta"]
         assert len((root / "gate.jsonl").read_text().splitlines()) == 1
 
+        # --lock appends one real record from the same clean report, and a
+        # rerun is a no-op.
+        lockbox = root / "forward_proof.jsonl"
+        buf = io.StringIO()
+        with contextlib.redirect_stdout(buf):
+            locked = fg.main(
+                [
+                    "--results-dir",
+                    str(root),
+                    "--book",
+                    "monthly/TECH",
+                    "--now",
+                    "2026-11-26T22:00:00+00:00",
+                    "--bench-last",
+                    "2026-11-25",
+                    "--lock",
+                    "--lockbox",
+                    str(lockbox),
+                    "--json",
+                ]
+            )
+        assert locked == fg.EXIT_WAIT
+        payload = json.loads(buf.getvalue())
+        assert payload["lockbox"]["records"] == 1
+        assert payload["lockbox"]["last"] == "2026-11-25"
+        assert len(lockbox.read_text().splitlines()) == 1
+        buf = io.StringIO()
+        with contextlib.redirect_stdout(buf):
+            again = fg.main(
+                [
+                    "--results-dir",
+                    str(root),
+                    "--book",
+                    "monthly/TECH",
+                    "--now",
+                    "2026-11-26T22:00:00+00:00",
+                    "--bench-last",
+                    "2026-11-25",
+                    "--lock",
+                    "--lockbox",
+                    str(lockbox),
+                    "--json",
+                ]
+            )
+        assert again == fg.EXIT_WAIT
+        assert json.loads(buf.getvalue())["lockbox"]["skipped"]
+        assert len(lockbox.read_text().splitlines()) == 1
+
 
 if __name__ == "__main__":
     test_pass_and_wait_counts()

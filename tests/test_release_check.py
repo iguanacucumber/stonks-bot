@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import sys
 from pathlib import Path
 from tempfile import TemporaryDirectory
@@ -11,6 +12,7 @@ sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(ROOT / "scripts"))
 
 import release_check as rc  # noqa: E402
+from bot.live import proof  # noqa: E402
 
 SAMPLE = """\
 TECH monthly native  51.82x  terminal-FX  57.01x  EUR-ledger  53.42x
@@ -139,6 +141,54 @@ def test_forward_gate_wait_and_blocked() -> None:
         )
         status, detail = rc.check_forward_gate(gate, audit, expected)
         assert status == "FAIL" and "missing tax/TECH" in detail
+
+
+def test_forward_proof_check_requires_every_audit_date() -> None:
+    with TemporaryDirectory() as td:
+        tmp = Path(td)
+        audit = tmp / "paper_audit.csv"
+        audit.write_text(AUDIT)
+        lockbox = tmp / "forward_proof.jsonl"
+        rec = {
+            "version": 1,
+            "date": "2026-11-25",
+            "book": "monthly",
+            "market": "TECH",
+            "recorded_at": "2026-11-25T22:00:00+00:00",
+            "gate": {
+                "verified": 1,
+                "observed": 1,
+                "target": 5,
+                "status": "WAIT",
+            },
+            "files": {
+                "paper_audit": {"path": "paper_audit.csv", "sha256": "a" * 64},
+                "paper_daily": {"path": "paper_daily.csv", "sha256": "b" * 64},
+                "live_state": {
+                    "path": "state/live/x.json",
+                    "sha256": None,
+                    "present": False,
+                },
+            },
+            "verification": {
+                "command": "uv run python scripts/forward_gate.py --lock",
+                "session": "2026-11-25",
+                "close_valid": True,
+            },
+            "prev_hash": proof.GENESIS,
+        }
+        rec["record_hash"] = proof.compute_record_hash(rec)
+        lockbox.write_text(json.dumps(rec, sort_keys=True) + "\n")
+        status, detail = rc.check_forward_proof(lockbox, audit)
+        assert status == "PASS", detail
+        # A verified audit date with no lockbox row is a release failure.
+        lockbox.unlink()
+        status, detail = rc.check_forward_proof(lockbox, audit)
+        assert status == "FAIL" and "unlocked" in detail
+        # An edited record is a hard failure, not a silent pass.
+        lockbox.write_text(json.dumps(rec, sort_keys=True).replace("monthly", "monthy"))
+        status, detail = rc.check_forward_proof(lockbox, audit)
+        assert status == "FAIL" and "invalid" in detail
 
 
 def test_short3_verdict_missing_pending_and_reject() -> None:
