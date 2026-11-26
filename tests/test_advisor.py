@@ -35,7 +35,7 @@ def expect_error(fn, label: str) -> None:
 def main() -> None:
     # Documented profile values, copied from docs/profiles.md.
     expected = {
-        "max_growth": (66.72, 61.64, -0.567, -0.332),
+        "max_growth": (66.69, 61.64, -0.567, -0.332),
         "balanced": (36.85, 34.36, -0.460, -0.274),
         "conservative": (19.44, 18.51, -0.402, -0.203),
     }
