@@ -188,6 +188,17 @@ Pass: after-tax OOS beats QQQ/BIL, survives 2x costs, event drift beats the
 placebo, and intraday has enough trades to be implementable. Otherwise reject
 and keep the monthly book.
 
+### H9 — Short-horizon III (v8)
+
+Actual Yahoo 1h 2y and 5m 60d bars, filtered 09:30-16:00 ET. Test 1-hour
+opening-range breakout, gap fade, VWAP reversion and last-hour momentum;
+5-minute execution-quality check only. Daily 2015-2026: open-to-close vs
+close-to-open decomposition, volatility-scaled gap fade with lagged VIX
+conditioning, and cross-sectional short-term reversal on liquid ETFs. Signals
+use completed bars; entry is next bar open; 5/10 bps per side; annual French
+PFU. Pass only if after-tax beats BIL and QQQ with 2x-cost survival and no
+single-year dependence; intraday sample limits are stated.
+
 ## File ownership
 
 - `bot/research/`: harness (orchestrator).
@@ -205,6 +216,8 @@ and keep the monthly book.
   `tests/test_futures.py`, `results/futures.md`.
 - v7 short-horizon II: `bot/research/short2/`, `scripts/research_short2.py`,
   `tests/test_short2.py`, `results/short2.md`, `results/short2_trials.csv`.
+- v8 short-horizon III: `bot/research/short3/`, `scripts/research_short3.py`,
+  `tests/test_short3.py`, `results/short3.md`, `results/short3_trials.csv`.
 
 Workers do not edit shared earnings code (`bot/backtest.py`, `bot/strategy.py`)
 and do not commit. The orchestrator reviews and commits.
