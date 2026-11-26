@@ -33,7 +33,7 @@ sys.path.insert(0, str(ROOT))
 
 import pandas as pd  # noqa: E402
 
-from bot import backtest, data, markets, strategy, universe  # noqa: E402
+from bot import backtest, france, markets, strategy, universe  # noqa: E402
 
 START = "2015-01-01"
 BASE = dict(
@@ -48,63 +48,7 @@ BASE = dict(
     tax_lots="hifo",
 )
 
-BROKERS = {
-    "Bourse Direct": dict(
-        broker_grid=((500, 0.99), (1000, 1.90), (2000, 2.90), (4400, 3.80)),
-        broker_bps=9.0,
-        us_grid=((10000, 8.50),),
-        us_bps=9.0,
-        fx_bps=25.0,
-        custody_bps=3.6,
-    ),
-    "Trade Republic": dict(
-        broker_grid=((1e12, 1.0),),
-        broker_bps=0.0,
-        us_grid=((1e12, 1.0),),
-        us_bps=0.0,
-        fx_bps=25.0,
-        custody_bps=0.0,
-    ),
-}
-
 PANELS: dict[tuple[str, str], tuple[pd.DataFrame, pd.DataFrame]] = {}
-
-
-def eur_per_unit(market: str) -> pd.Series | None:
-    """EUR value of one unit of the market's currency, by date."""
-    spec = markets.MARKETS[market]
-    if spec["fx"] == "EUR":
-        return None
-    eurusd = data.fetch_one("EURUSD=X").set_index("date")["adjclose"].sort_index()
-    if spec["fx"] == "USD":
-        return 1.0 / eurusd
-    if spec["fx"] == "GBP":
-        gbpusd = data.fetch_one("GBPUSD=X").set_index("date")["adjclose"].sort_index()
-        return gbpusd / eurusd
-    if spec["fx"] == "CHF":
-        usdchf = data.fetch_one("USDCHF=X").set_index("date")["adjclose"].sort_index()
-        return eurusd / usdchf
-    raise ValueError(spec["fx"])
-
-
-def to_eur(panel: pd.DataFrame, market: str) -> pd.DataFrame:
-    factor = eur_per_unit(market)
-    if factor is None:
-        return panel
-    p = panel.copy()
-    dates = pd.DatetimeIndex(p["date"])
-    f = factor.reindex(dates).ffill().to_numpy()
-    for c in ("open", "close", "adjclose"):
-        if c in p.columns:
-            p[c] = p[c].to_numpy() * f
-    return p
-
-
-def fx_factor(market: str, start, end) -> float:
-    factor = eur_per_unit(market)
-    if factor is None:
-        return 1.0
-    return float(factor.asof(end) / factor.asof(start))
 
 
 def load(market: str, mode: str = "native") -> tuple[pd.DataFrame, pd.DataFrame]:
@@ -112,20 +56,10 @@ def load(market: str, mode: str = "native") -> tuple[pd.DataFrame, pd.DataFrame]
     if key not in PANELS:
         panel, mem = markets.build(market)
         PANELS[key] = (
-            to_eur(panel, market) if mode == "eur" else panel,
+            france.to_eur(panel, market) if mode == "eur" else panel,
             mem,
         )
     return PANELS[key]
-
-
-def ticket_fee(broker: str, notional: float, is_us: bool) -> float:
-    b = BROKERS[broker]
-    grid = b["us_grid"] if is_us else b["broker_grid"]
-    for limit, fee in grid:
-        if notional <= limit:
-            return float(fee)
-    rate = b["us_bps"] if is_us else b["broker_bps"]
-    return notional * rate / 1e4
 
 
 def bench_return(
@@ -135,16 +69,16 @@ def bench_return(
     cfg = strategy.Config(start=START, core=None, leverage=1.0, trend_ma=0)
     mkt = strategy.Market(panel, mem, cfg)
     spy = mkt.spy.reindex(mkt.dates).ffill().dropna()
-    fx = fx_factor(market, spy.index[0], spy.index[-1]) if mode == "native" else 1.0
+    fx = france.fx_factor(market, spy.index[0], spy.index[-1]) if mode == "native" else 1.0
     is_us = market in ("US", "TECH")
-    entry = ticket_fee(broker, capital, is_us)
+    entry = france.ticket_fee(broker, capital, is_us)
     if is_us:
-        entry += capital * BROKERS[broker]["fx_bps"] / 1e4
+        entry += capital * france.BROKERS[france.broker_name(broker)]["fx_bps"] / 1e4
     units = (capital - entry) / spy.iloc[0]
     gross = units * spy.iloc[-1]
-    exit_fee = ticket_fee(broker, gross, is_us)
+    exit_fee = france.ticket_fee(broker, gross, is_us)
     if is_us:
-        exit_fee += gross * BROKERS[broker]["fx_bps"] / 1e4
+        exit_fee += gross * france.BROKERS[france.broker_name(broker)]["fx_bps"] / 1e4
     proceeds = gross - exit_fee
     rate = 0.186 if wrapper == "PEA" else 0.314
     tax = max(0.0, proceeds - capital) * rate
@@ -170,21 +104,8 @@ def run_book(
     panel, mem = load(market, mode)
     if market != "US":
         universe.canonical = lambda t: t
-    us_tickers = (
-        frozenset(panel["ticker"].unique())
-        if market in ("US", "TECH")
-        else frozenset({"SMH", "SOXX"})
-    )
     kw = dict(BASE)
-    kw.update(BROKERS[broker])
-    kw.update(
-        initial_capital=capital,
-        us_tickers=us_tickers,
-        tax_country="fr_pea" if wrapper == "PEA" else "fr",
-        ftt_tickers=(
-            frozenset(markets.UNIVERSES["FR"]) if market == "FR" else frozenset()
-        ),
-    )
+    kw.update(france.kwargs(market, broker, wrapper.lower(), capital, panel))
     if profile == "tax":
         kw.update(core_mode="always", leverage_band=0.30)
     if wrapper == "PEA":
@@ -199,7 +120,7 @@ def run_book(
     cfg = strategy.Config(**kw)
     res = backtest.run(strategy.Market(panel, mem, cfg))
     fx = (
-        fx_factor(market, res.equity.index[0], res.equity.index[-1])
+        france.fx_factor(market, res.equity.index[0], res.equity.index[-1])
         if mode == "native"
         else 1.0
     )
@@ -366,7 +287,7 @@ def main() -> None:
         f"Bourse Direct ends at **{tech_mon_10['after_tax'] / 10_000:.1f}x** and "
         f"through Trade Republic at **{tech_mon_tr['after_tax'] / 10_000:.1f}x**. "
         f"The sleeve's ~15x annual turnover generates ~2,100 orders in 12 years, "
-        f"against 178 for the core-only book; the fixed ticket and FX costs "
+        f"against ~180 for the core-only book; the fixed ticket and FX costs "
         f"dominate the small account.",
         "",
         f"2. **31.4%, not 30%.** The 2026 PFU adds 1.4 pp (social contributions "

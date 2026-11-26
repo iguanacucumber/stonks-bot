@@ -11,7 +11,7 @@ import pandas as pd
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from bot import backtest, strategy, universe  # noqa: E402
+from bot import backtest, france, strategy, universe  # noqa: E402
 
 
 def synthetic(days: int = 420, n: int = 30, seed: int = 3):
@@ -283,6 +283,39 @@ def main():
     # open-trade costs cannot increase equity; the forward tracker relies on this
     assert (res.eq_open <= res.eq_open_pre + 1e-9).all(), "open equity grew"
     assert (res.eq_open >= res.eq_open_pre * 0.98).all(), "open cost >2% of equity"
+
+    # French rate schedule and broker tickets used by the CLI
+    assert backtest.fr_rate(2017) == 0.345
+    assert backtest.fr_rate(2020) == 0.30
+    assert backtest.fr_rate(2026) == 0.314
+    assert backtest.fr_rate(2026, pea=True) == 0.186
+    assert backtest.ftt_rate(pd.Timestamp("2025-04-01")) == 0.004
+    assert france.ticket_fee("Bourse Direct", 1000, False) == 1.90
+    assert abs(france.ticket_fee("Bourse Direct", 5000, False) - 4.5) < 1e-12
+    assert france.ticket_fee("Bourse Direct", 10000, True) == 8.50
+    assert france.ticket_fee("Trade Republic", 1_000_000, True) == 1.0
+    fr = france.after_tax(
+        backtest.Result(
+            equity=pd.Series(
+                [1.0, 2.0], index=pd.bdate_range("2026-01-02", periods=2)
+            ),
+            cash=pd.Series(
+                [1.0, 1.0], index=pd.bdate_range("2026-01-02", periods=2)
+            ),
+            trades=pd.DataFrame(),
+            weights=pd.DataFrame(),
+            nav=pd.DataFrame(),
+            tax_paid=0.10,
+            fees_paid=0.05,
+            ftt_paid=0.01,
+            unrealized_tax=0.20,
+        ),
+        10000,
+        "FR",
+    )
+    assert fr["currency"] == "EUR"
+    assert abs(fr["after_tax_native"] - 18000.0) < 1e-6
+    assert abs(fr["after_tax_eur"] - 18000.0) < 1e-6
 
     print(
         f"ok: {len(res.equity)} days, final {res.equity.iloc[-1]:.3f}, "

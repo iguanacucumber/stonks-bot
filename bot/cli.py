@@ -12,7 +12,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-from . import backtest, data, llm, markets, overlay, report, strategy, universe
+from . import backtest, data, france, llm, markets, overlay, report, strategy, universe
 
 ROOT = Path(__file__).resolve().parent.parent
 CACHE = ROOT / "cache"
@@ -71,12 +71,24 @@ def _load(
     leverage_band: float | None = None,
     rebalance_mode: str | None = None,
     exec_price: str | None = None,
+    country: str = "us",
+    broker: str | None = None,
+    wrapper: str = "cto",
+    capital: float = 10000.0,
 ):
+    profile = profile or ("tax" if country == "fr" else "monthly")
+    broker = broker or ("trade-republic" if country == "fr" else "none")
+    if wrapper == "pea" and market != "FR":
+        raise SystemExit("--wrapper pea is only modelled for --market FR")
     panel, mem = markets.build(market)
     if market != "US":
         # Yahoo Europe/Asia keep the "." in symbols; the S&P alias map does not.
         universe.canonical = lambda t: t
     kw = dict(PROFILES[profile])
+    if country == "fr":
+        kw.update(france.kwargs(market, broker, wrapper, capital, panel))
+    elif broker and broker != "none":
+        kw.update(france.broker_kwargs(broker, capital))
     if core:
         kw["core"] = core
     if dd_stop:
@@ -105,6 +117,16 @@ def _load(
     kw["exec_price"] = DEFAULT_EXEC if exec_price is None else exec_price
     if financing_bps is not None:
         kw["financing_bps"] = financing_bps
+    if wrapper == "pea":
+        # A PEA cannot borrow and cannot hold the US core.
+        kw.update(
+            leverage=1.0,
+            financing_bps=0.0,
+            trend_ma=0,
+            core=None,
+            core_mode="always",
+            leverage_band=0.0,
+        )
     cfg = strategy.Config(start=start, end=end, **kw)
     mkt = strategy.Market(panel, mem, cfg)
     return panel, mem, mkt, cfg
@@ -132,6 +154,8 @@ def _random_bench(mkt, seeds: int) -> pd.DataFrame:
 
 
 def cmd_backtest(args):
+    profile = args.profile or ("tax" if args.country == "fr" else "monthly")
+    broker = args.broker or ("trade-republic" if args.country == "fr" else "none")
     panel, mem, mkt, cfg = _load(
         args.start,
         args.end,
@@ -140,7 +164,7 @@ def cmd_backtest(args):
         args.leverage,
         args.financing_bps,
         args.market,
-        args.profile,
+        profile,
         args.core,
         args.dd_stop,
         args.trend_ma,
@@ -152,6 +176,10 @@ def cmd_backtest(args):
         args.leverage_band,
         args.rebalance_mode,
         args.exec,
+        args.country,
+        broker,
+        args.wrapper,
+        args.capital,
     )
     print(
         f"dates {mkt.dates[0].date()} -> {mkt.dates[-1].date()}  tickers {mkt.px.shape[1]}"
@@ -170,22 +198,59 @@ def cmd_backtest(args):
     m_eq, _ = backtest.summarize(res_eq, eq_mkt)
 
     rnd = _random_bench(mkt, args.random_seeds)
-    print(
-        f"random-20: Sharpe p50 {rnd['sharpe'].median():.2f}  p5 {rnd['sharpe'].quantile(0.05):.2f}  "
-        f"p95 {rnd['sharpe'].quantile(0.95):.2f}  CAGR p50 {rnd['cagr'].median():.1%}"
-    )
-
-    table = pd.DataFrame(
-        {
-            "bot": m,
-            "spy": m_spy,
-            "equal_weight": m_eq,
-            "random_p50": rnd.median(),
-            "random_p5": rnd.quantile(0.05),
-            "random_p95": rnd.quantile(0.95),
-        }
-    ).T
+    cols = {"bot": m, "spy": m_spy, "equal_weight": m_eq}
+    if rnd.empty:
+        print("random-20: skipped (0 seeds)")
+        for label in ("random_p50", "random_p5", "random_p95"):
+            cols[label] = pd.Series(np.nan, index=pd.Index(list(m)))
+    else:
+        print(
+            f"random-20: Sharpe p50 {rnd['sharpe'].median():.2f}  "
+            f"p5 {rnd['sharpe'].quantile(0.05):.2f}  "
+            f"p95 {rnd['sharpe'].quantile(0.95):.2f}  "
+            f"CAGR p50 {rnd['cagr'].median():.1%}"
+        )
+        cols["random_p50"] = rnd.median()
+        cols["random_p5"] = rnd.quantile(0.05)
+        cols["random_p95"] = rnd.quantile(0.95)
+    table = pd.DataFrame(cols).T
     print(table.round(4).to_string())
+    if args.country == "fr":
+        f = france.after_tax(res, args.capital, args.market)
+        f.update(
+            market=args.market,
+            broker=france.broker_name(broker),
+            wrapper=args.wrapper,
+            profile="pea" if args.wrapper == "pea" else profile,
+        )
+        print(
+            f"\nFrance {args.wrapper.upper()} · {f['broker']} · "
+            f"€{args.capital:,.0f} · {profile} book"
+        )
+        print(
+            f"  after tax {f['after_tax_eur'] / args.capital:.2f}x "
+            f"(€{f['after_tax_eur']:,.0f}) · native "
+            f"{f['after_tax_native'] / args.capital:.2f}x "
+            f"({f['currency']} {f['after_tax_native']:,.0f})"
+        )
+        print(
+            f"  tax paid €{f['tax_paid_eur']:,.0f} · exit tax "
+            f"€{f['exit_tax_eur']:,.0f} · fees €{f['fees_eur']:,.0f} "
+            f"(incl. FTT €{f['ftt_eur']:,.0f})"
+        )
+        if f["currency"] != "EUR":
+            print(f"  EUR translation {f['fx'] - 1:+.1%} over the window")
+        path = RESULTS / "metrics_france.csv"
+        row = pd.DataFrame([f])
+        if path.exists():
+            old = pd.read_csv(path)
+            same = pd.Series(True, index=old.index)
+            for key in ("market", "wrapper", "broker", "capital", "profile"):
+                if key not in old.columns:
+                    old[key] = f.get(key)
+                same &= old[key] == f[key]
+            row = pd.concat([old[~same], row], ignore_index=True)
+        row.to_csv(path, index=False)
     # the report is US-only, so a non-US run must not overwrite its inputs
     suffix = "" if args.market == "US" else f"_{args.market.lower()}"
     table.to_csv(RESULTS / f"metrics{suffix}.csv")
@@ -338,6 +403,30 @@ def cmd_report(args):
                 lines.append(f"| {name} | ${val:,.0f} |")
             lines.append("")
 
+    frp = RESULTS / "metrics_france.csv"
+    if frp.exists():
+        fdf = pd.read_csv(frp)
+        lines += ["## France (after tax, real broker tariffs)", ""]
+        lines += [
+            "| market | wrapper | book | broker | account | after tax (EUR) | native | tax paid | exit tax | fees (incl. FTT) |",
+            "|---|---|---|---|---:|---:|---:|---:|---:|---:|",
+        ]
+        for _, r in fdf.iterrows():
+            cap = float(r["capital"])
+            lines.append(
+                f"| {r['market']} | {r['wrapper']} | {r['profile']} | {r['broker']} | "
+                f"€{cap:,.0f} | **{r['after_tax_eur'] / cap:.2f}x** | "
+                f"{r['after_tax_native'] / cap:.2f}x | "
+                f"€{r['tax_paid_eur']:,.0f} | €{r['exit_tax_eur']:,.0f} | "
+                f"€{r['fees_eur']:,.0f} |"
+            )
+        lines += [
+            "",
+            "The US table above is pre-tax. This section is after French PFU/PEA, "
+            "FTT, broker tickets and EUR translation; see `results/france.md`.",
+            "",
+        ]
+
     full = pd.read_csv(RESULTS / "metrics.csv", index_col=0)
     y26 = pd.read_csv(RESULTS / "metrics_2026.csv", index_col=0)
     b, s0 = full.loc["bot"], full.loc["spy"]
@@ -465,6 +554,8 @@ def _risk_scale(mkt, date, cfg) -> float:
 
 
 def cmd_pnl(args):
+    profile = args.profile or ("tax" if args.country == "fr" else "monthly")
+    broker = args.broker or ("trade-republic" if args.country == "fr" else "none")
     panel, mem, mkt, cfg = _load(
         "2015-01-01",
         None,
@@ -473,7 +564,7 @@ def cmd_pnl(args):
         args.leverage,
         args.financing_bps,
         args.market,
-        args.profile,
+        profile,
         args.core,
         args.dd_stop,
         args.trend_ma,
@@ -485,6 +576,10 @@ def cmd_pnl(args):
         args.leverage_band,
         args.rebalance_mode,
         args.exec,
+        args.country,
+        broker,
+        args.wrapper,
+        args.capital,
     )
     res = backtest.run(mkt)
     d = mkt.dates[-1]
@@ -502,9 +597,12 @@ def cmd_pnl(args):
         ("1 year", daily["1 year"]),
     ]
     stamp = last_ts.strftime("%Y-%m-%d %H:%M ET") if last_ts is not None else "no quote"
+    tag = ""
+    if args.country == "fr":
+        tag = f"  ·  {args.country}/{france.broker_name(broker)}/{args.wrapper}"
     head = [
         f"STONKS-BOT  ·  {markets.MARKETS[args.market]['label']}  ·  paper P&L",
-        f"${args.capital:,.0f}  ·  {cfg.leverage:.1f}x  ·  {args.profile}  ·  "
+        f"${args.capital:,.0f}  ·  {cfg.leverage:.1f}x  ·  {profile}{tag}  ·  "
         f"signal {d.date()}  ·  {stamp}",
     ]
     print(_pnl_box(rows, args.capital, head))
@@ -515,9 +613,20 @@ def cmd_pnl(args):
     if scale != 1.0:
         print(f"  risk: half size (core below its {cfg.trend_ma}d MA)")
     print(f"  hour quotes: {quoted}/{len(targets)} names")
+    if args.country == "fr":
+        f = france.after_tax(res, args.capital, args.market)
+        print(
+            f"  France {args.wrapper} via {france.broker_name(broker)}: "
+            f"after tax {f['after_tax_eur'] / args.capital:.2f}x "
+            f"(€{f['after_tax_eur']:,.0f}), exit tax "
+            f"€{f['exit_tax_eur']:,.0f}"
+        )
+        print("  horizons above are pre-exit-tax")
 
 
 def cmd_paper(args):
+    profile = args.profile or ("tax" if args.country == "fr" else "monthly")
+    broker = args.broker or ("trade-republic" if args.country == "fr" else "none")
     panel, mem, mkt, cfg = _load(
         "2026-01-02",
         None,
@@ -526,7 +635,7 @@ def cmd_paper(args):
         args.leverage,
         args.financing_bps,
         args.market,
-        args.profile,
+        profile,
         args.core,
         args.dd_stop,
         args.trend_ma,
@@ -538,6 +647,10 @@ def cmd_paper(args):
         args.leverage_band,
         args.rebalance_mode,
         args.exec,
+        args.country,
+        broker,
+        args.wrapper,
+        args.capital,
     )
     d = mkt.dates[-1]
     res = backtest.run(mkt)
@@ -603,6 +716,18 @@ def cmd_paper(args):
     print(f"\nappended {path}")
 
 
+def _add_fr_args(p, with_capital: bool = True):
+    p.add_argument("--country", choices=["us", "fr"], default="us")
+    p.add_argument(
+        "--broker",
+        choices=["none", "bourse-direct", "trade-republic"],
+        default=None,
+    )
+    p.add_argument("--wrapper", choices=["cto", "pea"], default="cto")
+    if with_capital:
+        p.add_argument("--capital", type=float, default=10000.0)
+
+
 def main(argv=None):
     p = argparse.ArgumentParser(prog="stonks-bot")
     sub = p.add_subparsers(dest="cmd", required=True)
@@ -625,13 +750,14 @@ def main(argv=None):
     pb.add_argument("--tax-rate", type=float, default=0.0)
     pb.add_argument("--state-tax-rate", type=float, default=0.0)
     pb.add_argument("--salt-cap", type=float, default=10000.0)
-    pb.add_argument("--wash-sale-days", type=int, default=30)
+    pb.add_argument("--wash-sale-days", type=int, default=None)
     pb.add_argument("--leverage-band", type=float, default=None)
     pb.add_argument("--rebalance-mode", choices=["days", "calendar"], default=DEFAULT_REBALANCE)
     pb.add_argument("--exec", choices=["close", "open"], default=DEFAULT_EXEC)
-    pb.add_argument("--profile", choices=sorted(PROFILES), default="monthly")
+    pb.add_argument("--profile", choices=sorted(PROFILES), default=None)
     pb.add_argument("--leverage", type=float, default=DEFAULT_LEVERAGE)
     pb.add_argument("--financing-bps", type=float, default=DEFAULT_FINANCING_BPS)
+    _add_fr_args(pb)
     pb.set_defaults(func=cmd_backtest)
 
     ps = sub.add_parser("study")
@@ -654,13 +780,14 @@ def main(argv=None):
     pn.add_argument("--tax-rate", type=float, default=0.0)
     pn.add_argument("--state-tax-rate", type=float, default=0.0)
     pn.add_argument("--salt-cap", type=float, default=10000.0)
-    pn.add_argument("--wash-sale-days", type=int, default=30)
+    pn.add_argument("--wash-sale-days", type=int, default=None)
     pn.add_argument("--leverage-band", type=float, default=None)
     pn.add_argument("--rebalance-mode", choices=["days", "calendar"], default=DEFAULT_REBALANCE)
     pn.add_argument("--exec", choices=["close", "open"], default=DEFAULT_EXEC)
-    pn.add_argument("--profile", choices=sorted(PROFILES), default="monthly")
+    pn.add_argument("--profile", choices=sorted(PROFILES), default=None)
     pn.add_argument("--leverage", type=float, default=DEFAULT_LEVERAGE)
     pn.add_argument("--financing-bps", type=float, default=DEFAULT_FINANCING_BPS)
+    _add_fr_args(pn, with_capital=False)
     pn.set_defaults(func=cmd_pnl)
 
     pp = sub.add_parser("paper")
@@ -677,13 +804,14 @@ def main(argv=None):
     pp.add_argument("--tax-rate", type=float, default=0.0)
     pp.add_argument("--state-tax-rate", type=float, default=0.0)
     pp.add_argument("--salt-cap", type=float, default=10000.0)
-    pp.add_argument("--wash-sale-days", type=int, default=30)
+    pp.add_argument("--wash-sale-days", type=int, default=None)
     pp.add_argument("--leverage-band", type=float, default=None)
     pp.add_argument("--rebalance-mode", choices=["days", "calendar"], default=DEFAULT_REBALANCE)
     pp.add_argument("--exec", choices=["close", "open"], default=DEFAULT_EXEC)
-    pp.add_argument("--profile", choices=sorted(PROFILES), default="monthly")
+    pp.add_argument("--profile", choices=sorted(PROFILES), default=None)
     pp.add_argument("--leverage", type=float, default=DEFAULT_LEVERAGE)
     pp.add_argument("--financing-bps", type=float, default=DEFAULT_FINANCING_BPS)
+    _add_fr_args(pp)
     pp.set_defaults(func=cmd_paper)
 
     args = p.parse_args(argv)

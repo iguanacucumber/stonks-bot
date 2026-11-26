@@ -14,6 +14,28 @@ Selector = Callable[[Market, pd.Timestamp, list[str], set[str]], dict[str, float
 Overlay = Callable[[pd.Timestamp, dict[str, float], Market], dict[str, float]]
 
 
+def fr_rate(year: int, pea: bool = False, override: float = 0.0) -> float:
+    """French capital-gains rate by year: PFU, or PEA social contributions."""
+    if override:
+        return float(override)
+    if pea:
+        return 0.186 if year >= 2026 else 0.172
+    if year < 2018:
+        return 0.345  # 19% IR + 15.5% social, pre-PFU
+    if year < 2026:
+        return 0.30  # PFU 12.8% + 17.2%
+    return 0.314  # PFU 12.8% + 18.6% from 2026
+
+
+def ftt_rate(date: pd.Timestamp) -> float:
+    """French financial transaction tax on purchases of large French shares."""
+    if date < pd.Timestamp("2017-01-01"):
+        return 0.002
+    if date < pd.Timestamp("2025-04-01"):
+        return 0.003
+    return 0.004
+
+
 def tax_on_gain(
     taxable: float, federal: float, state: float, salt_left: float, salt_cap: float
 ) -> tuple[float, float]:
@@ -169,23 +191,14 @@ def run(
         if taxable <= 0:
             return 0.0
         tax, used = tax_on_gain(
-            taxable, cfg.tax_rate, cfg.state_tax_rate,
-            cfg.salt_cap - salt_used, cfg.salt_cap,
+            taxable,
+            cfg.tax_rate,
+            cfg.state_tax_rate,
+            cfg.salt_cap - salt_used,
+            cfg.salt_cap,
         )
         salt_used += used
         return tax
-
-    def _fr_rate(year: int) -> float:
-        """French tax rate by year (PFU; PEA social contributions only)."""
-        if cfg.tax_rate:
-            return cfg.tax_rate
-        if cfg.tax_country == "fr_pea":
-            return 0.186 if year >= 2026 else 0.172
-        if year < 2018:
-            return 0.345  # 19% IR + 15.5% social, pre-PFU
-        if year < 2026:
-            return 0.30  # PFU 12.8% + 17.2%
-        return 0.314  # PFU 12.8% + 18.6% from 2026
 
     def _settle_fr(year: int) -> float:
         """French annual settlement: net the year, use old losses, tax the rest."""
@@ -201,20 +214,14 @@ def run(
                 if net <= 1e-12:
                     break
             loss_carry = [x for x in loss_carry if x[1] > 1e-12]
-            tax = max(0.0, net) * _fr_rate(year)
+            tax = max(0.0, net) * fr_rate(
+                year, cfg.tax_country == "fr_pea", cfg.tax_rate
+            )
             tax_paid += tax
             return tax
         if net < 0:
             loss_carry.append([year + 10, -net])
         return 0.0
-
-    def _ftt_rate(date: pd.Timestamp) -> float:
-        """French financial transaction tax on share purchases."""
-        if date < pd.Timestamp("2017-01-01"):
-            return 0.002
-        if date < pd.Timestamp("2025-04-01"):
-            return 0.003
-        return 0.004
 
     def _fee_rate(ci: int, date: pd.Timestamp) -> float:
         """Approximate marginal rate, used to size an order before charging it."""
@@ -223,10 +230,12 @@ def run(
         if cfg.fx_bps and is_us:
             rate += cfg.fx_bps / 1e4
         if names[ci] in cfg.ftt_tickers:
-            rate += _ftt_rate(date)
+            rate += ftt_rate(date)
         grid = cfg.us_grid if is_us else cfg.broker_grid
-        rate += (cfg.us_bps if is_us else cfg.broker_bps) / 1e4 if grid else (
-            cfg.broker_bps / 1e4
+        rate += (
+            (cfg.us_bps if is_us else cfg.broker_bps) / 1e4
+            if grid
+            else (cfg.broker_bps / 1e4)
         )
         return rate
 
@@ -257,7 +266,7 @@ def run(
         if cfg.fx_bps and is_us:
             fee += notional * cfg.fx_bps / 1e4
         if is_buy and names[ci] in cfg.ftt_tickers:
-            ftt = notional * _ftt_rate(date)
+            ftt = notional * ftt_rate(date)
             fee += ftt
             ftt_paid += ftt
         fees_paid += fee
@@ -287,6 +296,7 @@ def run(
         if cfg.wash_sale_days and gain < 0:
             wash[ci] = (date, -gain)
         return gain
+
     stop_keep = 1.0 - cfg.stop
     protected_ci = np.array(
         [cols[t] for t in {cfg.core, *cfg.fallback_sectors} if t in cols], dtype=int
@@ -344,9 +354,7 @@ def run(
         # using the close would leak the day's move into the open weights and make
         # the forward paper tracker's intraday leg double-count it.
         if exec_open:
-            mark_open = np.where(
-                po > 0, po, np.where(np.isnan(prev_px), pr, prev_px)
-            )
+            mark_open = np.where(po > 0, po, np.where(np.isnan(prev_px), pr, prev_px))
         else:
             mark_open = pr
         eq_open_pre_arr[i] = cash + float((shares * mark_open).sum())
@@ -377,7 +385,11 @@ def run(
                     notional = shares[ci] * p
                     cash += notional - _fees(notional, False, ci, d)
                     gain = _sell(ci, shares[ci], p, d)
-                    if cfg.tax_country.startswith("fr") or cfg.tax_rate or cfg.state_tax_rate:
+                    if (
+                        cfg.tax_country.startswith("fr")
+                        or cfg.tax_rate
+                        or cfg.state_tax_rate
+                    ):
                         cash -= _tax(gain, d)
                     trades.append(
                         (
@@ -422,9 +434,7 @@ def run(
                                     if grid and cfg.initial_capital > 0
                                     else 0.0
                                 )
-                                delta = max(0.0, cash - reserve) / (
-                                    1.0 + fee_rate
-                                )
+                                delta = max(0.0, cash - reserve) / (1.0 + fee_rate)
                                 sh = delta / p
                         else:
                             gross_now = float((shares * mark).sum())
@@ -438,7 +448,11 @@ def run(
                     cash -= delta + _fees(abs(delta), delta > 0, ci, d)
                     if sh < 0:
                         gain = _sell(ci, -sh, p, d)
-                        if cfg.tax_country.startswith("fr") or cfg.tax_rate or cfg.state_tax_rate:
+                        if (
+                            cfg.tax_country.startswith("fr")
+                            or cfg.tax_rate
+                            or cfg.state_tax_rate
+                        ):
                             cash -= _tax(gain, d)
                     if shares[ci] == 0.0 and sh != 0.0:
                         held.append(ci)
@@ -477,9 +491,7 @@ def run(
         # executed book at the fill price, used by the forward paper tracker to split
         # overnight (previous book) from intraday (post-fill book) P&L
         eq_open_arr[i] = cash + float((shares * mark_open).sum())
-        wopen[i] = (
-            (shares * mark_open) / eq_open_arr[i] if eq_open_arr[i] > 0 else 0.0
-        )
+        wopen[i] = (shares * mark_open) / eq_open_arr[i] if eq_open_arr[i] > 0 else 0.0
 
         # 2. mark to market and check trailing stops
         # A missing bar (foreign holiday, halted name) is carried at the last observed
@@ -488,9 +500,7 @@ def run(
         prm = np.where(np.isnan(prm), 0.0, prm)
         vals = shares * prm
         if cfg.custody_bps:
-            foreign = float(
-                sum(vals[ci] for ci in held if names[ci] in cfg.us_tickers)
-            )
+            foreign = float(sum(vals[ci] for ci in held if names[ci] in cfg.us_tickers))
             charge = foreign * cfg.custody_bps / 1e4 / 252.0
             cash -= charge
             fees_paid += charge
@@ -518,7 +528,11 @@ def run(
                     notional = sell_sh * p
                     cash += notional - _fees(notional, False, ci, d)
                     gain = _sell(ci, sell_sh, p, d)
-                    if cfg.tax_country.startswith("fr") or cfg.tax_rate or cfg.state_tax_rate:
+                    if (
+                        cfg.tax_country.startswith("fr")
+                        or cfg.tax_rate
+                        or cfg.state_tax_rate
+                    ):
                         cash -= _tax(gain, d)
                     shares[ci] -= sell_sh
                     trades.append(
@@ -569,9 +583,7 @@ def run(
                 risk_off = True
                 risk_reason = "dd" if dd_breach else "trend"
                 cur = {
-                    names[ci]: shares[ci] * pr[ci] / equity
-                    for ci in held
-                    if pr[ci] > 0
+                    names[ci]: shares[ci] * pr[ci] / equity for ci in held if pr[ci] > 0
                 }
                 scale = cfg.dd_scale if risk_reason == "dd" else cfg.trend_scale
                 pending_target = {t: w * scale for t, w in cur.items()}
@@ -613,19 +625,19 @@ def run(
         unrealized_gain = 0.0
         for ci in held:
             p = last_px[ci]
-            if (
-                shares[ci] > 0
-                and not np.isnan(entry[ci])
-                and not np.isnan(p)
-            ):
+            if shares[ci] > 0 and not np.isnan(entry[ci]) and not np.isnan(p):
                 unrealized_gain += (p - entry[ci]) * shares[ci]
         carry_left = sum(x[1] for x in loss_carry)
         net = fr_realized + unrealized_gain - carry_left
-        unrealized_tax = max(0.0, net) * _fr_rate(dates[-1].year)
+        unrealized_tax = max(0.0, net) * fr_rate(
+            dates[-1].year, cfg.tax_country == "fr_pea", cfg.tax_rate
+        )
     elif cfg.tax_country == "fr_pea":
         # PEA: no annual tax. Social contributions are due on withdrawal, on the
         # portfolio gain (contributions are the 1.0 unit invested at the start).
-        unrealized_tax = max(0.0, float(eqs[-1]) - 1.0) * _fr_rate(dates[-1].year)
+        unrealized_tax = max(0.0, float(eqs[-1]) - 1.0) * fr_rate(
+            dates[-1].year, True, cfg.tax_rate
+        )
 
     equity = pd.Series(eqs, index=dates, name="equity")
     cash_s = pd.Series(cashs, index=dates, name="cash")

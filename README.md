@@ -101,7 +101,7 @@ leverage band to 30%, and sells the highest-basis tax lots first. It makes less 
 the low-turnover tax book. A tax-sheltered account should run the monthly book.
 `results/realism.md`, `results/tax_markets.md`.
 
-**France (2026 rules):** `--tax-country fr` models the CTO: PFU on the annual net
+**France (2026 rules):** `--country fr` models the CTO: PFU on the annual net
 gain (34.5% before 2018, 30% 2018-2025, **31.4% in 2026**: 12.8% IR + 18.6% social),
 10-year loss carry, 0.4% FTT on French purchases since April 2025, real broker ticket
 grids, 0.25% EUR/USD, and EUR translation. The $2,191,762 headline is pre-tax,
@@ -120,7 +120,8 @@ terminal wealth behind Trade Republic. The PEA cannot hold SMH or borrow, and it
 French-only sleeve loses to the CAC even at the 18.6% social rate. Translating the
 price series to EUR **before** the 200-day rule hurts (24.6x vs 38.8x): measure the
 P&L in EUR, but keep the signal in the asset's own currency. `results/france.md`,
-`scripts/france.py`.
+`scripts/france.py`. CLI: `backtest --country fr` prints the after-tax block;
+`pnl` adds the same line; `report` appends the France section.
 
 **Cross-market:** the same config on **39 markets** (9 stock-level including a 49-name
 NASDAQ tech book, 30 country/tech ETFs) is profitable in **39/39** and beats the local

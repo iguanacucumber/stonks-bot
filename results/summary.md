@@ -38,6 +38,15 @@ no trailing stop.
 | bot | $11,765 |
 | spy | $10,534 |
 
+## France (after tax, real broker tariffs)
+
+| market | wrapper | book | broker | account | after tax (EUR) | native | tax paid | exit tax | fees (incl. FTT) |
+|---|---|---|---|---:|---:|---:|---:|---:|---:|
+| TECH | cto | tax | Trade Republic | €10,000 | **38.80x** | 35.27x | €50,569 | €184,183 | €31,815 |
+| FR | pea | pea | Trade Republic | €10,000 | **1.61x** | 1.61x | €0 | €1,403 | €3,854 |
+
+The US table above is pre-tax. This section is after French PFU/PEA, FTT, broker tickets and EUR translation; see `results/france.md`.
+
 ## Verdict
 
 - Full window: bot $2,191,762 vs SPY $42,186 (+2,149,576).
