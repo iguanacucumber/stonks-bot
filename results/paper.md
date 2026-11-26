@@ -165,3 +165,16 @@ per book/market/date) and counts only **verified** dates toward the gate:
 |return diff| <= 5 bps, max weight diff <= 1 bp, and full fills. The US and tax
 books share the same audit file. A close-valid date with a failed fill or a
 larger shadow drift stays out of the gate.
+
+## US forward book (default real-life)
+
+The US monthly book is the default real-life allocation (`results/eur_ledger.md`:
+66.0x EUR ledger, maxDD -57.5%). A separate US ledger was started on 2026-11-26:
+
+- Preview row: signal 2026-11-25, quote 2026-11-26, `close_valid=False`; it is
+  recorded but does **not** count toward the 5-date gate.
+- Files: `results/paper_daily.csv` (market=US), `results/paper_ledger_us.csv`.
+- Command: `uv run python scripts/paper_daily.py --market US --refresh`, then
+  `uv run python scripts/paper_report.py --market US`.
+- The first close-valid US row must pass the same reconciliation gate as TECH.
+  Do not quote a US forward win until five distinct dates are verified.

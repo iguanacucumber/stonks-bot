@@ -1,0 +1,2 @@
+time,signal_date,targets,prices,stops
+2026-11-26 14:56:11.433184+00:00,2026-11-25,"{""CRWD"": 0.209138, ""DELL"": 0.164181, ""ILMN"": 0.214998, ""MPC"": 0.209241, ""MRNA"": 0.261446, ""OKTA"": 0.24567}","{""CRWD"": 209.3, ""DELL"": 297.06, ""ILMN"": 200.39, ""MPC"": 346.27, ""MRNA"": 220.84, ""OKTA"": 201.77, ""SPY"": 716.7}","{""CRWD"": false, ""DELL"": false, ""ILMN"": false, ""MPC"": false, ""MRNA"": false, ""OKTA"": false}"
