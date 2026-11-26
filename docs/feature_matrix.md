@@ -24,6 +24,7 @@
 | PEA semis recheck | `uv run python scripts/pea_semis.py` | rejected | no pure semis PEA; PUST 5.77x |
 | Covered-call study | `uv run python scripts/covered_calls.py` | paper opt-in | model-only; 40% IV conditional |
 | End-to-end acceptance | `uv run python scripts/acceptance.py` | ready | 12/12 checks, temp state |
+| Release acceptance | `uv run python scripts/release_check.py` | ready | writes `results/release_check.md`; forward gate WAIT |
 | Dashboard | `uv run python scripts/dashboard.py` | ready | static HTML/MD |
 | Assurance-vie study | `uv run python scripts/assurance_vie.py` | conditional | only if contract can hold exposure below break-even |
 | Futures leverage | `uv run python scripts/research_futures.py` | rejected | worse after financing/roll |
@@ -31,15 +32,16 @@
 
 ## Read first
 
-1. `docs/accounting.md` — native vs terminal-FX vs EUR ledger.
-2. `docs/profiles.md` — max_growth / balanced / conservative.
-3. `docs/live.md` — paper autopilot and rails.
-4. `docs/ops.md` — runbook, backups, alerts.
-5. `results/v2_summary.md` and `results/v3_summary.md` — evidence and verdicts.
+1. `RELEASE.md` — release headline, verdicts, checklist and known risks.
+2. `docs/accounting.md` — native vs terminal-FX vs EUR ledger.
+3. `docs/profiles.md` — max_growth / balanced / conservative.
+4. `docs/live.md` — paper autopilot and rails.
+5. `docs/ops.md` — runbook, backups, alerts.
+6. `results/v2_summary.md` and `results/v3_summary.md` — evidence and verdicts.
 
 ## Non-negotiables
 
 - No real orders, no keys in the repo.
-- Backtests are not forward evidence; the TECH forward gate is 1/5.
+- Backtests are not forward evidence; the forward gate is US 0/5, TECH 1/5.
 - The 2.5x book can lose more than half; balanced is a risk preference, not a free lunch.
 - Short-horizon trading was tested and rejected after costs.

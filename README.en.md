@@ -7,7 +7,7 @@ with a constrained LLM news overlay. No broker connection, no orders, no keys.
 
 > **Accounting note.** For a French CTO, the real-life number is the **EUR ledger**
 > (`results/eur_ledger.md`): annual PFU on EUR gains, EUR cost basis at trade-date FX,
-> exit tax. It gives **66.2x for US monthly** and **53.0x for TECH monthly**, versus
+> exit tax. It gives **66.17x for US monthly** and **53.0x for TECH monthly**, versus
 > 70.9x/57.0x for the older terminal-FX headline. See `docs/accounting.md`. The default
 > for a new investor is US monthly; TECH remains the forward-validation book.
 
@@ -41,7 +41,7 @@ The S&P sleeve (used when SMH lags) is:
 
 | profile | allocation | EUR ledger | maxDD | 2022 |
 |---|---|---:|---:|---:|
-| **max_growth** (default) | US monthly 2.5x | **66.2x** | -56.9% | -33.7% |
+| **max_growth** (default) | US monthly 2.5x | **66.17x** | -56.9% | -33.7% |
 | balanced (paper opt-in) | 70% US book + 30% SPY | 36.6x | -46.9% | -27.4% |
 | conservative (paper opt-in) | US monthly 1.5x | 19.3x | -40.4% | -20.3% |
 
@@ -166,14 +166,14 @@ On €10k after tax and real tariffs (`results/france.md`, `results/brokers.md`)
 
 | book (€10k) | Bourse Direct | Trade Republic | Interactive Brokers | index after tax |
 |---|---:|---:|---:|---:|
-| **US monthly sleeve (default)** | — | — | **66.2x EUR ledger** | 5.4x QQQ |
+| **US monthly sleeve (default)** | — | — | **66.17x EUR ledger** | 5.4x QQQ |
 | TECH monthly sleeve (forward) | 11.7x | 31.9x | **53.0x EUR ledger** | 5.4x QQQ |
 | TECH core-only tax book | 34.7x | 39.5x | 48.8x EUR ledger | 5.4x QQQ |
 | French CTO (CAC + SMH core) | 6.4x | 12.5x | — | 2.1x CAC |
 | French PEA (sleeve only) | 1.47x | 1.61x | — | 2.3x CAC |
 | PEA Nasdaq-100 proxy (PUST.PA) | 4.96x | 5.08x | — | 5.4x QQQ |
 
-At €10k the best book+broker is **monthly US at Interactive Brokers: 66.2x in the
+At €10k the best book+broker is **monthly US at Interactive Brokers: 66.17x in the
 EUR ledger** (70.9x terminal-FX headline, €28.8k fees, €132k PFU + €210k exit tax).
 The TECH monthly book is 53.0x EUR ledger (57.0x terminal-FX) and remains the
 forward-validation track. The core-only tax book at IBKR is 48.8x EUR ledger; at Trade Republic and Bourse Direct the tax
@@ -202,7 +202,7 @@ Sleeve breadth: 4 names reaches **75.3x** after tax (p5 3.27x) but fails the
 6-name sleeve for the forward book; 4 is a risk-on candidate, not the default.
 `results/topn_fr.md`.
 
-Market choice: **US monthly at IBKR is 66.2x in the EUR ledger** (70.9x terminal-FX),
+Market choice: **US monthly at IBKR is 66.17x in the EUR ledger** (70.9x terminal-FX),
 maxDD -56.9%, versus TECH 53.0x (57.0x terminal-FX) / -65.6%. US wins the full window
 and **7/7 five-year starts** (median **6.83x** vs SPY 1.74x, worst 2.95x), with lower
 drawdown. It is now the default for a new investor; TECH remains the forward-validation
@@ -217,7 +217,7 @@ the core-only tax book (39.47x at 25 bps).
 Bourse Direct's €8.50 US ticket still makes it the wrong broker for a €10k US book.
 No pure semiconductor UCITS is PEA-eligible (the fund must hold >75% EU/EEA
 companies), so the best 1x PEA tech proxy (PUST.PA) makes 5.08x after tax, and even
-the 2x Nasdaq PEA ETF (LQQ) is 14.4x, versus 66.2x for the best CTO. The PEA is not
+the 2x Nasdaq PEA ETF (LQQ) is 14.4x, versus 66.17x for the best CTO. The PEA is not
 a substitute for the US core. Keep the 200-day signal in the asset's own currency:
 translating the price series to EUR before the rule changes the trend timing and
 hurts. `results/france.md`, `results/brokers.md`, `results/pea_ucits.md`,
@@ -363,5 +363,23 @@ bot/cli.py       commands
 tests/test_core.py
 ```
 
+
+## Release v7
+
+[RELEASE.md](RELEASE.md) is the single release acceptance sheet: headline
+**66.17x EUR ledger**, maxDD **-56.9%**, 2022 **-33.7%**, profiles, paper-only
+boundaries, research verdicts, quick start, file map and checklist.
+
+Before tagging, run:
+
+```bash
+uv run python scripts/release_check.py
+```
+
+It runs every test script, the acceptance harness, the EUR-ledger baseline,
+US/TECH paper plans, the forward gate and the dashboard, then writes
+`results/release_check.md`. The forward gate remains **WAIT US 0/5, TECH 1/5**;
+that is tracking information, not forward evidence. This branch does not tag or
+create a GitHub release.
 
 See `docs/feature_matrix.md` for the command map and `results/v2_summary.md` for the four-workstream v2 evidence, `results/v3_summary.md` for the real-life layer, `results/v4_summary.md` for PIT/tax/FX/forward, `results/v5_summary.md` for wrappers/estate/PEA/income, `results/v6_summary.md` for AV/futures/acceptance/dashboard, the EUR-ledger baseline, the rejected alpha/short-horizon studies, and the live/evaluation merge hashes.
