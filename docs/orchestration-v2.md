@@ -44,6 +44,18 @@ open forward gate, and no statistical correction for the number of experiments r
 8. **Reproduce.** Every headline number needs a committed script and a command line in
    `results/*.md`.
 
+## Live status (2026-11-26)
+
+| workstream | issue | branch | PR | state |
+|---|---|---|---|---|
+| A. Live Autopilot | #17 | `v2/live-autopilot` | — | running |
+| B. Alpha Lab | #18 | `v2/alpha-lab` | — | running |
+| C. Risk & Allocation | #19 | `v2/risk-alloc` | — | running (primitives committed) |
+| D. Data & Evaluation | #20 | `v2/data-eval` | — | running |
+| EUR ledger | #21 | `v3/eur-ledger` | #22 | merged at `b64130c` |
+
+The main session reviews and merges; agents do not merge their own PRs.
+
 ## Workstreams
 
 ### A. Live Autopilot — branch `v2/live-autopilot`
