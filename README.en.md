@@ -351,4 +351,4 @@ tests/test_core.py
 ```
 
 
-See `docs/feature_matrix.md` for the command map and `results/v2_summary.md` for the four-workstream v2 evidence, the EUR-ledger baseline, the rejected alpha/short-horizon studies, and the live/evaluation merge hashes.
+See `docs/feature_matrix.md` for the command map and `results/v2_summary.md` for the four-workstream v2 evidence, `results/v3_summary.md` for the real-life layer, `results/v4_summary.md` for PIT/tax/FX/forward, the EUR-ledger baseline, the rejected alpha/short-horizon studies, and the live/evaluation merge hashes.
