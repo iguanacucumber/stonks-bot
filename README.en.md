@@ -65,6 +65,19 @@ monthly book remains the only production strategy. A market maker with sub-bp
 spreads might find a gross overnight edge, but that is not a French retail CTO.
 See `results/alpha_short.md` after merge.
 
+## US estate tax and the PEA
+
+A French non-US investor holding SMH/SPY/QQQ directly owns **US-situs assets**.
+Without the treaty the US estate-tax exemption is only $60,000 and the marginal
+rate reaches 40%. The 2004 France-US treaty provides a pro-rata credit that
+removes the US tax in our examples, but it requires filings (706-NA/8833) and
+does not remove French inheritance tax. An Irish UCITS core removes US situs,
+but SMH.L retained only 64% of SMH's return in the common window (3.61x vs
+5.63x): the return cost is larger than the tax saving in this sample. A PEA
+cannot hold a pure semiconductor ETF: PUST.PA (Nasdaq-100) makes 5.77x after
+social tax versus 66.17x for the CTO. Details: `results/estate_tax.md`,
+`results/ucits_core.md`, `results/pea_semis.md`. Not tax or legal advice.
+
 ## Data
 
 | Source | Use | Notes |

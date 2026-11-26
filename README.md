@@ -93,6 +93,10 @@ Dans ce modèle, le CTO est la seule enveloppe qui peut porter SMH à 2,5x. Le P
 
 La FTT (taxe sur les transactions financières) de 0,4 % s'applique aux achats d'actions françaises depuis avril 2025. Les stratégies US et TECH n'en paient pas. La stratégie française paie 5 757 € de FTT pour 10 000 € de départ chez IBKR. Le PFU 2026 est modélisé à 31,4 %, pas 30 %.
 
+### Le risque fiscal américain et le PEA
+
+Un investisseur français non-résident américain qui détient SMH/SPY/QQQ directement a des actifs **US-situs**. Sans traité, l'abattement successoral américain n'est que de 60 000 $ et le taux monte à 40 %. Le traité France-US de 2004 accorde un crédit prorata qui annule l'impôt américain dans nos exemples, mais il faut le documenter (Form 706-NA/8833) et il ne supprime pas les droits de succession français. Un cœur UCITS irlandais supprime l'exposition US-situs, mais SMH.L ne retient que 64 % du rendement de SMH sur la fenêtre commune (3,61x vs 5,63x) : le coût en rendement est plus grand que l'économie d'impôt. Le PEA ne peut pas porter un ETF semi-conducteurs pur : PUST.PA (Nasdaq-100) fait 5,77x après social contre 66,17x pour le CTO. Détails : `results/estate_tax.md`, `results/ucits_core.md`, `results/pea_semis.md`. Ce n'est pas un conseil fiscal ou juridique.
+
 ## Les indices et ETF
 
 | Ticker | Rôle | Ce que c'est |
