@@ -134,7 +134,7 @@ def resolve_forward_session(
     now: str | datetime | None = None, as_of: str | None = None
 ) -> pd.Timestamp:
     """Last completed US session; reject holidays/future replays."""
-    latest = data.target_session(_now_dt(now))
+    latest = calendar.target_session(_now_dt(now))
     if as_of:
         session = pd.Timestamp(as_of).normalize()
         if session > latest:
@@ -143,6 +143,14 @@ def resolve_forward_session(
                 f"{latest.date()}"
             )
     else:
+        # A weekday holiday must fail closed, not silently reuse yesterday's
+        # completed session as a new writable run. Weekends still target Friday
+        # and are rejected by the close-date guard below.
+        et = _now_dt(now).astimezone(ET)
+        if et.date().weekday() < 5 and not calendar.is_session(et.date()):
+            raise ForwardBlocked(
+                f"market closed: {et.date()} is not a US trading session"
+            )
         session = latest
     if not calendar.is_session(session):
         raise ForwardBlocked(
