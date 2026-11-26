@@ -170,6 +170,8 @@ automation-safe exit-code wrapper.
 uv run python scripts/forward_gate.py                  # table
 uv run python scripts/forward_gate.py --json           # machine-readable
 uv run python scripts/forward_gate.py --check --write-status
+uv run python scripts/forward_gate.py --check --snapshot results/forward_gate_snapshot.json
+uv run python scripts/forward_gate.py --check --log results/forward_gate_log.jsonl
 uv run python scripts/forward_gate.py --check --since 2026-11-25
 ```
 
@@ -179,12 +181,16 @@ missed required session, or reconcile failure), `1` unexpected error. `--since`
 prints NEW VERIFIED dates; it does not change the gate count. The daily automation
 can therefore treat `2` as the only alert condition.
 
-Run it immediately after the daily job so a MISSED/BLOCKED condition is visible in
-the same cron/service log:
+`--snapshot` writes an atomic JSON model for a second automation; `--log` appends
+one compact JSONL record with the gate status, verified count, remaining sessions
+and ETA. Neither touches `paper_audit.csv` or a paper ledger. Run both immediately
+after the daily job:
 
 ```bash
 uv run python scripts/forward_daily.py --paper --tax
-uv run python scripts/forward_gate.py --check --write-status
+uv run python scripts/forward_gate.py --check --write-status \
+  --snapshot results/forward_gate_snapshot.json \
+  --log results/forward_gate_log.jsonl
 ```
 
 Only distinct verified dates count. Duplicate dates/conflicting rows are excluded
@@ -195,19 +201,22 @@ required session is 2026-11-27. No 2026-11-26 row exists and none is fabricated.
 
 The calendar's remaining sessions from 2026-11-25 are:
 
-- US (needs 5): 11-27, **11-30**, 12-01, 12-02, 12-03.
-- TECH (needs 4 more): 11-27, **11-30**, 12-01, 12-02.
-- Tax (needs 5): 11-27, **11-30**, 12-01, 12-02, 12-03.
+- US (needs 5): 11-27, **11-30**, 12-01, 12-02, 12-03 → **ETA 2026-12-03**.
+- TECH (needs 4 more): 11-27, **11-30**, 12-01, 12-02 → **ETA 2026-12-02**.
+- Tax (needs 5): 11-27, **11-30**, 12-01, 12-02, 12-03 → **ETA 2026-12-03**.
 
-11-30 is a normal Monday session; the issue's illustrative list omitted it. The
-gate is calendar-driven, so a genuinely verified 11-30 row counts and is not
-skipped. If any session is missed, the required list extends (US through 12-04+).
+The ETA is the last remaining session only if every required session is verified;
+it is not a promise and it extends after any miss. 11-30 is a normal Monday
+session; the issue's illustrative list omitted it. The gate is calendar-driven, so
+a genuinely verified 11-30 row counts and is not skipped. If any session is missed,
+the required list and ETA extend (US through 12-04+).
 
 `--require-close` is the write guard: paper mode requires at least 30 minutes after
 the *actual* close. That is 16:30 ET normally and **13:30 ET on a half-day** (day
-after Thanksgiving, Christmas Eve, July 3 when applicable). Holiday/weekend runs
-cannot resolve to a writable session. A half-day snapshot before 13:30 is never
-close-valid.
+after Thanksgiving, Christmas Eve, July 3 when applicable). The gate's
+`target_session` uses the same actual-close rule, so a half-day run at 13:30 ET
+resolves to that session instead of yesterday. Holiday/weekend runs cannot resolve
+to a writable session. A half-day snapshot before 13:30 is never close-valid.
 
 ## Tests
 

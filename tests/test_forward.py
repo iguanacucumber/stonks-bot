@@ -179,6 +179,7 @@ def test_stale_holiday_and_health_fail() -> None:
             _base(root),
             [("monthly", "US")],
             paper=False,
+            now="2026-11-25T22:00:00+00:00",
             cache_check=lambda s: (False, "stale data: forced test"),
             write_status=False,
         )
@@ -316,9 +317,7 @@ def test_half_day_and_weekend_guard() -> None:
     assert not is_close_valid(
         session, session, datetime(2026, 11, 27, 13, 0, tzinfo=et)
     )
-    assert is_close_valid(
-        session, session, datetime(2026, 11, 27, 13, 30, tzinfo=et)
-    )
+    assert is_close_valid(session, session, datetime(2026, 11, 27, 13, 30, tzinfo=et))
     assert not is_close_valid(
         session, session, datetime(2026, 11, 27, 12, 59, tzinfo=et)
     )

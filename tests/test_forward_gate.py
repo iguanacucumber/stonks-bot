@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import json
 import sys
-from datetime import date
+from datetime import date, datetime
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
@@ -88,6 +88,7 @@ def test_pass_and_wait_counts():
             "2026-12-01",
             "2026-12-02",
         ]
+        assert report.books[0].eta == "2026-12-02"
 
 
 def test_nonverified_and_duplicate_dates():
@@ -321,6 +322,70 @@ def test_status_write_is_report_only_and_idempotent():
         assert (root / "forward_gate.md").read_text() == first
 
 
+def test_half_day_target_session():
+    from bot.live import calendar
+
+    # 2026-11-26 is Thanksgiving: at 12:24 ET the last completed session is
+    # 11-25, not 11-24. The pre-close rollback must not be applied twice.
+    holiday_now = datetime.fromisoformat("2026-11-26T17:24:00+00:00")
+    assert calendar.target_session(holiday_now) == pd.Timestamp("2026-11-25")
+    with TemporaryDirectory() as tmp:
+        report = fg.collect_gate(
+            results_dir=Path(tmp),
+            books=[("monthly", "US")],
+            now=holiday_now,
+            bench_last="2026-11-25",
+        )
+        assert report.session == "2026-11-25"
+
+    assert calendar.is_half_day("2026-11-27")
+    # 13:29 ET is before the half-day close + 30m data delay; 13:30 is complete.
+    assert calendar.target_session(
+        datetime.fromisoformat("2026-11-27T18:29:00+00:00")
+    ) == pd.Timestamp("2026-11-25")
+    assert calendar.target_session(
+        datetime.fromisoformat("2026-11-27T18:30:00+00:00")
+    ) == pd.Timestamp("2026-11-27")
+    # Normal session keeps the usual 16:30 ET cutoff.
+    assert calendar.target_session(
+        datetime.fromisoformat("2026-12-01T21:29:00+00:00")
+    ) == pd.Timestamp("2026-11-30")
+    assert calendar.target_session(
+        datetime.fromisoformat("2026-12-01T21:30:00+00:00")
+    ) == pd.Timestamp("2026-12-01")
+
+
+def test_snapshot_and_jsonl_log_are_machine_readable():
+    with TemporaryDirectory() as tmp:
+        root = Path(tmp)
+        audit = _audit([("monthly", "TECH", "2026-11-25", True)])
+        paper = pd.DataFrame(
+            [("TECH", "2026-11-25", True, 10000.0)],
+            columns=["market", "quote_date", "close_valid", "equity"],
+        )
+        _write(root, audit, paper)
+        before = (root / "paper_audit.csv").read_bytes()
+        report = fg.collect_gate(
+            results_dir=root,
+            books=[("monthly", "US"), ("monthly", "TECH")],
+            now="2026-11-26T22:00:00+00:00",
+            bench_last="2026-11-25",
+        )
+        snapshot = root / "forward_gate_snapshot.json"
+        log = root / "forward_gate_log.jsonl"
+        fg._write_snapshot(report, snapshot)
+        fg._append_log(report, log)
+        fg._append_log(report, log)
+        payload = json.loads(snapshot.read_text())
+        assert payload["status"] == "WAIT"
+        assert payload["books"][0]["eta"] == "2026-12-03"
+        assert payload["books"][1]["eta"] == "2026-12-02"
+        lines = [json.loads(x) for x in log.read_text().splitlines()]
+        assert len(lines) == 2
+        assert lines[0]["books"][1]["remaining"][-1] == "2026-12-02"
+        assert (root / "paper_audit.csv").read_bytes() == before
+
+
 def test_cli_json_and_exit_codes():
     with TemporaryDirectory() as tmp:
         root = Path(tmp)
@@ -341,6 +406,10 @@ def test_cli_json_and_exit_codes():
                     "2026-11-26T22:00:00+00:00",
                     "--bench-last",
                     "2026-11-25",
+                    "--snapshot",
+                    str(root / "snapshot.json"),
+                    "--log",
+                    str(root / "gate.jsonl"),
                     "--json",
                 ]
             )
@@ -348,6 +417,8 @@ def test_cli_json_and_exit_codes():
         payload = json.loads(buf.getvalue())
         assert payload["status"] == "WAIT"
         assert payload["books"][0]["verified"] == 1
+        assert json.loads((root / "snapshot.json").read_text())["books"][0]["eta"]
+        assert len((root / "gate.jsonl").read_text().splitlines()) == 1
 
 
 if __name__ == "__main__":
@@ -358,6 +429,8 @@ if __name__ == "__main__":
     test_stale_benchmark_blocks()
     test_drawdown_equity_and_since()
     test_gate_increments_only_on_new_verified_date()
+    test_half_day_target_session()
+    test_snapshot_and_jsonl_log_are_machine_readable()
     test_status_write_is_report_only_and_idempotent()
     test_cli_json_and_exit_codes()
     print("test_forward_gate: all checks passed")

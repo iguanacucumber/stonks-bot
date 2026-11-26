@@ -66,6 +66,7 @@ class BookGate:
     last_paper: str | None = None
     next_required: str | None = None
     remaining_required: list[str] = field(default_factory=list)
+    eta: str | None = None
     equity: float | None = None
     equity_source: str = "none"
     drawdown: float | None = None
@@ -92,6 +93,7 @@ class BookGate:
             "last_paper": self.last_paper,
             "next_required": self.next_required,
             "remaining_required": self.remaining_required,
+            "eta": self.eta,
             "equity": self.equity,
             "equity_source": self.equity_source,
             "drawdown": self.drawdown,
@@ -138,8 +140,8 @@ class GateReport:
         for b in self.books:
             rest = (
                 f"{b.book}/{b.market}: {b.status} {b.verified}/{b.target} verified, "
-                f"next={b.next_required}, remaining={b.remaining_required}, "
-                f"equity={_fmt(b.equity)}, "
+                f"next={b.next_required}, eta_5of5={b.eta}, "
+                f"remaining={b.remaining_required}, equity={_fmt(b.equity)}, "
                 f"dd={_fmt_pct(b.drawdown)}, data={'fresh' if b.data_fresh else 'STALE'}, "
                 f"reconcile={b.reconcile}"
             )
@@ -291,11 +293,12 @@ def collect_gate(
     now_dt = _now_dt(now)
     et = now_dt.astimezone(ET)
     today = et.date()
-    after_close = et.hour > 16 or (et.hour == 16 and et.minute >= 30)
-    session = data.target_session(now_dt)
+    close = calendar.close_hour(today)
+    after_close = et.hour > close or (et.hour == close and et.minute >= 30)
+    session = calendar.target_session(now_dt)
     if not calendar.is_session(session):
-        # data.target_session rolls weekends but not holidays; the gate must use
-        # the last completed session, never a holiday date.
+        # The calendar helper rolls weekends/holidays; keep the gate on the last
+        # completed session, never a holiday date.
         session = pd.Timestamp(calendar.prev_session(session))
     since_date = pd.Timestamp(since).date() if since else None
 
@@ -442,6 +445,11 @@ def collect_gate(
         for _ in range(need):
             bg.remaining_required.append(str(cursor))
             cursor = calendar.next_session(cursor)
+        bg.eta = (
+            bg.remaining_required[-1]
+            if bg.remaining_required
+            else (bg.last_verified or "reached")
+        )
         if bg.verified < target:
             if next_session < today or (next_session == today and after_close):
                 if bg.last_verified is None or bg.last_verified < str(next_session):
@@ -470,6 +478,39 @@ def collect_gate(
     return report
 
 
+def _write_snapshot(report: GateReport, path: Path) -> None:
+    """Write the machine-readable gate snapshot atomically for a second automation."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    tmp = path.with_name(f"{path.name}.tmp")
+    tmp.write_text(json.dumps(report.to_dict(), indent=2, sort_keys=True) + "\n")
+    tmp.replace(path)
+
+
+def _append_log(report: GateReport, path: Path) -> None:
+    """Append one compact JSONL gate record; never includes secrets or rows."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    record = {
+        "now": report.now,
+        "session": report.session,
+        "status": report.status,
+        "books": [
+            {
+                "book": b.book,
+                "market": b.market,
+                "status": b.status,
+                "verified": b.verified,
+                "target": b.target,
+                "next": b.next_required,
+                "remaining": b.remaining_required,
+                "eta": b.eta,
+            }
+            for b in report.books
+        ],
+    }
+    with path.open("a") as fh:
+        fh.write(json.dumps(record, sort_keys=True) + "\n")
+
+
 def _write_status(report: GateReport, path: Path) -> None:
     lines = [
         "# Forward gate status",
@@ -478,24 +519,25 @@ def _write_status(report: GateReport, path: Path) -> None:
         f"Session: {report.session}",
         f"Overall: **{report.status}**",
         "",
-        "| book | market | status | verified | next required | equity | drawdown | data | reconcile |",
-        "|---|---|---|---:|---|---:|---:|---|---|",
+        "| book | market | status | verified | next required | ETA 5/5 (no misses) | equity | drawdown | data | reconcile |",
+        "|---|---|---|---:|---|---:|---:|---:|---|---|",
     ]
     for b in report.books:
         lines.append(
             f"| {b.book} | {b.market} | {b.status} | {b.verified}/{b.target} | "
-            f"{b.next_required} | {_fmt(b.equity)} | {_fmt_pct(b.drawdown)} | "
+            f"{b.next_required} | {b.eta or 'n/a'} | {_fmt(b.equity)} | "
+            f"{_fmt_pct(b.drawdown)} | "
             f"{'fresh' if b.data_fresh else 'STALE'} | {b.reconcile} |"
         )
     lines += ["", "## Required sessions", ""]
     lines += [
-        "| book | market | next | remaining |",
-        "|---|---|---|---|",
+        "| book | market | next | remaining | ETA 5/5 (no misses) |",
+        "|---|---|---|---|---|",
     ]
     for b in report.books:
         lines.append(
             f"| {b.book} | {b.market} | {b.next_required} | "
-            f"{', '.join(b.remaining_required) or 'none'} |"
+            f"{', '.join(b.remaining_required) or 'none'} | {b.eta or 'n/a'} |"
         )
     lines += ["", "## Checks", ""]
     for b in report.books:
@@ -506,7 +548,8 @@ def _write_status(report: GateReport, path: Path) -> None:
             f"last verified: {b.last_verified or 'none'}; last paper: {b.last_paper or 'none'}"
         )
         lines.append(
-            f"- next required: {b.next_required}; remaining: "
+            f"- next required: {b.next_required}; ETA 5/5 (no misses): "
+            f"{b.eta or 'n/a'}; remaining: "
             f"{', '.join(b.remaining_required) or 'none'}; data last: "
             f"{b.data_last or 'none'}; equity: {_fmt(b.equity)} "
             f"({b.equity_source}); drawdown: {_fmt_pct(b.drawdown)}"
@@ -537,6 +580,16 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--json", action="store_true")
     ap.add_argument("--check", action="store_true", help="automation exit-code mode")
     ap.add_argument("--write-status", action="store_true")
+    ap.add_argument(
+        "--snapshot",
+        default=None,
+        help="write an atomic JSON gate snapshot for a second automation",
+    )
+    ap.add_argument(
+        "--log",
+        default=None,
+        help="append one compact JSONL gate record (no secrets)",
+    )
     ap.add_argument("--status-file", default=None)
     ap.add_argument("--results-dir", default=None)
     ap.add_argument("--target", type=int, default=TARGET_DEFAULT)
@@ -584,6 +637,14 @@ def main(argv: list[str] | None = None) -> int:
         )
         _write_status(report, path)
         report.status_path = str(path)
+    if args.snapshot:
+        snapshot_path = Path(args.snapshot)
+        _write_snapshot(report, snapshot_path)
+        print(f"snapshot: {snapshot_path}", file=sys.stderr)
+    if args.log:
+        log_path = Path(args.log)
+        _append_log(report, log_path)
+        print(f"log: {log_path}", file=sys.stderr)
     if args.json:
         print(json.dumps(report.to_dict(), indent=2, sort_keys=True))
     else:

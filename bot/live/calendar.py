@@ -12,8 +12,9 @@ closures. Ambiguity is resolved by failing closed in the engine, never by tradin
 
 from __future__ import annotations
 
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta, timezone
 from functools import lru_cache
+from zoneinfo import ZoneInfo
 
 import pandas as pd
 
@@ -166,6 +167,31 @@ def is_half_day(day: str | date | pd.Timestamp) -> bool:
 def close_hour(day: str | date | pd.Timestamp) -> int:
     """Exchange close hour in New York: 13 for a half-day, else 16."""
     return 13 if is_half_day(day) else 16
+
+
+def target_session(
+    now: datetime | None = None, data_delay_minutes: int = 30
+) -> pd.Timestamp:
+    """Last completed session using the actual close, including half-days.
+
+    ``bot.data.target_session`` uses a fixed 16:30 ET cutoff, which is correct
+    for normal sessions but wrong for a 13:00 ET early close.  This helper is the
+    forward-gate/daily equivalent: a half-day becomes complete at 13:30 ET.
+    """
+    et = (now or datetime.now(timezone.utc)).astimezone(ZoneInfo("America/New_York"))
+    d = et.date()
+    if not is_session(d):
+        # A holiday/weekend has no session today. Return the previous session
+        # directly; do not apply the intraday cutoff to the previous day again
+        # (that would regress 11-26 holiday from 11-25 to 11-24).
+        return pd.Timestamp(prev_session(d))
+    close = close_hour(d)
+    closed = et.hour > close or (
+        et.hour == close and et.minute >= int(data_delay_minutes)
+    )
+    if not closed:
+        d = prev_session(d)
+    return pd.Timestamp(d)
 
 
 def is_rebalance_session(
