@@ -37,6 +37,18 @@ The S&P sleeve (used when SMH lags) is:
 6. **Evaluation**: SPY, equal-weight S&P, momentum-only, LLM, placebo-LLM (same names/dates,
    no news), random-20 null, block-bootstrap CIs, calibration and Brier score.
 
+## Short horizons: tested, rejected
+
+Weekly/daily rebalancing of the same book, 1/5-day reversal, 20-day momentum and
+the close-to-open overnight effect were tested with walk-forward folds, realistic
+5 bps/side costs, French PFU and a 2x-cost run. The best close-to-close signal made
+**2.64x after tax out-of-sample versus QQQ 5.49x**; the overnight family made 1.01x,
+and 0.70x at 2x costs. The always-overnight comparator loses 88% on SPY before tax
+at a 10 bps daily round trip. Verdict: **reject**. No short-horizon satellite; the
+monthly book remains the only production strategy. A market maker with sub-bp
+spreads might find a gross overnight edge, but that is not a French retail CTO.
+See `results/alpha_short.md` after merge.
+
 ## Data
 
 | Source | Use | Notes |
