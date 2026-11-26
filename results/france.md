@@ -21,13 +21,13 @@ charged on top of the broker tariff.
 
 Both brokers are charged 0.25% FX per side on USD names (Bourse Direct's
 0.08% explicit commission plus the spread). Fixed fees use the account
-size, so the €10k and €100k rows are not the same strategy. `fees`, `FTT`,
-and `tax paid` are cumulative costs already inside `pre-tax`; `exit tax` is
-the remaining liability on the open book, deducted from `after tax`.
+size, so the €10k and €100k rows are not the same strategy. `fees` includes the FTT; `fees` and `tax paid` are cumulative costs already
+inside `pre-tax`. `exit tax` is the remaining liability on the open book,
+deducted from `after tax`.
 
 ## TECH book (the live paper market): CTO only
 
-| market | wrapper | book | broker | account | signals | pre-tax | fees | FTT | tax paid | exit tax | **after tax** | CAGR | maxDD | benchmark after tax | vs bench |
+| market | wrapper | book | broker | account | signals | pre-tax | fees (incl. FTT) | FTT | tax paid | exit tax | **after tax** | CAGR | maxDD | benchmark after tax | vs bench |
 |---|---|---|---|---:|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
 | TECH | CTO | monthly | Bourse Direct | €10,000 | native | 10.9x | €46,042 | €0 | €37,175 | €26,729 | **8.27x** | 19.5% | -71% | 5.38x | +2.89x |
 | TECH | CTO | monthly | Bourse Direct | €100,000 | native | 29.5x | €716,008 | €0 | €823,483 | €716,961 | **22.37x** | 29.9% | -70% | 5.38x | +16.99x |
@@ -40,7 +40,7 @@ the remaining liability on the open book, deducted from `after tax`.
 
 ## French book: CTO vs PEA
 
-| market | wrapper | book | broker | account | signals | pre-tax | fees | FTT | tax paid | exit tax | **after tax** | CAGR | maxDD | benchmark after tax | vs bench |
+| market | wrapper | book | broker | account | signals | pre-tax | fees (incl. FTT) | FTT | tax paid | exit tax | **after tax** | CAGR | maxDD | benchmark after tax | vs bench |
 |---|---|---|---|---:|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
 | FR | CTO | monthly | Bourse Direct | €10,000 | native | 8.3x | €25,682 | €2,942 | €26,155 | €18,992 | **6.41x** | 16.6% | -70% | 2.13x | +4.28x |
 | FR | CTO | monthly | Trade Republic | €10,000 | native | 16.1x | €24,923 | €4,850 | €42,941 | €35,850 | **12.47x** | 23.2% | -70% | 2.13x | +10.34x |
@@ -49,13 +49,13 @@ the remaining liability on the open book, deducted from `after tax`.
 
 ## US book: CTO, Trade Republic, €100k
 
-| market | wrapper | book | broker | account | signals | pre-tax | fees | FTT | tax paid | exit tax | **after tax** | CAGR | maxDD | benchmark after tax | vs bench |
+| market | wrapper | book | broker | account | signals | pre-tax | fees (incl. FTT) | FTT | tax paid | exit tax | **after tax** | CAGR | maxDD | benchmark after tax | vs bench |
 |---|---|---|---|---:|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
 | US | CTO | tax | Trade Republic | €100,000 | native | 59.4x | €335,547 | €0 | €533,366 | €1,907,024 | **40.35x** | 36.5% | -69% | 3.51x | +36.83x |
 
 ## EUR-signal sensitivity
 
-| market | wrapper | book | broker | account | signals | pre-tax | fees | FTT | tax paid | exit tax | **after tax** | CAGR | maxDD | benchmark after tax | vs bench |
+| market | wrapper | book | broker | account | signals | pre-tax | fees (incl. FTT) | FTT | tax paid | exit tax | **after tax** | CAGR | maxDD | benchmark after tax | vs bench |
 |---|---|---|---|---:|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
 | TECH | CTO | tax | Trade Republic | €10,000 | eur | 35.0x | €22,387 | €0 | €45,682 | €104,118 | **24.59x** | 30.9% | -70% | 5.36x | +19.23x |
 

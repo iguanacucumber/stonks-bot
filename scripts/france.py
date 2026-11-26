@@ -290,9 +290,10 @@ def main() -> None:
         "",
         "Both brokers are charged 0.25% FX per side on USD names (Bourse Direct's",
         "0.08% explicit commission plus the spread). Fixed fees use the account",
-        "size, so the €10k and €100k rows are not the same strategy. `fees`, `FTT`,",
-        "and `tax paid` are cumulative costs already inside `pre-tax`; `exit tax` is",
-        "the remaining liability on the open book, deducted from `after tax`.",
+        "size, so the €10k and €100k rows are not the same strategy. `fees` includes",
+        "the FTT; `fees` and `tax paid` are cumulative costs already inside `pre-tax`.",
+        "`exit tax` is the remaining liability on the open book, deducted from",
+        "`after tax`.",
         "",
     ]
 
@@ -301,7 +302,7 @@ def main() -> None:
             [
                 f"## {title}",
                 "",
-                "| market | wrapper | book | broker | account | signals | pre-tax | fees | FTT | tax paid | exit tax | **after tax** | CAGR | maxDD | benchmark after tax | vs bench |",
+                "| market | wrapper | book | broker | account | signals | pre-tax | fees (incl. FTT) | FTT | tax paid | exit tax | **after tax** | CAGR | maxDD | benchmark after tax | vs bench |",
                 "|---|---|---|---|---:|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|",
             ]
         )
