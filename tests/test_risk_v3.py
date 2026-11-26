@@ -266,7 +266,7 @@ def test_gates() -> None:
         "family": "V",
         "net_x": 60.0,
         "net_maxdd": -0.56,
-        "p5": 3.0,
+        "p5": 3.1,
         "y2018": -0.30,
         "y2022": -0.33,
         "h1_cagr": 0.17,
@@ -275,10 +275,10 @@ def test_gates() -> None:
         "control_p5": 2.2,
         "net_x_2x": 55.0,
     }
-    # 61.0 base -> 60.0 is >95%; p5 passes; DD -56% is worse than base+10pp
-    # (-47.8%), so the 95% branch must fail on the DD leg.
+    # 61.64 base -> 60.0 is >95%; p5 passes; DD -56% is worse than base+10pp
+    # (-46.7%), so the 95% branch must fail on the DD leg.
     assert rv.gate_row("US", row).split("/")[0] == "fail"
-    row["net_maxdd"] = -0.47
+    row["net_maxdd"] = -0.46
     assert rv.gate_row("US", row).split("/")[0] == "pass-95"
 
 

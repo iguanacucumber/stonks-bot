@@ -61,32 +61,32 @@ ORIG_CANONICAL = universe.canonical
 
 # Net-of-dividend EUR baselines, asserted by --baseline. These are the gate
 # values in results/risk_v3.md (Amendment 2); update both together.
-US_BASE_NET = 60.9978
-TECH_BASE_NET = 48.8190
-US_BASE_EUR = 66.0221
-TECH_BASE_EUR = 52.8939
+US_BASE_NET = 61.6432
+TECH_BASE_NET = 49.3326
+US_BASE_EUR = 66.7207
+TECH_BASE_EUR = 53.4503
 
 # Pre-registered max-growth gates on the net-of-dividend EUR path.
 GATE = {
     "US": dict(
         base=US_BASE_NET,
-        maxdd=-0.5776,
-        y2018=-0.3051,
-        y2022=-0.3362,
-        y2018_floor=-0.3251,
-        y2022_floor=-0.3562,
-        p5=2.384,
-        half_cagr=(0.1697, 0.5506),
+        maxdd=-0.5667,
+        y2018=-0.3058,
+        y2022=-0.3316,
+        y2018_floor=-0.3258,
+        y2022_floor=-0.3516,
+        p5=2.526,
+        half_cagr=(0.1711, 0.5519),
     ),
     "TECH": dict(
         base=TECH_BASE_NET,
-        maxdd=-0.6619,
-        y2018=-0.1031,
-        y2022=-0.5252,
-        y2018_floor=-0.1231,
-        y2022_floor=-0.5452,
-        p5=1.839,
-        half_cagr=(0.2122, 0.4595),
+        maxdd=-0.6527,
+        y2018=-0.1058,
+        y2022=-0.5164,
+        y2018_floor=-0.1258,
+        y2022_floor=-0.5364,
+        p5=1.906,
+        half_cagr=(0.2105, 0.4636),
     ),
 }
 
@@ -217,7 +217,7 @@ def evaluate(
     """Full-window, stress-year, half-window and bootstrap statistics."""
     cfg = EurLedgerConfig(
         capital=CAP,
-        tax_rate=0.314,
+        tax_rate=None,  # year-dependent French rate (30% to 2025, 31.4% from 2026)
         financing_bps=500.0,
         spread_bps=cost,
         fx_bps=2.0,
@@ -665,6 +665,7 @@ def balanced_gate(st: dict) -> bool:
     """
     if st.get("_model_invalid") or st.get("family") == "H":
         return False
+    g = GATE["US"]
     ctrl = st.get("control_x", -np.inf) >= st.get("net_x", np.inf) or st.get(
         "control_p5", -np.inf
     ) >= st.get("p5", np.inf)
@@ -672,11 +673,11 @@ def balanced_gate(st: dict) -> bool:
     return bool(
         st.get("net_maxdd", 0.0) >= -0.47
         and st.get("net_x", 0.0) >= 28.0
-        and st.get("p5", 0.0) >= 2.384
-        and st.get("y2018", -1.0) >= -0.3051
-        and st.get("y2022", -1.0) >= -0.3362
-        and st.get("h1_cagr", -1.0) >= 0.10
-        and st.get("h2_cagr", -1.0) >= 0.2753
+        and st.get("p5", 0.0) >= g["p5"]
+        and st.get("y2018", -1.0) >= g["y2018"]
+        and st.get("y2022", -1.0) >= g["y2022"]
+        and st.get("h1_cagr", -1.0) >= max(0.10, 0.5 * g["half_cagr"][0])
+        and st.get("h2_cagr", -1.0) >= max(0.10, 0.5 * g["half_cagr"][1])
         and st.get("h1_dd", 0.0) >= -0.50
         and st.get("h2_dd", 0.0) >= -0.50
         and ctrl
