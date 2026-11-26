@@ -61,7 +61,8 @@ live ledger row and no second legacy paper row.
 
 A date counts toward the forward gate only when **all** of these are true:
 
-- the quote was taken at/after 16:00 New York on a completed session;
+- the quote was taken at/after the actual session close (13:00 ET half-day,
+  16:00 ET normal; the write guard waits another 30 minutes for publication);
 - the session exists in the panel and the close is final;
 - holdings have closes, and a rebalance has opens (the legacy
   `close_valid`/`data_complete` flags);
@@ -172,10 +173,11 @@ uv run python scripts/forward_gate.py --check --write-status
 uv run python scripts/forward_gate.py --check --since 2026-11-25
 ```
 
-Exit codes: `0` PASS (all required books >=5 verified), `2` WAIT (short but
-healthy), `3` BLOCKED (missing/duplicate/conflicting rows, stale benchmark,
+Exit codes: `0` **PASS or WAIT** (a healthy short track is not an automation
+failure), `2` **BLOCKED** (missing/duplicate/conflicting rows, stale benchmark,
 missed required session, or reconcile failure), `1` unexpected error. `--since`
-prints NEW VERIFIED dates; it does not change the gate count.
+prints NEW VERIFIED dates; it does not change the gate count. The daily automation
+can therefore treat `2` as the only alert condition.
 
 Run it immediately after the daily job so a MISSED/BLOCKED condition is visible in
 the same cron/service log:
@@ -185,10 +187,27 @@ uv run python scripts/forward_daily.py --paper --tax
 uv run python scripts/forward_gate.py --check --write-status
 ```
 
-Only distinct verified dates count. Duplicate dates, non-verified rows, preview
-rows with `close_valid=False`, holidays and missing files are reported explicitly.
-The current gate on 2026-11-26 (holiday) is US 0/5, TECH 1/5, tax 0/5; the next
+Only distinct verified dates count. Duplicate dates/conflicting rows are excluded
+entirely and mark the book BLOCKED; non-verified rows, preview rows with
+`close_valid=False`, holidays and missing files are reported explicitly. The
+current gate on 2026-11-26 (holiday) is US 0/5, TECH 1/5, tax 0/5; the next
 required session is 2026-11-27. No 2026-11-26 row exists and none is fabricated.
+
+The calendar's remaining sessions from 2026-11-25 are:
+
+- US (needs 5): 11-27, **11-30**, 12-01, 12-02, 12-03.
+- TECH (needs 4 more): 11-27, **11-30**, 12-01, 12-02.
+- Tax (needs 5): 11-27, **11-30**, 12-01, 12-02, 12-03.
+
+11-30 is a normal Monday session; the issue's illustrative list omitted it. The
+gate is calendar-driven, so a genuinely verified 11-30 row counts and is not
+skipped. If any session is missed, the required list extends (US through 12-04+).
+
+`--require-close` is the write guard: paper mode requires at least 30 minutes after
+the *actual* close. That is 16:30 ET normally and **13:30 ET on a half-day** (day
+after Thanksgiving, Christmas Eve, July 3 when applicable). Holiday/weekend runs
+cannot resolve to a writable session. A half-day snapshot before 13:30 is never
+close-valid.
 
 ## Tests
 

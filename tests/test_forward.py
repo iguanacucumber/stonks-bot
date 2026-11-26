@@ -263,6 +263,67 @@ def test_refresh_is_opt_in_and_injected() -> None:
         assert seen == ["US", "TECH"]
 
 
+def test_half_day_and_weekend_guard() -> None:
+    from datetime import datetime
+    from zoneinfo import ZoneInfo
+
+    from bot.live import calendar
+    from paper_daily import is_close_valid
+
+    session = pd.Timestamp("2026-11-27")  # day after Thanksgiving, 13:00 ET close
+    assert calendar.is_half_day(session)
+    assert calendar.close_hour(session) == 13
+
+    def blocked(now: str) -> bool:
+        try:
+            fd._require_close_session(now, session, True, None)
+            return False
+        except fd.ForwardBlocked:
+            return True
+
+    # 12:00/13:29 ET are before the half-day close + 30m data delay.
+    assert blocked("2026-11-27T17:00:00+00:00")  # 12:00 ET
+    assert blocked("2026-11-27T18:29:00+00:00")  # 13:29 ET
+    assert not blocked("2026-11-27T18:30:00+00:00")  # 13:30 ET
+    assert not blocked("2026-11-27T21:00:00+00:00")  # 16:00 ET
+
+    normal = pd.Timestamp("2026-12-01")
+    assert not calendar.is_half_day(normal)
+
+    def blocked_normal(now: str) -> bool:
+        try:
+            fd._require_close_session(now, normal, True, None)
+            return False
+        except fd.ForwardBlocked:
+            return True
+
+    assert blocked_normal("2026-12-01T21:00:00+00:00")  # 16:00 ET
+    assert not blocked_normal("2026-12-01T21:30:00+00:00")  # 16:30 ET
+
+    # A holiday cannot resolve to a writable session.
+    try:
+        fd.resolve_forward_session("2026-11-26T22:00:00+00:00", None)
+    except fd.ForwardBlocked:
+        pass
+    else:
+        raise AssertionError("Thanksgiving must not resolve to a writable session")
+
+    # A Saturday run targets Friday's completed session but must not write a
+    # close-valid row under a Saturday quote date.
+    assert blocked("2026-11-28T22:00:00+00:00")
+
+    et = ZoneInfo("America/New_York")
+    assert not is_close_valid(
+        session, session, datetime(2026, 11, 27, 13, 0, tzinfo=et)
+    )
+    assert is_close_valid(
+        session, session, datetime(2026, 11, 27, 13, 30, tzinfo=et)
+    )
+    assert not is_close_valid(
+        session, session, datetime(2026, 11, 27, 12, 59, tzinfo=et)
+    )
+
+
 def test_cli_holiday_exit() -> None:
     import contextlib
     import io
@@ -283,5 +344,6 @@ if __name__ == "__main__":
     test_stale_holiday_and_health_fail()
     test_gate_and_separate_books()
     test_refresh_is_opt_in_and_injected()
+    test_half_day_and_weekend_guard()
     test_cli_holiday_exit()
     print("test_forward: all checks passed")

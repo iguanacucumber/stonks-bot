@@ -31,6 +31,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 import pandas as pd  # noqa: E402
 
 from bot import backtest, data, markets, overlay, strategy, universe  # noqa: E402
+from bot.live import calendar  # noqa: E402
 
 ROOT = Path(__file__).resolve().parent.parent
 RESULTS = ROOT / "results"
@@ -95,8 +96,14 @@ def ledger_file(book: str, market: str) -> Path:
 def is_close_valid(
     quote_date: pd.Timestamp, session_date: pd.Timestamp, et: datetime
 ) -> bool:
-    """Only a row dated on an actual completed session may count forward."""
-    return et.hour >= 16 and quote_date == session_date
+    """Only a row dated on an actual completed session may count forward.
+
+    Half-day sessions close at 13:00 ET; using 16:00 there would silently mark an
+    intraday half-day snapshot as a full close.
+    """
+    close = calendar.close_hour(session_date)
+    after_close = et.hour > close or (et.hour == close and et.minute >= 30)
+    return after_close and quote_date == session_date
 
 
 def refresh(market: str) -> None:
