@@ -37,6 +37,20 @@ The S&P sleeve (used when SMH lags) is:
 6. **Evaluation**: SPY, equal-weight S&P, momentum-only, LLM, placebo-LLM (same names/dates,
    no news), random-20 null, block-bootstrap CIs, calibration and Brier score.
 
+## Which profile?
+
+| profile | allocation | EUR ledger | maxDD | 2022 |
+|---|---|---:|---:|---:|
+| **max_growth** (default) | US monthly 2.5x | **66.7x** | -56.4% | -32.8% |
+| balanced (paper opt-in) | 70% US book + 30% SPY | 36.9x | -46.0% | -27.4% |
+| conservative (paper opt-in) | US monthly 1.5x | 19.4x | -40.2% | -20.3% |
+
+`max_growth` maximizes terminal wealth but loses more than half at the worst
+peak-to-trough. `balanced` gives up about half the terminal wealth for roughly
+10 pp less drawdown; it is the profile for a human who must stay invested. Both
+opt-ins are post-hoc and labelled `paper`, not forward-validated. See
+`docs/profiles.md`.
+
 ## Short horizons: tested, rejected
 
 Weekly/daily rebalancing of the same book, 1/5-day reversal, 20-day momentum and

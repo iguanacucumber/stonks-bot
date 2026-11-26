@@ -105,6 +105,16 @@ La FTT (taxe sur les transactions financières) de 0,4 % s'applique aux achats d
 
 La stratégie française combine le CAC 40 et le cœur SMH. Elle finit à 6,4x chez Bourse Direct, 12,5x chez Trade Republic et 16,2x chez IBKR, après FTT et PFU. Elle perd contre la stratégie TECH, mais elle reste devant le CAC seul.
 
+## Quel profil ?
+
+| Profil | Allocation | EUR ledger | Pire creux | 2022 |
+|---|---|---:|---:|---:|
+| **max_growth** (défaut) | US mensuel 2,5x | **66,7x** | -56,4 % | -32,8 % |
+| balanced (opt-in papier) | 70 % livre US + 30 % SPY | 36,9x | -46,0 % | -27,4 % |
+| conservative (opt-in papier) | US mensuel 1,5x | 19,4x | -40,2 % | -20,3 % |
+
+`max_growth` maximise le capital mais perd plus de la moitié au pire creux. `balanced` abandonne environ la moitié du capital final pour 10 points de baisse en moins ; c'est le profil d'un humain qui doit rester investi. Les deux opt-in sont post-hoc et étiquetés `paper`, pas validés forward. Détails : `docs/profiles.md`.
+
 ## Le risque, sans filtre
 
 - Pire creux : **-56,4 %** sur le livre US (grand livre EUR). En 2022 : -32,8 %. En 2018 : -30,2 %. Le livre TECH fait -65,1 % au pire, -51,4 % en 2022 et -10,0 % en 2018.
