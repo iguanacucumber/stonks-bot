@@ -19,7 +19,7 @@
 | #17 live autopilot | `v2/live-autopilot` | **merged #27 at `25bd661`**; pre-tax paper ledger, rails, state |
 | #18 alpha lab | `v2/alpha-lab` | PR #29 open; reviewer fixes (gates, BIL, EUR tax) in progress |
 | #19 risk & allocation | `v2/risk-alloc` | sweeps done; runner/tests/gate fixes in progress |
-| #20 data & evaluation | `v2/data-eval` | PR #28 open; rebasing EUR tax fix |
+| #20 data & evaluation | `v2/data-eval` | **merged #28 at `f95fb1e`**; EUR tax baseline, CI, audits |
 
 Each branch is in its own worktree; they merge after main-session review. Four
 independent reviewer sessions are auditing idempotency, methodology, risk math and
