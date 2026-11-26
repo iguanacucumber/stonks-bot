@@ -18,11 +18,11 @@
 > C'est un backtest, pas une promesse de rendement. Le livre US a perdu 56,4 % au pire creux (grand livre EUR) et 32,8 % en 2022. À 2,5x, la baisse peut aller plus vite que ta capacité à couper. N'investis pas de l'argent dont tu as besoin.
 
 > [!NOTE]
-> Le grand livre EUR compte l'impôt français sur les gains en EUR chaque année, avec une base de coût en EUR au taux de change du jour. Il donne 66,2x pour le livre US et 53,0x pour le livre TECH, contre 70,9x/57,0x pour l'ancienne méthode qui ne convertit qu'à la fin. Voir `docs/accounting.md`. Le livre TECH reste le suivi forward ; le livre US devient le défaut pour un nouvel investisseur.
+> Le grand livre EUR compte l'impôt français sur les gains en EUR chaque année, avec une base de coût en EUR au taux de change du jour. Il donne 66,17x pour le livre US et 53,0x pour le livre TECH, contre 70,9x/57,0x pour l'ancienne méthode qui ne convertit qu'à la fin. Voir `docs/accounting.md`. Le livre TECH reste le suivi forward ; le livre US devient le défaut pour un nouvel investisseur.
 
 ## Combien ça rapporte
 
-10 000 € au départ, compte-titres ordinaire chez Interactive Brokers, livre US mensuel. Du 2 janvier 2015 au 25 novembre 2026, le capital finit à 66,2x après impôt dans le grand livre EUR, soit 42,3 % par an. Les montants ci-dessous prolongent ce rythme.
+10 000 € au départ, compte-titres ordinaire chez Interactive Brokers, livre US mensuel. Du 2 janvier 2015 au 25 novembre 2026, le capital finit à 66,17x après impôt dans le grand livre EUR, soit 42,3 % par an. Les montants ci-dessous prolongent ce rythme.
 
 | Horizon | Capital final | Gain | QQQ après impôt |
 |---|---:|---:|---:|
@@ -34,7 +34,7 @@
 
 ![Rendements annuels avant impôt](docs/readme_fr.svg)
 
-<sub>Le graphique montre les années avant PFU du livre TECH historique. Le multiple de 66,2x et le rendement annualisé de 42,3 % sont le livre US, après impôt dans le grand livre EUR.</sub>
+<sub>Le graphique montre les années avant PFU du livre TECH historique. Le multiple de 66,17x et le rendement annualisé de 42,3 % sont le livre US, après impôt dans le grand livre EUR.</sub>
 
 ## Le principe
 
@@ -52,11 +52,11 @@ Testé et rejeté. Le rebalancement hebdomadaire/quotidien du même livre, le re
 
 **Verdict : Interactive Brokers, compte-titres ordinaire, livre US mensuel.**
 
-À 10 000 €, le livre US mensuel chez Interactive Brokers finit à 66,2x après impôt dans le grand livre EUR (661 655 €). Le livre TECH, suivi en forward, fait 53,0x (529 755 €). Le classement des brokers dépend surtout du coût de conversion EUR/USD, pas de la commission par ordre.
+À 10 000 €, le livre US mensuel chez Interactive Brokers finit à 66,17x après impôt dans le grand livre EUR (661 655 €). Le livre TECH, suivi en forward, fait 53,0x (529 755 €). Le classement des brokers dépend surtout du coût de conversion EUR/USD, pas de la commission par ordre.
 
 | Livre | Multiple EUR ledger | Pire creux | 2022 |
 |---|---:|---:|---:|
-| **US mensuel (défaut)** | **66,2x** | **-56,9 %** | **-33,7 %** |
+| **US mensuel (défaut)** | **66,17x** | **-56,9 %** | **-33,7 %** |
 | TECH mensuel (forward) | 53,0x | -65,6 % | -52,4 % |
 | CORE SMH seul | 49,0x | -64,2 % | -54,2 % |
 
@@ -78,7 +78,7 @@ Interactive Brokers gagne parce que la stratégie convertit souvent USD/EUR. À 
 
 DEGIRO reste à 46,3x avec l'hypothèse de 10 bps, mais tombe à 39,2x avec son AutoFX publié de 25 bps. Saxo (36,4x), Bourse Direct (34,7x), Fortuneo (24,9x) et BoursoBank (22,7x) restent derrière sur la variante core-only. À 10 000 €, les commissions fixes et la conversion pèsent plus que le taux de courtage affiché.
 
-La stratégie US mensuelle chez IBKR est le meilleur backtest et le défaut pour un nouvel investisseur : **66,2x après impôt dans le grand livre EUR** (70,9x en mesure terminale), maxDD -56,9 %, 7 fenêtres de 5 ans sur 7 battent SPY. Le livre TECH reste le suivi forward (1/5 dates validées) ; `--market TECH` le restaure.
+La stratégie US mensuelle chez IBKR est le meilleur backtest et le défaut pour un nouvel investisseur : **66,17x après impôt dans le grand livre EUR** (70,9x en mesure terminale), maxDD -56,9 %, 7 fenêtres de 5 ans sur 7 battent SPY. Le livre TECH reste le suivi forward (1/5 dates validées) ; `--market TECH` le restaure.
 
 ## Les impôts
 
@@ -89,7 +89,7 @@ La stratégie US mensuelle chez IBKR est le meilleur backtest et le défaut pour
 | CTO | **31,4 %** | PFU (prélèvement forfaitaire unique) : 12,8 % d'impôt sur le revenu et 18,6 % de prélèvements sociaux sur le gain net annuel. Les moins-values se reportent 10 ans. |
 | PEA | **18,6 %** | Plan d'épargne en actions. Prélèvements sociaux seulement après 5 ans. Pas d'actions US en direct, pas de SMH, pas de levier au niveau du compte. Plafond de 150 000 €. |
 
-Dans ce modèle, le CTO est la seule enveloppe qui peut porter SMH à 2,5x. Le PEA sauve 12,8 points de PFU, mais il ne peut pas acheter le cœur de la stratégie. Le meilleur PEA tech 1x, PUST.PA, fait 5,8x après social, contre 66,2x pour le CTO (livre US, grand livre EUR).
+Dans ce modèle, le CTO est la seule enveloppe qui peut porter SMH à 2,5x. Le PEA sauve 12,8 points de PFU, mais il ne peut pas acheter le cœur de la stratégie. Le meilleur PEA tech 1x, PUST.PA, fait 5,8x après social, contre 66,17x pour le CTO (livre US, grand livre EUR).
 
 La FTT (taxe sur les transactions financières) de 0,4 % s'applique aux achats d'actions françaises depuis avril 2025. Les stratégies US et TECH n'en paient pas. La stratégie française paie 5 757 € de FTT pour 10 000 € de départ chez IBKR. Le PFU 2026 est modélisé à 31,4 %, pas 30 %.
 
@@ -113,7 +113,7 @@ La stratégie française combine le CAC 40 et le cœur SMH. Elle finit à 6,4x c
 
 | Profil | Allocation | EUR ledger | Pire creux | 2022 |
 |---|---|---:|---:|---:|
-| **max_growth** (défaut) | US mensuel 2,5x | **66,2x** | -56,9 % | -33,7 % |
+| **max_growth** (défaut) | US mensuel 2,5x | **66,17x** | -56,9 % | -33,7 % |
 | balanced (opt-in papier) | 70 % livre US + 30 % SPY | 36,6x | -46,9 % | -27,4 % |
 | conservative (opt-in papier) | US mensuel 1,5x | 19,3x | -40,4 % | -20,3 % |
 
@@ -140,7 +140,7 @@ uv run python -m bot.cli backtest --country fr --capital 10000 --random-seeds 0
 uv run python -m bot.cli pnl --country fr --capital 10000
 ```
 
-`--country fr` utilise le livre US mensuel, Interactive Brokers et un CTO par défaut. La commande affiche le multiple terminal et le **grand livre EUR** (66,2x pour US). `--market TECH` restaure le livre TECH du suivi forward, `--profile tax` la variante core-only, `--fx-bps` ton vrai coût de conversion. Aucun ordre n'est envoyé, aucune clé n'est nécessaire.
+`--country fr` utilise le livre US mensuel, Interactive Brokers et un CTO par défaut. La commande affiche le multiple terminal et le **grand livre EUR** (66,17x pour US). `--market TECH` restaure le livre TECH du suivi forward, `--profile tax` la variante core-only, `--fx-bps` ton vrai coût de conversion. Aucun ordre n'est envoyé, aucune clé n'est nécessaire.
 
 ## Le pilote papier
 
@@ -166,6 +166,16 @@ uv run python scripts/ops.py backup --out /var/backups/stonks-bot
 
 `advise.py` transforme le profil, l'horizon et la tolérance au risque en allocation et liste d'ordres papier, avec un simulateur de retrait sur 15 ans. `ops.py` donne le status, le diagnostic, les sauvegardes vérifiées et le runbook. Aucun ordre réel.
 
-Les détails techniques sont dans le [README anglais](README.en.md), les [résultats brokers](results/brokers.md), les [résultats France](results/france.md), le [test de robustesse](results/robustness_best.md) et le [résumé v2](results/v2_summary.md), le [résumé v3](results/v3_summary.md), les [résumés v4](results/v4_summary.md), [v5](results/v5_summary.md), [v6](results/v6_summary.md) et la [matrice des commandes](docs/feature_matrix.md).
+Les détails techniques sont dans le [README anglais](README.en.md), les [résultats brokers](results/brokers.md), les [résultats France](results/france.md), le [test de robustesse](results/robustness_best.md) et le [résumé v2](results/v2_summary.md), le [résumé v3](results/v3_summary.md), les [résumés v4](results/v4_summary.md), [v5](results/v5_summary.md), [v6](results/v6_summary.md), la [matrice des commandes](docs/feature_matrix.md) et la [fiche de release v7](RELEASE.md).
+
+## Release v7
+
+La fiche [RELEASE.md](RELEASE.md) rassemble les chiffres, les verdicts et la checklist de release. Pour vérifier une copie locale avant tag :
+
+```bash
+uv run python scripts/release_check.py
+```
+
+Le contrôle lance tous les tests, l'acceptance, le baseline EUR, les plans papier US/TECH, le gate forward et le dashboard, puis écrit `results/release_check.md`. Le gate reste **WAIT US 0/5, TECH 1/5** : c'est une information de suivi, pas une preuve forward. Aucun tag ni release GitHub n'est créé par cette branche.
 
 <sub>Les performances passées ne préjugent pas des performances futures. Dernière mise à jour : 26 novembre 2026, données au 25 novembre 2026. Résumé v2 et tests : `results/v2_summary.md`.</sub>
