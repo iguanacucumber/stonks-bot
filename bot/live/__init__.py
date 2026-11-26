@@ -2,7 +2,8 @@
 
 Paper only by default. The package reuses the signal and accounting definitions in
 ``bot.strategy`` / ``bot.backtest`` and adds execution state, order intents, safety
-rails and an auditable ledger. There is deliberately no real broker adapter here.
+rails and an auditable ledger. An opt-in IBKR **paper** adapter lives in
+``bot.live.brokers.ibkr``; there is deliberately no real-money adapter.
 """
 
 from .config import BEST_EVIDENCE_MARKET, LiveConfig, book_overrides

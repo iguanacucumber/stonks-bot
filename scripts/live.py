@@ -2,8 +2,9 @@
 """Live autopilot CLI: plan | run | status | reconcile.
 
 Dry-run is the default. ``run --paper`` is the only command that writes the paper
-ledger. There is no real-broker flag; a future adapter must be added behind the
-``Broker`` protocol and remain opt-in.
+ledger. ``--broker ibkr-paper`` is an opt-in paper execution adapter; there is no
+real-money flag. A future real adapter must remain behind explicit configuration and
+the same fail-closed rails.
 
 New live plans default to US (the best real-life backtest). Use ``--market TECH``
 for the forward validation track that is already being logged; this CLI never
@@ -46,6 +47,13 @@ EXIT_RECONCILE = 3
 def _add_common(ap: argparse.ArgumentParser) -> None:
     ap.add_argument("--book", choices=("monthly", "tax"), default=None)
     ap.add_argument(
+        "--broker",
+        choices=("paper", "ibkr-paper"),
+        default=None,
+        help="execution adapter; default paper (local deterministic fills). "
+        "ibkr-paper requires a Client Portal Gateway and env credentials",
+    )
+    ap.add_argument(
         "--market",
         default=None,
         help=f"any market in bot.markets; default {BEST_EVIDENCE_MARKET} "
@@ -84,6 +92,7 @@ def _config(args: argparse.Namespace) -> LiveConfig:
     overrides = {
         "book": args.book,
         "market": args.market,
+        "broker": args.broker,
         "capital": args.capital,
         "leverage": args.leverage,
         "dd_stop": args.dd_stop,
@@ -245,7 +254,11 @@ def _status(args: argparse.Namespace) -> int:
     else:
         print(
             report.format_report(
-                result, cfg, mode="status", forward_gate=_forward_gate(cfg)
+                result,
+                cfg,
+                mode="status",
+                forward_gate=_forward_gate(cfg),
+                broker_name=cfg.broker,
             )
         )
         _print_state(cfg)
@@ -268,11 +281,21 @@ def _plan(args: argparse.Namespace) -> int:
         return EXIT_ERROR
     gate = _forward_gate(cfg)
     if args.json:
-        print(report.plan_json(result, cfg))
+        print(report.plan_json(result, cfg, broker_name=cfg.broker))
     else:
-        print(report.format_report(result, cfg, mode="plan", forward_gate=gate))
+        print(
+            report.format_report(
+                result,
+                cfg,
+                mode="plan",
+                forward_gate=gate,
+                broker_name=cfg.broker,
+            )
+        )
         if args.as_of:
             print(f"replay mode: --as-of {args.as_of} (no state written)")
+        if cfg.broker != "paper":
+            print("dry-run: broker not contacted; add --paper to execute")
     return EXIT_BLOCKED if result.blocked else EXIT_OK
 
 
@@ -298,9 +321,17 @@ def _run(args: argparse.Namespace) -> int:
         return EXIT_ERROR
     gate = _forward_gate(cfg)
     if args.json:
-        print(report.plan_json(result, cfg))
+        print(report.plan_json(result, cfg, broker_name=cfg.broker))
     else:
-        print(report.format_report(result, cfg, mode="run", forward_gate=gate))
+        print(
+            report.format_report(
+                result,
+                cfg,
+                mode="run",
+                forward_gate=gate,
+                broker_name=cfg.broker,
+            )
+        )
         if paper and result.persisted and not result.created:
             print("idempotent no-op: this session is already recorded")
         elif not paper:
@@ -313,12 +344,19 @@ def _run(args: argparse.Namespace) -> int:
 def _reconcile(args: argparse.Namespace) -> int:
     cfg = _config(args)
     engine = LiveEngine(cfg)
+    broker_rep = None
     try:
         state = engine.store.load(allow_config_change=args.allow_config_change)
         rep = reconcile.reconcile(
             cfg, state, engine.store, repair_ledger=args.repair_ledger
         )
+        if cfg.broker != "paper" and state is not None:
+            broker_rep = engine.broker.reconcile(state.portfolio)
+            rep.ok = rep.ok and broker_rep.ok
     except (StateError, EngineError) as exc:
+        print(f"ERROR: {exc}")
+        return EXIT_ERROR
+    except Exception as exc:  # broker config/transport errors fail closed
         print(f"ERROR: {exc}")
         return EXIT_ERROR
     if args.json:
@@ -330,6 +368,17 @@ def _reconcile(args: argparse.Namespace) -> int:
                     "warnings": rep.warnings,
                     "metrics": rep.metrics,
                     "repaired_rows": rep.repaired_rows,
+                    "broker": (
+                        None
+                        if broker_rep is None
+                        else {
+                            "ok": broker_rep.ok,
+                            "issues": broker_rep.issues,
+                            "warnings": broker_rep.warnings,
+                            "broker_cash": broker_rep.broker_cash,
+                            "broker_positions": broker_rep.broker_positions,
+                        }
+                    ),
                 },
                 indent=2,
                 sort_keys=True,
@@ -337,6 +386,8 @@ def _reconcile(args: argparse.Namespace) -> int:
         )
     else:
         print("\n".join(rep.lines()))
+        if broker_rep is not None:
+            print("\n".join(broker_rep.lines()))
     return EXIT_OK if rep.ok else EXIT_RECONCILE
 
 

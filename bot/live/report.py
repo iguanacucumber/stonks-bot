@@ -88,8 +88,10 @@ def format_report(
     cfg: LiveConfig,
     mode: str = "plan",
     forward_gate: str | None = None,
+    broker_name: str | None = None,
 ) -> str:
     plan = result.plan
+    broker = broker_name or getattr(cfg, "broker", "paper")
     lines: list[str] = []
     title = (
         "LIVE PLAN (dry-run)"
@@ -102,7 +104,7 @@ def format_report(
         f"{title}  book={cfg.book} ({cfg.book_label})  "
         f"market={cfg.market} ({cfg.market_label})  "
         f"native={cfg.native_currency}  reporting={cfg.reporting_currency}  "
-        "broker=paper"
+        f"broker={broker}"
     )
     lines.append(f"recommendation: {cfg.recommendation}")
     fx = (plan.data.get("fx") if plan else None) or result.fx or {}
@@ -188,6 +190,10 @@ def format_report(
             f"{cfg.commission_bps:.1f} bps commission "
             f"(min {cfg.min_commission:.2f}), "
             f"max {cfg.max_participation:.1%} of open volume"
+            if broker == "paper"
+            else "execution model: IBKR paper market day order at the next open; "
+            "fill price/commission reported by the broker; remainder cancelled "
+            "after the poll window"
         )
         stale = [
             t
@@ -202,9 +208,16 @@ def format_report(
     if mode == "status":
         lines.append("read-only status; no state written")
     elif mode == "run":
-        lines.append(
-            "PAPER ONLY — fills and orders are recorded in the paper ledger; no real broker"
-        )
+        if broker == "ibkr-paper":
+            lines.append(
+                "IBKR PAPER ONLY — orders go to the IBKR paper account; "
+                "no real-money adapter exists"
+            )
+        else:
+            lines.append(
+                "PAPER ONLY — fills and orders are recorded in the paper ledger; "
+                "no real broker"
+            )
     else:
         lines.append("NO ORDERS SENT — paper/dry-run only")
     if forward_gate:
@@ -212,12 +225,18 @@ def format_report(
     return "\n".join(lines)
 
 
-def plan_json(result: LiveResult, cfg: LiveConfig) -> str:
+def plan_json(
+    result: LiveResult,
+    cfg: LiveConfig,
+    broker_name: str | None = None,
+) -> str:
+    broker = broker_name or getattr(cfg, "broker", "paper")
     fx = (result.plan.data.get("fx") if result.plan else None) or result.fx or {}
     rate = fx.get("rate")
     rate_f = None if rate is None else float(rate)
     payload: dict[str, Any] = {
         "mode": "paper" if result.persisted else "dry-run",
+        "broker": broker,
         "session": result.session,
         "blocked": result.blocked,
         "blocked_reason": result.blocked_reason,
@@ -241,6 +260,7 @@ def plan_json(result: LiveResult, cfg: LiveConfig) -> str:
             "native_currency": cfg.native_currency,
             "reporting_currency": cfg.reporting_currency,
             "recommended_market": cfg.recommended_market,
+            "broker": broker,
             "capital": cfg.capital,
             "leverage": cfg.leverage,
             "max_gross": cfg.max_gross,

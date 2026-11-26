@@ -20,7 +20,8 @@ import pandas as pd
 from bot import data
 
 from . import calendar
-from .broker import PaperBroker, estimate_cost
+from .broker import Broker, BrokerError, PaperBroker, estimate_cost
+from .brokers import make_broker
 from .config import LiveConfig
 from .models import (
     PLAN_BLOCKED,
@@ -190,7 +191,7 @@ def _settle_pending(
     state: LiveState,
     snap: Snapshot,
     now: str,
-    broker: PaperBroker,
+    broker: Broker,
 ) -> tuple[Plan | None, list[Fill]]:
     plan = state.pending_plan
     if plan is None:
@@ -221,7 +222,10 @@ def _settle_pending(
             f"cannot settle {plan.plan_id}: no usable open on "
             f"{plan.fill_session} for {sorted(missing)}"
         )
-    fills = broker.execute(plan, bars, now, state.portfolio)
+    try:
+        fills = broker.execute(plan, bars, now, state.portfolio)
+    except BrokerError as exc:
+        raise EngineError(f"broker execution failed for {plan.plan_id}: {exc}") from exc
     # FX at the fill session, not at today's signal session: the EUR ledger needs
     # the trade-date rate to rebuild cost basis and annual EUR gains.
     fill_fx = eur_fx(cfg, plan.fill_session)
@@ -327,7 +331,7 @@ def _simulate(
     state: LiveState,
     snap: Snapshot,
     now: str,
-    broker: PaperBroker,
+    broker: Broker,
     persist: bool,
 ) -> LiveResult:
     session = str(snap.session.date())
@@ -574,16 +578,33 @@ def _simulate(
 
 
 class LiveEngine:
-    def __init__(self, cfg: LiveConfig, store: StateStore | None = None):
+    def __init__(
+        self,
+        cfg: LiveConfig,
+        store: StateStore | None = None,
+        *,
+        broker: Broker | None = None,
+        env: dict[str, str] | None = None,
+    ):
         self.cfg = cfg
         self.store = store or StateStore(cfg)
-        self.broker = PaperBroker(
+        self._broker = broker
+        self._env = env
+        # Dry-run/plan always uses the deterministic local preview, even when the
+        # configured execution broker is IBKR. Planning must never touch a network.
+        self.preview_broker = PaperBroker(
             slippage_bps=cfg.slippage_bps,
             commission_bps=cfg.commission_bps,
             min_commission=cfg.min_commission,
             max_participation=cfg.max_participation,
             fractional_shares=cfg.fractional_shares,
         )
+
+    @property
+    def broker(self) -> Broker:
+        if self._broker is None:
+            self._broker = make_broker(self.cfg, env=self._env)
+        return self._broker
 
     def _load(self, allow_config_change: bool = False) -> LiveState:
         state = self.store.load(allow_config_change=allow_config_change)
@@ -666,7 +687,7 @@ class LiveEngine:
                 )
         try:
             result = _simulate(
-                self.cfg, _clone(state), snap, stamp, self.broker, persist=False
+                self.cfg, _clone(state), snap, stamp, self.preview_broker, persist=False
             )
         except EngineError as exc:
             return self._blocked(
@@ -723,6 +744,25 @@ class LiveEngine:
                     created=False,
                 )
             working = _clone(state)
+            if self.cfg.broker != "paper":
+                try:
+                    ensure = getattr(self.broker, "ensure_ready", None)
+                    if ensure is not None:
+                        ensure()
+                except BrokerError as exc:
+                    state.blocked = {
+                        "session": session_str,
+                        "time": stamp,
+                        "reason": f"broker unavailable: {exc}",
+                    }
+                    self.store.save(state)
+                    return self._blocked(
+                        snap.session,
+                        stamp,
+                        f"broker unavailable: {exc}",
+                        state,
+                        snap.data_summary(),
+                    )
             try:
                 result = _simulate(
                     self.cfg, working, snap, stamp, self.broker, persist=True
