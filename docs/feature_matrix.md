@@ -15,7 +15,7 @@
 | Withdrawal projection | `uv run python scripts/advise.py --profile balanced ...` | ready | deterministic scenarios |
 | Ops status/doctor | `uv run python scripts/ops.py status` / `doctor` | ready | paper state |
 | Backup/restore | `uv run python scripts/ops.py backup --out DIR` | ready | local archive |
-| Daily forward loop | `uv run python scripts/forward_daily.py --paper` | wave 4 | pending merge |
+| Daily forward loop | `uv run python scripts/forward_daily.py --paper --tax` | ready | weekday automation 21:45 UTC |
 | PIT NASDAQ tech universe | `uv run python scripts/research_pit_tech.py` | wave 4 | pending merge |
 | Tax-loss harvesting | `uv run python scripts/tax_harvest.py` | wave 4 | pending merge |
 | EUR/USD hedge study | `uv run python scripts/fx_hedge.py` | wave 4 | pending merge |

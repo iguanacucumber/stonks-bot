@@ -143,9 +143,10 @@ uv run python scripts/live.py plan --book monthly --market US
 uv run python scripts/live.py run  --book monthly --market US --paper
 uv run python scripts/live.py status  --book monthly --market US
 uv run python scripts/live.py reconcile --book monthly --market US
+uv run python scripts/forward_daily.py --paper --tax
 ```
 
-Le dry-run est le défaut ; `--paper` est le seul mode qui écrit. L'état est atomique sous `state/live/`, les ordres sont idempotents, les rails bloquent les données périmées, les jours fériés, le gross/turnover excessif et les doublons. Le ledger papier est **pré-impôt et au coût moyen** : il ne remplace pas le grand livre EUR après impôt. Aucun broker réel, aucune clé.
+Le dry-run est le défaut ; `--paper` est le seul mode qui écrit. `forward_daily.py` enchaîne US + TECH (+ tax) après la clôture, rafraîchit seulement les barres périmées, réconcilie et met à jour le gate ; une automation weekday tourne à 21:45 UTC. L'état est atomique sous `state/live/`, les ordres sont idempotents, les rails bloquent les données périmées, les jours fériés, le gross/turnover excessif et les doublons. Le ledger papier est **pré-impôt et au coût moyen** : il ne remplace pas le grand livre EUR après impôt. Aucun broker réel, aucune clé.
 
 ## Le conseiller et l'exploitation
 
