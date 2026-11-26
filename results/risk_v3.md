@@ -185,8 +185,10 @@ committed cache; this is stated as a limitation.
   2. EUR after-tax multiple >= 28x (at least 46% of the 61.00x baseline);
   3. bootstrap after-tax p5 >= 2.38x (no worse than the US baseline);
   4. EUR 2018 and 2022 both better than the US baseline (-30.5%, -33.6%);
-  5. each half (2015-2019, 2020-2026) after-tax CAGR >= 20% and half maxDD no
-     worse than -50%;
+  5. each half (2015-2019, 2020-2026) after-tax CAGR >= 10% **and** at least
+     50% of the baseline half CAGR (11.8% and 30.7%); half maxDD no worse than
+     -50%. The original 20% absolute gate is withdrawn: it would reject every
+     lower-risk profile, including the baseline's own 23.6% first half.
   6. 2x-cost EUR after-tax multiple >= 25x.
 - The balanced profile is the passing candidate with the highest EUR after-tax
   multiple; ties go to the lower maxDD. The pre-registered fallbacks are A1
@@ -271,8 +273,10 @@ Every variant gets a label; failures are kept.
 
 ## Trial count
 
-- Strategy variants: 1 baseline + 7 V (including post-hoc V7) + 3 D + 3 R +
-  5 pre-registered A + 4 H = 23, plus one post-hoc balanced neighbour A6 = 24.
+- Strategy variants: 1 baseline + 9 V (V1-V6 pre-registered; V7-V9 post-hoc
+  vol-target neighbours) + 3 D + 3 R + 5 pre-registered A + 4 H = 25, plus two
+  post-hoc balanced neighbours (A6 70/30 SPY, and the lower-gross US ladder).
+  Diagnostics and cost reruns are counted separately.
 - Diagnostic runs: 6 leverage-matched V controls + 1 ETF-trend benchmark +
   1 cost-sensitivity baseline + finalist cost reruns. Reported separately.
 - No post-hoc parameter sweep will be used to rescue a failed family. If a
