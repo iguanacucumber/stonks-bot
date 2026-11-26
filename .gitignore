@@ -11,6 +11,7 @@ results/*.log
 !results/paper_ledger_tax.csv
 !results/paper_ledger_us.csv
 !results/paper_audit.csv
+!results/eval_trials.csv
 
 # worktree symlinks
 /.venv
