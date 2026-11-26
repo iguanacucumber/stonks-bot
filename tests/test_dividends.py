@@ -174,6 +174,37 @@ def test_withholding_and_credit() -> None:
     assert abs(pea.after_tax - 1_000.0) < 1e-9
 
 
+def test_year_dependent_dividend_rate() -> None:
+    d = [
+        "2024-01-02",
+        "2024-06-03",
+        "2025-06-03",
+        "2026-06-03",
+        "2026-06-04",
+    ]
+    r = Res({x: 1.0 for x in d}, [trade(d[0], "BUY", 0.01, 10.0)])
+    divs = pd.DataFrame(
+        {
+            "date": [pd.Timestamp(d[1]), pd.Timestamp(d[2]), pd.Timestamp(d[3])],
+            "ticker": ["AAA", "AAA", "AAA"],
+            "amount": [1.0, 1.0, 1.0],
+        }
+    )
+    out = eur_ledger.replay(
+        r,
+        panel(d, [10.0] * len(d)),
+        "FR",
+        free(tax_rate=None),  # year-dependent French PFU
+        dividends=divs,
+    )
+    # 2024/2025: 30% on 10 EUR = 3.00 each; 2026: 31.4% = 3.14.
+    assert abs(out.dividends_gross - 30.0) < 1e-9
+    assert abs(out.dividend_withholding - 4.5) < 1e-9
+    assert abs(out.dividend_tax_topup - 4.64) < 1e-9
+    assert abs(out.dividend_tax_total - 9.14) < 1e-9
+    assert abs(out.after_tax - 990.86) < 1e-9
+
+
 def test_cash_accumulation() -> None:
     d = ["2020-01-02", "2020-01-03", "2020-01-06"]
     r = Res({x: 1.0 for x in d}, [trade(d[0], "BUY", 0.01, 10.0)])
@@ -236,6 +267,7 @@ def test_loss_carry_is_separate() -> None:
 def main() -> None:
     test_parse_and_cache()
     test_withholding_and_credit()
+    test_year_dependent_dividend_rate()
     test_cash_accumulation()
     test_loss_carry_is_separate()
     print(

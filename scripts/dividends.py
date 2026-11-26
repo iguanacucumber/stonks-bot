@@ -41,7 +41,7 @@ CROSS = {"TLT": 0.50, "IEF": 0.25, "BIL": 0.15, "GLD": 0.10}
 def ledger_config(cost: float = 5.0, **kw) -> eur_ledger.EurLedgerConfig:
     base = dict(
         capital=CAP,
-        tax_rate=0.314,
+        tax_rate=None,  # year-dependent: 30% through 2025, 31.4% from 2026
         financing_bps=500.0,
         spread_bps=cost,
         fx_bps=2.0,
@@ -122,11 +122,12 @@ def metrics(case: dict, divs: pd.DataFrame) -> dict:
     base = eur_ledger.replay(res, panel, case["market"], cfg)
     out = eur_ledger.replay(res, panel, case["market"], cfg, dividends=divs)
     years = max(len(out.equity) / 252.0, 1e-9)
-    pfu_rate = (
-        cfg.dividend_tax_rate if cfg.dividend_tax_rate is not None else cfg.tax_rate
-    )
-    no_credit = out.dividends_gross * (cfg.withholding_rate + pfu_rate)
-    extra_no_credit = max(0.0, no_credit - out.dividend_tax_total)
+    avg_equity = float(out.equity.mean())
+    if avg_equity <= 0:
+        avg_equity = CAP
+    # Withholding is 15% and PFU is at least 30%, so the credit is the whole
+    # withholding amount in every year. Ignoring it would tax that 15% again.
+    extra_no_credit = float(out.dividend_withholding)
     return {
         "label": case["label"],
         "market": case["market"],
@@ -144,9 +145,9 @@ def metrics(case: dict, divs: pd.DataFrame) -> dict:
         "topup": out.dividend_tax_topup,
         "div_tax": out.dividend_tax_total,
         "net_div": out.dividends_net,
-        "gross_yield": out.dividends_gross / CAP / years * 100,
-        "net_yield": out.dividends_net / CAP / years * 100,
-        "tax_yield": out.dividend_tax_total / CAP / years * 100,
+        "gross_yield": out.dividends_gross / avg_equity / years * 100,
+        "net_yield": out.dividends_net / avg_equity / years * 100,
+        "tax_yield": out.dividend_tax_total / avg_equity / years * 100,
         "events": out.dividend_events,
         "no_credit_x": (out.after_tax - extra_no_credit) / CAP,
         "extra_no_credit": extra_no_credit,
@@ -156,7 +157,7 @@ def metrics(case: dict, divs: pd.DataFrame) -> dict:
 
 def fmt_table(rows: list[dict]) -> list[str]:
     lines = [
-        "| book | base EUR x | corrected EUR x | change | base CAGR | corrected CAGR | annual drag | gross yield | tax drag | gross dividends | withholding | PFU top-up | total dividend tax |",
+        "| book | base EUR x | corrected EUR x | change | base CAGR | corrected CAGR | annual drag | gross yield (avg NAV) | tax drag (avg NAV) | gross dividends | withholding | PFU top-up | total dividend tax |",
         "|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|",
     ]
     for r in rows:
@@ -231,8 +232,9 @@ def main() -> None:
         "  gross native-currency dividend per current share (Yahoo already presents it on",
         "  the current split basis).",
         "- US treaty withholding at 15% of gross, deducted at the event.",
-        "- French PFU at 31.4% of gross. The 15% withholding is a credit against the PFU,",
-        "  so the total is 31.4%, not 46.4%. Withholding above the PFU is not refunded.",
+        "- French PFU on gross dividends at the year-dependent rate: 30% through 2025,",
+        "  31.4% from 2026. The 15% withholding is a credit against the PFU, so the total",
+        "  is the PFU, not PFU + 15%. Withholding above the PFU is not refunded.",
         "- Dividend tax is separate from capital-gains PFU and does not consume the",
         "  capital-loss carry. A loss carried forward still offsets future capital gains.",
         "- Default `dividend_reinvest=True` keeps the gross dividend inside the adjusted",
@@ -251,7 +253,9 @@ def main() -> None:
         "`base EUR x` is the merged EUR ledger without dividend events (gross dividends",
         "implicit in adjusted closes). `corrected EUR x` applies withholding, PFU and the",
         "foreign-tax credit. `annual drag` is the difference in EUR CAGR, not the gross",
-        "dividend yield. The 50/25/15/10 cross-asset book is monthly rebalanced at 1x.",
+        "dividend yield. Yields are divided by average daily EUR NAV, not initial capital;",
+        "a 66x book would make an initial-capital yield look artificially large. The",
+        "50/25/15/10 cross-asset book is monthly rebalanced at 1x.",
         "",
         "## Cross-asset high-yield check",
         "",
@@ -287,8 +291,8 @@ def main() -> None:
         "- SMH/TECH and US monthly move only a little: their gross distribution yields are",
         "  low relative to the equity volatility and the existing PFU/exit-tax drag.",
         "- The core-only tax book is mostly one SMH position and shows the same small drag.",
-        "- The bond-heavy book is the real test. Its gross yield is material, and the 31.4%",
-        "  PFU removes roughly a third of it every year. A strategy comparison that ignores",
+        "- The bond-heavy book is the real test. Its gross yield is material, and the",
+        "  year-dependent PFU removes roughly a third of it every year. A strategy comparison that ignores",
         "  dividends flatters TLT/IEF/BIL and any future income sleeve.",
         "- The exit tax still applies to unrealized capital gains; dividend tax is paid",
         "  along the path and is not part of the terminal exit tax.",

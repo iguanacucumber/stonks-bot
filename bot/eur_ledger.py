@@ -10,6 +10,10 @@ spot ignores two things:
 This module replays the engine's trades in EUR. Signals and share quantities stay
 USD-native (that is what the bot actually sees); only the accounting currency
 changes. It is a reporting/validation layer, not a trading strategy.
+
+French PFU is year-dependent: 30% through 2025 and 31.4% from 2026, matching
+`bot.backtest.fr_rate`. Dividends use the same schedule, with the 15% US treaty
+withholding credited against the PFU.
 """
 
 from __future__ import annotations
@@ -48,7 +52,9 @@ class EurLedgerConfig:
     # dividend inside the total-return position. Set dividend_reinvest=False to
     # move the gross amount to cash as an accounting transformation (see report).
     withholding_rate: float = 0.15
-    dividend_tax_rate: float | None = None  # None -> use tax_rate
+    # None -> year-dependent French PFU (30% through 2025, 31.4% from 2026),
+    # unless tax_rate forces a flat stressed rate. A float overrides only dividends.
+    dividend_tax_rate: float | None = None
     dividend_reinvest: bool = True
     wrapper: str = "cto"  # "cto" | "pea"; PEA skips US dividend tax
 
@@ -89,6 +95,15 @@ class EurLedgerResult:
     dividends_net: float = 0.0
     dividend_events: int = 0
     dividend_reinvest: bool = True
+
+
+def _pfu_rate(cfg: EurLedgerConfig, year: int) -> float:
+    """Dividend PFU rate: explicit override, forced flat rate, or by year."""
+    if cfg.dividend_tax_rate is not None:
+        return float(cfg.dividend_tax_rate)
+    if cfg.tax_rate is not None:
+        return float(cfg.tax_rate)
+    return french_rate(year)
 
 
 def _consume_hifo(
@@ -198,11 +213,6 @@ def replay(
     div_by_date = (
         {} if str(cfg.wrapper).lower() == "pea" else _dividend_map(dividends, dates)
     )
-    pfu_rate = (
-        float(cfg.tax_rate)
-        if cfg.dividend_tax_rate is None
-        else float(cfg.dividend_tax_rate)
-    )
 
     px = panel[["date", "ticker", "adjclose"]].copy()
     px["px_eur"] = (
@@ -279,7 +289,7 @@ def replay(
             if not np.isfinite(gross) or gross <= 0:
                 continue
             withholding = gross * float(cfg.withholding_rate)
-            pfu = gross * pfu_rate
+            pfu = gross * _pfu_rate(cfg, int(d.year))
             credit = min(withholding, pfu)
             topup = max(0.0, pfu - credit)
             tax = withholding + topup
