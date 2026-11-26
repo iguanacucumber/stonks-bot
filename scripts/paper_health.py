@@ -30,6 +30,7 @@ ET = ZoneInfo("America/New_York")
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--book", choices=tuple(BOOKS), default="monthly")
+    ap.add_argument("--market", default="TECH")
     ap.add_argument("--as-of", default=None, help="ISO timestamp, for testing")
     args = ap.parse_args()
     daily = book_paths(args.book)[0]
@@ -41,8 +42,10 @@ def main() -> int:
         print(f"HEALTH STALE: no {daily.name} (book {args.book})")
         return 2
     df = pd.read_csv(daily)
+    if "market" in df.columns:
+        df = df[df["market"] == args.market]
     if df.empty:
-        print(f"HEALTH STALE: empty {daily.name} (book {args.book})")
+        print(f"HEALTH STALE: empty {daily.name} for {args.market} (book {args.book})")
         return 2
     if "close_valid" in df.columns:
         valid = df["close_valid"].astype(str).str.lower().isin(["true", "1"])
@@ -63,7 +66,8 @@ def main() -> int:
     stale = bool(weekday and after_close and (last_valid_et != et.date()))
 
     print(
-        f"HEALTH {'STALE' if stale else 'OK'}  book={args.book}  rows={len(df)}  "
+        f"HEALTH {'STALE' if stale else 'OK'}  book={args.book}  "
+        f"market={args.market}  rows={len(df)}  "
         f"close_valid={int(valid.sum())}  valid_dates={n_valid_dates}  "
         f"last_valid={last_valid_et}  now_et={et:%Y-%m-%d %H:%M}"
     )
