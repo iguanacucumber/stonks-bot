@@ -41,7 +41,7 @@ the semis core. `results/pea_semis.md`.
 
 No option quotes. Black-Scholes, monthly 2/5/10% OTM, IV 25/30/40%, European
 cash settlement, fractional contracts. At 40% IV and 10% OTM the overlay looks
-good (US book 75.96x vs 66.72x, maxDD -48.5% vs -56.4%, income €91k); at 25/30%
+good (US book 75.96x vs the report's 66.72x gross-dividend baseline; the exact dividend-aware baseline is 66.17x, maxDD -48.5% vs -56.4%, income €91k); at 25/30%
 IV most variants have negative option P&L. It is a `paper` income opt-in, not a
 default: the model is optimistic about assignment, contract size and the
 volatility smile. `results/covered_calls.md`.

@@ -22,7 +22,7 @@
 | US estate-tax calculator | `uv run python scripts/estate_tax.py --capital 660000` | ready | not tax/legal advice |
 | UCITS core study | `uv run python scripts/research_ucits_core.py` | rejected | return gap > tax saving |
 | PEA semis recheck | `uv run python scripts/pea_semis.py` | rejected | no pure semis PEA; PUST 5.77x |
-| Covered-call study | `uv run python scripts/covered_calls.py` | wave 5 | pending merge |
+| Covered-call study | `uv run python scripts/covered_calls.py` | paper opt-in | model-only; 40% IV conditional |
 | Full tests | `for t in tests/test_*.py; do uv run python "$t"; done` | ready | no network |
 
 ## Read first
