@@ -55,5 +55,5 @@ Private repo `iguanacucumber/stonks-bot`, one issue per workstream. Orchestrator
 - [x] pea-ucits — PR #8 merged at `0993f87`; no pure semis UCITS is PEA-eligible; PUST 5.08x vs CTO 38.80x
 - [x] execution — PR #10 merged at `896b401`; real core opens default; limit orders stay off
 - [x] risk — PR #7 merged at `9ff23b7`; docs/scripts only, merged early because it does not touch the engine; verdict: keep defaults
-- [ ] brokers — rebasing on the corrected engine; default is now monthly + IBKR (`7415f45`)
-- [ ] merged and re-tested
+- [x] brokers — PR #11 merged at `d04787f`; 8 presets, best monthly+IBKR 57.01x at 2 bps, FX caveat; PEA field spans 0.056x
+- [x] merged and re-tested — master `d04787f`; `test_core`, `test_brokers`, `test_pea` pass; default CLI = monthly + IBKR
