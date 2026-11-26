@@ -1,5 +1,13 @@
 # Risk v3: survivable compounding, pre-registered
 
+> **Dividend update (later merge).** The EUR-ledger column in this report is the
+> pre-dividend-event ledger (US 66.72x, TECH 53.45x). The merged dividend ledger
+> (`results/dividends.md`) gives US 66.17x, TECH 52.98x, CORE 48.80x. The `net`
+> column applies a deliberately conservative scalar dividend tax (61.64x US), not
+> the event-level tax; use the dividend report for the real-life number. The
+> max-growth/balanced verdicts are unchanged: no max-growth rule passes, A6/V8
+> remain post-hoc `paper`.
+
 Branch `v2/risk-alloc`, base `93b39c4`. This file is written **before** the v3
 sweep runs. The pre-registration is not edited retrospectively; results are
 appended below the line.

@@ -25,9 +25,9 @@ that hit the cache/network in CI.
 
 | book | native | terminal-FX | EUR ledger | CAGR | maxDD | 2018 | 2022 |
 |---|---:|---:|---:|---:|---:|---:|---:|
-| **US monthly 2.5x (default)** | 64.41x | 70.86x | **66.72x** | 42.4% | -56.4% | -30.2% | -32.8% |
-| TECH monthly 2.5x (forward) | 51.82x | 57.01x | **53.45x** | 39.8% | -65.1% | -10.0% | -51.4% |
-| CORE SMH only | 46.26x | 50.89x | **49.32x** | 38.9% | -63.9% | -30.1% | -54.1% |
+| **US monthly 2.5x (default)** | 64.41x | 70.86x | **66.17x** | 42.3% | -56.9% | -31.1% | -33.7% |
+| TECH monthly 2.5x (forward) | 51.82x | 57.01x | **52.98x** | 39.7% | -65.6% | -10.5% | -52.4% |
+| CORE SMH only | 46.26x | 50.89x | **48.80x** | 38.7% | -64.5% | -31.4% | -55.0% |
 | QQQ buy & hold | — | — | 4.65x | — | — | — | — |
 
 The terminal-FX headline overstates the EUR-ledger result by ~6.6%. The default
@@ -38,9 +38,9 @@ remains the forward-validation book.
 
 | profile | allocation | EUR ledger | net | maxDD | 2022 |
 |---|---|---:|---:|---:|---:|
-| max_growth (default) | US monthly 2.5x | 66.72x | 61.64x | -56.7% | -33.2% |
-| balanced (paper) | 70% US book + 30% SPY | 36.85x | 34.36x | -46.0% | -27.4% |
-| conservative (paper) | US monthly 1.5x | 19.44x | 18.51x | -40.2% | -20.3% |
+| max_growth (default) | US monthly 2.5x | 66.17x | 61.64x* | -56.9% | -33.7% |
+| balanced (paper) | 70% US book + 30% SPY | 36.56x | 34.36x* | -46.9% | -27.4% |
+| conservative (paper) | US monthly 1.5x | 19.27x | 18.51x* | -40.4% | -20.3% |
 
 `balanced` is runnable: `uv run python -m bot.cli backtest --country fr --profile balanced`.
 It is post-hoc and paper-only; it gives up about half the terminal wealth for
@@ -55,7 +55,7 @@ It is post-hoc and paper-only; it gives up about half the terminal wealth for
   2.64x; at 2x costs 1.13x, below BIL 1.20x. Overnight 1.01x optimistic, 0.82x
   all-in, 0.60x doubled. No satellite allocation.
 - **TECH sleeve survivorship: robust, not default.** PIT S&P IT retains ~107% of
-  the static headline (EUR ledger 57.90x vs 53.45x), but US all-PIT is better on
+  the static headline (EUR ledger 57.90x vs 52.98x), but US all-PIT is better on
   return and drawdown. TECH remains forward-only; PIT membership is `paper`.
 - **Risk rules: no max-growth pass.** Vol targeting, drawdown ladders, VIX/trend
   overlays, trend 250/300 and tail hedges all fail the return/drawdown/control
@@ -92,3 +92,5 @@ for t in tests/test_*.py; do uv run python "$t"; done
 - Live paper ledger is pre-tax/average-cost, not the after-tax EUR ledger.
 - 2.5x gap risk remains; -56% drawdowns are possible.
 - No real broker adapter yet (wave 3 #24), no ops runbook yet (#26).
+
+* The net column is the risk workstream scalar stress; the EUR-ledger column uses exact cached dividend events and is the real-life number.

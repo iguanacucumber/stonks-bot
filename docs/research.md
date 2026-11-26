@@ -18,16 +18,16 @@ the winners.
   3.12x ledger, still below US 2.5x, with a -66.8% drawdown.
 - **H3 TECH sleeve:** `accept` as a robustness finding, `reject` as a new
   default. PIT S&P IT retains 107% of the static headline (61.07x vs 57.01x;
-  EUR ledger 57.90x vs 53.45x). This is consistent with, not proof against,
+  EUR ledger 57.90x vs 52.98x). This is consistent with, not proof against,
   survivorship bias; the static-49 PIT row is cleaner but still a survivor
-  list. US all-PIT is better at 70.86x / 66.72x and a -56.4% ledger drawdown.
+  list. US all-PIT is better at 70.86x / 66.17x and a -56.9% ledger drawdown.
   Keep US monthly primary; TECH is forward validation.
 - **H4 short horizon:** `reject`. Close-to-close OOS 2.64x vs QQQ 5.49x
   full-window; 2x-cost 1.13x is below BIL 1.20x. Overnight 1.01x at
   an optimistic 5 bps/side, 0.82x at 7.25 bps/side all-in, 0.60x at
   14.5 bps/side. No satellite.
 - **Candidate config:** no Alpha Lab allocation; keep US monthly 2.5x
-  (70.86x headline / 66.72x EUR ledger, -56.4% ledger maxDD). If the TECH
+  (70.86x headline / 66.17x EUR ledger, -56.9% ledger maxDD). If the TECH
   sleeve is kept, use PIT S&P membership (`paper`, not default).
 
 ## Baseline (reproduced, not assumed)

@@ -15,6 +15,7 @@ import pandas as pd
 from . import (
     backtest,
     data,
+    dividends as dividend_events,
     eur_ledger,
     france,
     llm,
@@ -613,6 +614,8 @@ def _eur_ledger(res, panel, market, cfg, broker, capital):
     """Replay the engine's trades in EUR for the real-life French CTO number."""
     b = france.BROKERS[france.broker_name(broker)]
     grid = b.get("us_grid") or ()
+    tickers = sorted(set(res.trades["ticker"])) if len(res.trades) else []
+    events = dividend_events.load_dividends(tickers, fetch_missing=False)
     return eur_ledger.replay(
         res,
         panel,
@@ -625,6 +628,7 @@ def _eur_ledger(res, panel, market, cfg, broker, capital):
             broker_bps=float(b.get("us_bps", 0.0)),
             broker_fixed_eur=float(grid[-1][1]) if grid else 0.0,
         ),
+        dividends=events if len(events) else None,
     )
 
 

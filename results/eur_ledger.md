@@ -10,16 +10,17 @@ trade-date FX, HIFO lots, French PFU by realization year (30% through 2025, 31.4
 tickets. Signals and share quantities stay USD-native, so this is the same
 strategy, not a different one.
 
-| market | book | USD-native | headline EUR | EUR ledger | CAGR | maxDD | 2018 | 2022 | worst 12m |
-|---|---|---:|---:|---:|---:|---:|---:|---:|---:|
-| TECH | monthly | 51.82x | 57.01x | **53.45x** | 39.8% | -65.1% | -10.0% | -51.4% | -63.1% |
-| CORE | tax | 46.26x | 50.89x | **49.32x** | 38.9% | -63.9% | -30.1% | -54.1% | -62.6% |
-| US | monthly | 64.41x | 70.86x | **66.72x** | 42.4% | -56.4% | -30.2% | -32.8% | -48.1% |
+| market | book | USD-native | headline EUR | EUR ledger | CAGR | maxDD | 2018 | 2022 | worst 12m | div tax |
+|---|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| TECH | monthly | 51.82x | 57.01x | **52.98x** | 39.7% | -65.6% | -10.5% | -52.4% | -64.0% | €3,822 |
+| CORE | tax | 46.26x | 50.89x | **48.80x** | 38.7% | -64.5% | -31.4% | -55.0% | -63.6% | €4,167 |
+| US | monthly | 64.41x | 70.86x | **66.17x** | 42.3% | -56.9% | -31.1% | -33.7% | -49.3% | €4,554 |
 
 `USD-native` is the after-tax result in the asset currency. `headline EUR` is
 the current README method: USD-native after tax multiplied by terminal FX.
-`EUR ledger` is the annual EUR tax/accounting replay. 2018, 2022 and worst
-rolling 12m are computed on the EUR daily equity curve, not the USD engine.
+`EUR ledger` is the annual EUR tax/accounting replay, including cached
+dividend withholding/PFU where available. 2018, 2022 and worst rolling 12m
+are computed on the EUR daily equity curve, not the USD engine.
 
 ## Reading
 

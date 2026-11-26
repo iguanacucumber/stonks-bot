@@ -16,7 +16,7 @@ sys.path.insert(0, str(ROOT / "scripts"))
 
 import pandas as pd  # noqa: E402
 
-from bot import backtest, eur_ledger, france, markets, strategy, universe  # noqa: E402
+from bot import backtest, dividends as dividend_events, eur_ledger, france, markets, strategy, universe  # noqa: E402
 from paper_daily import BOOKS  # noqa: E402
 from scripts.france import BASE  # noqa: E402
 
@@ -34,6 +34,8 @@ def run(market: str, book: str) -> dict:
     res = backtest.run(strategy.Market(panel, mem, cfg))
     headline = france.after_tax(res, CAP, market)
     native_after = (float(res.equity.iloc[-1]) - float(res.unrealized_tax)) * CAP
+    tickers = sorted(set(res.trades["ticker"])) if len(res.trades) else []
+    events = dividend_events.load_dividends(tickers, fetch_missing=False)
     led = eur_ledger.replay(
         res,
         panel,
@@ -46,6 +48,7 @@ def run(market: str, book: str) -> dict:
             broker_bps=0.25,
             broker_fixed_eur=1.0,
         ),
+        dividends=events if len(events) else None,
     )
 
     def annual(eq, year):
@@ -65,6 +68,8 @@ def run(market: str, book: str) -> dict:
         "fx": float(led.fx.iloc[-1] / led.fx.iloc[0]),
         "fees": led.fees,
         "tax": led.tax_paid,
+        "div_tax": led.dividend_tax_total,
+        "div_gross": led.dividends_gross,
         "exit": led.exit_tax,
         "reconcile": led.reconcile_gap,
         "trades": len(res.trades),
@@ -107,22 +112,23 @@ def main() -> None:
         "tickets. Signals and share quantities stay USD-native, so this is the same",
         "strategy, not a different one.",
         "",
-        "| market | book | USD-native | headline EUR | EUR ledger | CAGR | maxDD | 2018 | 2022 | worst 12m |",
-        "|---|---|---:|---:|---:|---:|---:|---:|---:|---:|",
+        "| market | book | USD-native | headline EUR | EUR ledger | CAGR | maxDD | 2018 | 2022 | worst 12m | div tax |",
+        "|---|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|",
     ]
     for r in rows:
         lines.append(
             f"| {r['market']} | {r['book']} | {r['native_usd_mult']:.2f}x | "
             f"{r['headline_eur_mult']:.2f}x | **{r['ledger_mult']:.2f}x** | "
             f"{r['cagr']:.1%} | {r['maxdd']:.1%} | {r['y2018']:.1%} | "
-            f"{r['y2022']:.1%} | {r['worst12']:.1%} |"
+            f"{r['y2022']:.1%} | {r['worst12']:.1%} | €{r['div_tax']:,.0f} |"
         )
     lines += [
         "",
         "`USD-native` is the after-tax result in the asset currency. `headline EUR` is",
         "the current README method: USD-native after tax multiplied by terminal FX.",
-        "`EUR ledger` is the annual EUR tax/accounting replay. 2018, 2022 and worst",
-        "rolling 12m are computed on the EUR daily equity curve, not the USD engine.",
+        "`EUR ledger` is the annual EUR tax/accounting replay, including cached",
+        "dividend withholding/PFU where available. 2018, 2022 and worst rolling 12m",
+        "are computed on the EUR daily equity curve, not the USD engine.",
         "",
         "## Reading",
         "",

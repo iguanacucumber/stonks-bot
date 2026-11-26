@@ -25,9 +25,9 @@ balanced and conservative choices are explicit opt-ins, not defaults.
 
 | profile | allocation | EUR ledger | net | maxDD | 2022 | status |
 |---|---|---:|---:|---:|---:|---|
-| **max_growth** | 100% US monthly 2.5x | **66.72x** | 61.64x | -56.7% | -33.2% | backtest default |
-| **balanced** | 70% US book + 30% SPY (A6 70/30), total gross 2.05 | **36.85x** | 34.36x | -46.0% | -27.4% | post-hoc paper opt-in |
-| **conservative** | 100% US monthly at 1.5x | **19.44x** | 18.51x | -40.2% | -20.3% | post-hoc lower-leverage opt-in |
+| **max_growth** | 100% US monthly 2.5x | **66.17x** | 61.64x | -56.9% | -33.7% | backtest default |
+| **balanced** | 70% US book + 30% SPY (A6 70/30), total gross 2.05 | **36.56x** | 34.36x | -46.9% | -27.4% | post-hoc paper opt-in |
+| **conservative** | 100% US monthly at 1.5x | **19.27x** | 18.51x | -40.4% | -20.3% | post-hoc lower-leverage opt-in |
 
 The source table is `docs/profiles.md`. The balanced selector is the merged
 `bot/profiles.py` / `python -m bot.cli backtest --country fr --profile balanced`

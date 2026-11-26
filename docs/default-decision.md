@@ -13,9 +13,9 @@ audit.
 
 | book | EUR ledger | CAGR | maxDD | 2018 | 2022 | worst 12m |
 |---|---:|---:|---:|---:|---:|---:|
-| US monthly | **66.72x** | 42.4% | -56.4% | -30.2% | -32.8% | -48.1% |
-| TECH monthly | 53.45x | 39.8% | -65.1% | -10.0% | -51.4% | -63.1% |
-| CORE tax (SMH only) | 49.32x | 38.9% | -63.9% | -30.1% | -54.1% | -62.6% |
+| US monthly | **66.17x** | 42.3% | -56.9% | -31.1% | -33.7% | -49.3% |
+| TECH monthly | 52.98x | 39.7% | -65.6% | -10.5% | -52.4% | -64.0% |
+| CORE tax (SMH only) | 48.80x | 38.7% | -64.5% | -31.4% | -55.0% | -63.6% |
 
 Terminal-FX headlines are higher (US 70.86x, TECH 57.01x). Use the EUR ledger for a
 French investor; see `docs/accounting.md`.
@@ -48,8 +48,8 @@ either book. Keep the TECH logger running; do not force new users onto it.
 1. `france.DEFAULT_MARKET = "US"`; update `tests/test_core.py`.
 2. Keep `scripts/paper_daily.py --market TECH` as the forward-validation book; add a
    US forward logger separately.
-3. Update `README.md` / `README.en.md`: headline 667,207 € / 66.7x EUR ledger; warning
-   -56.4%; explain TECH is the validation book.
+3. Update `README.md` / `README.en.md`: headline 661,655 € / 66.2x EUR ledger; warning
+   -56.9%; explain TECH is the validation book.
 4. Re-run all tests and the EUR ledger report.
 5. Do not change the existing TECH paper rows or the forward audit.
 
