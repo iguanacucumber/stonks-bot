@@ -177,6 +177,17 @@ Pass: futures after-tax EUR wealth and maxDD must both be better than the
 same-index ETF+margin control, and futures must win a majority of 5-year
 windows. Otherwise reject and keep ETF+margin.
 
+### H8 — Short-horizon II (v7)
+
+New families only: daily pairs/relative value (SMH/SOXX, QQQ/SPY, sector/SPY),
+material SEC 8-K drift with date-shuffle placebo, and a tiny intraday gap-fade
+proof of concept. No repeat of daily/weekly reversal, 20-day momentum,
+overnight, faster rebalancing or covered calls.
+
+Pass: after-tax OOS beats QQQ/BIL, survives 2x costs, event drift beats the
+placebo, and intraday has enough trades to be implementable. Otherwise reject
+and keep the monthly book.
+
 ## File ownership
 
 - `bot/research/`: harness (orchestrator).
@@ -192,6 +203,8 @@ windows. Otherwise reject and keep ETF+margin.
   `tests/test_ucits.py`, `results/ucits_core.md`.
 - v6 futures work: `bot/futures.py`, `scripts/research_futures.py`,
   `tests/test_futures.py`, `results/futures.md`.
+- v7 short-horizon II: `bot/research/short2/`, `scripts/research_short2.py`,
+  `tests/test_short2.py`, `results/short2.md`, `results/short2_trials.csv`.
 
 Workers do not edit shared earnings code (`bot/backtest.py`, `bot/strategy.py`)
 and do not commit. The orchestrator reviews and commits.
