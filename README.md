@@ -138,6 +138,11 @@ Leverage after French tax at IBKR: 1.5x **20.2x** (DD -50%), 2.0x **37.2x**
 return bar but fails the tail: 2018/2022 worse and bootstrap p5 **1.71x** vs
 2.39x at 2.5x. Keep 2.5x; 3x is a risk-on option, not the default.
 `results/leverage_fr.md`.
+
+Sleeve breadth: 4 names reaches **75.3x** after tax (p5 3.27x) but fails the
+2022 test by 0.2 pp and doubles concentration; 5 names falls to 53.4x. Keep the
+6-name sleeve for the forward book; 4 is a risk-on candidate, not the default.
+`results/topn_fr.md`.
 The optimum depends on the broker's cost structure. `--country fr` now defaults to
 **TECH + monthly + IBKR**; `--profile tax` selects the core-only book. Pass your actual
 `--fx-bps` (per side) to let the CLI choose: at **≥15 bps** it switches the default to
