@@ -1,24 +1,24 @@
 # Release check — v8 / v1.1
 
 - Overall: **PASS**
-- Generated: 2026-11-26T18:01:22+00:00
-- Commit: `fedd6d3`
+- Generated: 2026-11-26T18:14:27+00:00
+- Commit: `ddc266c`
 - Data snapshot: **2026-11-25**
 - Checks: 10 PASS · 1 WAIT · 0 SKIP · 0 FAIL
 
 | check | status | detail | seconds | command |
 |---|---|---|---:|---|
 | cache | **PASS** | snapshot=2026-11-25 | 0.0 | `cache/bars` |
-| tests | **PASS** | 36/36 test scripts passed | 61.2 | `for t in tests/test_*.py; do python $t; done` |
-| acceptance | **PASS** | 12/12 checks pass | 28.6 | `python scripts/acceptance.py --json` |
-| reproduce_baseline | **PASS** | 4/4 baseline rows; exit 0 | 14.1 | `python scripts/reproduce.py baseline --no-write` |
+| tests | **PASS** | 36/36 test scripts passed | 63.9 | `for t in tests/test_*.py; do python $t; done` |
+| acceptance | **PASS** | 12/12 checks pass | 29.8 | `python scripts/acceptance.py --json` |
+| reproduce_baseline | **PASS** | 4/4 baseline rows; exit 0 | 12.5 | `python scripts/reproduce.py baseline --no-write` |
 | eur_ledger | **PASS** | TECH/monthly=53.42x, TECH/tax=49.27x, US/monthly=66.69x, US/tax=49.27x | 0.0 | `parsed from reproduce_baseline` |
-| live_plan_us | **PASS** | orders=6 status=OK | 4.2 | `python scripts/live.py plan --book monthly --market US --as-of 2026-11-25 --state-dir /tmp/opencode/stonks-release-u6wgfi3l --json` |
-| live_plan_tech | **PASS** | orders=6 status=OK | 2.1 | `python scripts/live.py plan --book monthly --market TECH --as-of 2026-11-25 --state-dir /tmp/opencode/stonks-release-u6wgfi3l --json` |
+| live_plan_us | **PASS** | orders=6 status=OK | 3.0 | `python scripts/live.py plan --book monthly --market US --as-of 2026-11-25 --state-dir /tmp/opencode/stonks-release-50q4qpm4 --json` |
+| live_plan_tech | **PASS** | orders=6 status=OK | 1.6 | `python scripts/live.py plan --book monthly --market TECH --as-of 2026-11-25 --state-dir /tmp/opencode/stonks-release-50q4qpm4 --json` |
 | forward_gate | **WAIT** | monthly/TECH=WAIT 1/5, monthly/US=WAIT 0/5, tax/TECH=WAIT 0/5; next=2026-11-27 | 0.0 | `results/forward_gate.md + paper_audit.csv` |
 | short3 | **PASS** | short3 verdict=reject | 0.0 | `results/short3.md verdict` |
-| dashboard_check | **PASS** | DASHBOARD CHECK OK  books=2  warnings=1  failures=0  synthetic=False | 1.3 | `python scripts/dashboard.py --check` |
-| no_secrets | **PASS** | 342 tracked text files scanned; no obvious secrets | 0.4 | `git ls-files + pattern scan` |
+| dashboard_check | **PASS** | DASHBOARD CHECK OK  books=2  warnings=1  failures=0  synthetic=False | 1.0 | `python scripts/dashboard.py --check` |
+| no_secrets | **PASS** | 343 tracked text files scanned; no obvious secrets | 0.3 | `git ls-files + pattern scan` |
 
 ## Release checklist
 

@@ -8,11 +8,11 @@ forward gate still WAIT. No satellite allocation.
 | family | best 1h | n | after-tax | maxDD |
 |---|---|---:|---:|---:|
 | lead-lag SMH→QQQ | lag 2 momentum | 1,942 | 0.185x | -81.9% |
-| intraday pair SMH/SOXX | z=1.5 hold=3 long-only | 391 | **1.078x** | -19.2% |
+| intraday pair SMH/SOXX | z=1.5 hold=3 long-only | 391 | **1.053x** | -19.2% |
 | cross-sectional 1-bar reversal | long-only | 2,981 | 0.046x | -95.5% |
 
-QQQ same 2y sample: **1.247x**; best pair 0.80x at 2x costs. Best 5m 0.821x vs QQQ
-0.897x. **Reject.**
+QQQ same 2y sample: **1.247x**; best pair 0.912x at 2x costs. Best 5m 0.875x vs QQQ
+0.897x. **Reject.** (Post-v10 audit: no-lookahead fills and calendar-span CAGR corrected.)
 
 ## Intraday 8-K drift
 

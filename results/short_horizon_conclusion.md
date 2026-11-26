@@ -27,7 +27,7 @@ after-tax hurdles (BIL, QQQ) at 2x costs. That is the result, not a missing test
 | v8 | volatility-scaled gap fade | daily 2015-2026 | best 0.93x after tax | reject |
 | v8 | cross-sectional short-term reversal | daily 2015-2026 | best 2.22x vs QQQ 5.49x; 2x costs 1.84x | reject |
 | v8 | VIX-conditioned gap fade | daily 2015-2026 | no regime edge | reject |
-| v9 | intraday lead-lag / pairs / cross-section | 1h 2y, 5m 60d | best pair 1.078x vs QQQ 1.247x; 0.80x at 2x | reject |
+| v9 | intraday lead-lag / pairs / cross-section | 1h 2y, 5m 60d | best pair 1.053x vs QQQ 1.247x; 0.912x at 2x | reject |
 | v9 | intraday 8-K event drift | 1h 2y, 5m 60d | best 5d long 2.704x but placebo p=0.229; 5m n=29 | reject |
 | v9 | sector cross-sectional reversal | daily walk-forward 2019-2026 | 1.29x vs QQQ 2.80x; 1.12x at 2x | reject |
 | v9 | calendar/seasonality | daily 2019-2026 | 1.01x; below BIL at 2x | reject |
