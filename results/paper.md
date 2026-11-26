@@ -142,3 +142,20 @@ the replay applies the cost factor `eq_open / eq_open_pre - 1`. The outlier fall
 **70.4 bps to 26.3 bps**; median stays 0.77 bps and p95 11.5 bps. The residual is
 financing and close-trade timing on rebalance days, not a data error. The invariant
 `eq_open <= eq_open_pre` (trades cannot create equity) is now a unit test.
+
+## Exposure and fills check
+
+`paper_report.py` now compares, for every close-valid row, the recorded live
+targets with the shadow book at the mark: names, gross, and max weight
+difference. First row, 2026-11-25:
+
+```
+date        gross_live  gross_shadow  gross_calc  max_w_diff_bps  fills
+2026-11-25      1.2937        1.2937      1.2937          0.0049    6/6
+```
+
+Live and shadow gross agree to 0.0049 bps of target weight, and all six names
+match. Returns agree to 0.6 bps. The gate is still **1/5**; the monthly job
+appends one date per weekday and the tax-book job at 23:35 UTC starts the second
+book. Do not treat 57.01x as validated until five distinct close-valid dates
+pass this same check.

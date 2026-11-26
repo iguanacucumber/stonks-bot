@@ -13,6 +13,7 @@ Run: uv run python scripts/paper_report.py --market TECH
 from __future__ import annotations
 
 import argparse
+import json
 import sys
 from pathlib import Path
 
@@ -25,6 +26,20 @@ import pandas as pd  # noqa: E402
 from paper_daily import book_paths, load  # noqa: E402
 
 BOOKS = ("monthly", "tax")
+
+
+def target_diff(live: dict, shadow: dict) -> dict:
+    """Compare the recorded target book with the shadow book at the mark."""
+    common = set(live) & set(shadow)
+    union = set(live) | set(shadow)
+    return {
+        "names": f"{len(common)}/{len(union)}",
+        "max_w_diff": max(
+            (abs(float(live.get(t, 0.0)) - float(shadow.get(t, 0.0))) for t in union),
+            default=0.0,
+        ),
+        "gross_shadow": sum(float(x) for x in shadow.values()),
+    }
 
 
 def main():
@@ -74,8 +89,10 @@ def main():
 
     _, _, res, _ = load(args.market, 2.5, 200, 0.5, args.book)
     eq = res.equity
+    wopen = res.weights_open if res.weights_open is not None else res.weights
 
     rows = []
+    exposure = []
     live_val, shadow_val = args.capital, args.capital
     pending = 0
     for d, r in live.iterrows():
@@ -96,6 +113,31 @@ def main():
             if "shadow_gross" in r.index and pd.notna(r["shadow_gross"])
             else float("nan")
         )
+        live_targets = (
+            json.loads(r["targets"])
+            if "targets" in r.index and isinstance(r["targets"], str)
+            else {}
+        )
+        shadow_targets = (
+            {
+                t: float(x)
+                for t, x in wopen.loc[mark].items()
+                if t != "CASH" and pd.notna(x) and float(x) > 1e-9
+            }
+            if mark in wopen.index
+            else {}
+        )
+        td = target_diff(live_targets, shadow_targets)
+        exposure.append(
+            {
+                "date": str(d.date()),
+                "gross_live": r["gross"],
+                "gross_shadow": gross_shadow,
+                "gross_calc": td["gross_shadow"],
+                "max_w_diff_bps": td["max_w_diff"] * 1e4,
+                "fills": td["names"],
+            }
+        )
         rows.append(
             {
                 "date": str(d.date()),
@@ -115,6 +157,9 @@ def main():
         print(f"GATE: WAIT 0/{args.min_rows} distinct dates (book {args.book})")
         return
     print(df.round(4).to_string(index=False))
+    if exposure:
+        print("\nexposure and target/fill check (live vs shadow):")
+        print(pd.DataFrame(exposure).round(4).to_string(index=False))
     print(
         f"\n{skipped} intraday row(s) skipped (not close-valid)"
         + (f"; {incomplete} incomplete close(s) skipped" if incomplete else "")

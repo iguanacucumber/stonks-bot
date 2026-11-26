@@ -16,6 +16,7 @@ sys.path.insert(0, str(ROOT / "scripts"))
 
 from bot import backtest, france, markets, strategy, universe  # noqa: E402
 from paper_daily import book_config, book_paths  # noqa: E402
+from paper_report import target_diff  # noqa: E402
 
 
 def synthetic(days: int = 420, n: int = 30, seed: int = 3):
@@ -491,6 +492,11 @@ def main():
     assert book_paths("monthly")[1].name == "paper_ledger.csv"
     assert book_paths("tax")[0].name == "paper_daily_tax.csv"
     assert book_paths("tax")[1].name == "paper_ledger_tax.csv"
+
+    td = target_diff({"A": 0.5, "B": 0.5}, {"A": 0.5, "C": 0.5})
+    assert td["names"] == "1/3"
+    assert abs(td["max_w_diff"] - 0.5) < 1e-12
+    assert abs(td["gross_shadow"] - 1.0) < 1e-12
 
     print(
         f"ok: {len(res.equity)} days, final {res.equity.iloc[-1]:.3f}, "
