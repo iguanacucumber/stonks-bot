@@ -150,6 +150,20 @@ overtake US all-PIT. If PIT collapses, the static sleeve was largely a
 survivorship artifact; if it survives, keep US primary and use PIT membership
 for any retained TECH sleeve. Residual delisting bias is reported explicitly.
 
+### H6 — UCITS semiconductor core (v5)
+
+Test whether an Irish-domiciled accumulating semiconductor UCITS ETF can
+replace US-domiciled SMH for a French CTO. Vehicles: SMH.L (VanEck, IE,
+USD line), SEMI.AS (iShares, IE, USD line), SEMI.L (same iShares ISIN, GBP
+line), control SMH (US). Convert all to USD with same-date FX; use the common
+window 2021-08-05..2026-11-25; same US monthly 2.5x signal and engine.
+
+Pass: UCITS retains at least 80% of SMH's dividend-corrected EUR ledger and
+survives 2x costs. Accept as preferred vehicle only if returns are comparable
+and the tax/estate benefit is clear; otherwise reject the vehicle change while
+documenting the qualitative estate benefit. No look-ahead in FX conversion;
+tests use synthetic bars.
+
 ## File ownership
 
 - `bot/research/`: harness (orchestrator).
@@ -161,6 +175,8 @@ for any retained TECH sleeve. Residual delisting bias is reported explicitly.
 - v4 PIT work: `bot/research/pit_universe.py`, `bot/research/data/`,
   `scripts/research_pit_tech.py`, `tests/test_pit_universe.py`,
   `results/pit_tech.md`.
+- v5 UCITS work: `bot/research/ucits.py`, `scripts/research_ucits_core.py`,
+  `tests/test_ucits.py`, `results/ucits_core.md`.
 
 Workers do not edit shared earnings code (`bot/backtest.py`, `bot/strategy.py`)
 and do not commit. The orchestrator reviews and commits.
