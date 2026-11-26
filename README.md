@@ -117,9 +117,12 @@ On €10k after tax and real tariffs (`results/france.md`, `results/brokers.md`)
 | PEA Nasdaq-100 proxy (PUST.PA) | 4.96x | 5.08x | — | 5.4x QQQ |
 
 At €10k the best book+broker is **monthly TECH at Interactive Brokers: 57.0x after
-tax** (pre-tax 75.0x, €26k fees, €135k PFU). The core-only tax book at IBKR is
-50.9x; at Trade Republic and Bourse Direct the tax book wins (39.5x/34.7x versus
-31.9x/11.7x monthly), because their 25 bps FX makes ~1,800 sleeve trades expensive.
+tax** (pre-tax 75.0x, €26k fees, €135k PFU; 55.6x at IBKR's 3 bps auto FX). The
+core-only tax book at IBKR is 50.9x; at Trade Republic and Bourse Direct the tax
+book wins (39.5x/34.7x versus 31.9x/11.7x monthly), because their 25 bps FX makes
+~1,800 sleeve trades expensive. At 25 bps IBKR monthly falls to 31.9x, so the
+core-only tax book at Trade Republic (39.5x) is the fallback if spot FX is not
+available.
 The optimum depends on the broker's cost structure. `--country fr` now defaults to
 monthly + IBKR; `--profile tax` selects the core-only book.
 

@@ -80,8 +80,13 @@ def _load(
 ):
     profile = profile or "monthly"
     broker = broker or (france.DEFAULT_BROKER if country == "fr" else "none")
-    if wrapper == "pea" and market != "FR":
-        raise SystemExit("--wrapper pea is only modelled for --market FR")
+    if wrapper == "pea":
+        if market != "FR":
+            raise SystemExit("--wrapper pea is only modelled for --market FR")
+        try:
+            france.require_pea_broker(broker)
+        except ValueError as exc:
+            raise SystemExit(str(exc)) from None
     # Passing --limit-bps (even 0) opts into the raw-bar high/low panel, so the
     # k=0 baseline is the same honest next-open path as the limit runs.
     panel, mem = markets.build(
@@ -730,7 +735,7 @@ def _add_fr_args(p, with_capital: bool = True):
     p.add_argument("--country", choices=["us", "fr"], default="us")
     p.add_argument(
         "--broker",
-        choices=["none", "bourse-direct", "trade-republic", "interactive-brokers"],
+        choices=["none", *sorted(france.ALIASES)],
         default=None,
     )
     p.add_argument("--wrapper", choices=["cto", "pea"], default="cto")
