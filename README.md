@@ -123,6 +123,10 @@ book wins (39.5x/34.7x versus 31.9x/11.7x monthly), because their 25 bps FX make
 ~1,800 sleeve trades expensive. At 25 bps IBKR monthly falls to 31.9x, so the
 core-only tax book at Trade Republic (39.5x) is the fallback if spot FX is not
 available.
+
+Start-date check: **84/84 five-year windows beat QQQ after tax** (median **5.67x**
+vs 1.97x, worst 2.03x); full-window block bootstrap p5 **3.38x**. The tail is still
+brutal: p5 max drawdown **-90.9%**. `results/robustness_best.md`.
 The optimum depends on the broker's cost structure. `--country fr` now defaults to
 **TECH + monthly + IBKR**; `--profile tax` selects the core-only book. Pass your actual
 `--fx-bps` (per side) to let the CLI choose: at **≥15 bps** it switches the default to
