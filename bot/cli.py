@@ -151,7 +151,11 @@ def _load(
 def cmd_ingest(args):
     mem = universe.load_membership()
     print(f"membership rows: {len(mem)}, tickers: {mem['ticker'].nunique()}")
-    panel = data.build_panel(mem, force=args.force)
+    panel = (
+        data.build_panel(mem, force=True)
+        if args.force
+        else data.update_panel(mem, workers=12)
+    )
     print(panel.groupby("ticker").size().describe())
 
 

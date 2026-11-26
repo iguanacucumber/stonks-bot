@@ -40,7 +40,7 @@ def _get(symbol: str, start: int = START) -> dict | None:
     for attempt in range(4):
         try:
             r = requests.get(url, params=params, headers=UA, timeout=40)
-            if r.status_code == 429:
+            if r.status_code == 429 or r.status_code >= 500:
                 time.sleep(2 + attempt * 3)
                 continue
             if r.status_code != 200:
