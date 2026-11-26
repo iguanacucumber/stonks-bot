@@ -119,6 +119,13 @@ class EurLedgerResult:
     fx_hedge_cost: float = 0.0
     fx_hedge_periods: int = 0
     fx_hedge_avg_notional: float = 0.0
+    # Covered-call overlay (model): cash premium/payoff and short-call liability.
+    option_premium_eur: float = 0.0
+    option_payoff_eur: float = 0.0
+    option_pnl_eur: float = 0.0
+    option_liability_eur: float = 0.0
+    option_rolls: int = 0
+    option_open_premium_eur: float = 0.0
     fx_hedge_log: pd.DataFrame = field(
         default_factory=lambda: pd.DataFrame(
             columns=[
@@ -242,6 +249,7 @@ def replay(
     fx_hedge: FxHedgeConfig | None = None,
     harvest: HarvestDecision | None = None,
     harvest_dates: Iterable[pd.Timestamp] | None = None,
+    option_overlay: pd.DataFrame | None = None,
 ) -> EurLedgerResult:
     """Replay `res.trades` in EUR with HIFO lots, PFU and margin interest.
 
@@ -258,12 +266,35 @@ def replay(
     cash, and returns synthetic trades (``ticker``, ``side``, ``shares`` in
     ledger units, ``price`` in EUR). It runs before the engine's own trades on
     that session. `harvest_dates` limits the callback to the supplied sessions.
+
+    `option_overlay` is an optional daily frame with native-currency columns
+    ``cash_native`` (premium net of commission at a roll, minus payoff at expiry),
+    ``liability_native`` (positive mark of the short call), ``pnl_native``
+    (taxable option P&L at expiry), ``premium_native``/``payoff_native`` for
+    reporting, and ``open_premium_native`` (premium still open at the end).
+    It is a model feed from ``bot.covered_calls``; no option quotes are assumed.
     """
     cfg = config or EurLedgerConfig()
     dates = pd.DatetimeIndex(res.equity.index)
     if len(dates) == 0:
         raise ValueError("empty equity series")
     fx = _fx_series(market, dates)
+    opt = None
+    if option_overlay is not None:
+        need = {
+            "cash_native",
+            "liability_native",
+            "pnl_native",
+            "premium_native",
+            "payoff_native",
+            "open_premium_native",
+        }
+        missing = need - set(option_overlay.columns)
+        if missing:
+            raise ValueError(f"option overlay missing columns: {sorted(missing)}")
+        opt = option_overlay.copy()
+        opt.index = pd.to_datetime(opt.index).normalize()
+        opt = opt.reindex(dates).fillna(0.0)
     div_by_date = (
         {} if str(cfg.wrapper).lower() == "pea" else _dividend_map(dividends, dates)
     )
@@ -336,6 +367,12 @@ def replay(
     fx_hedge_periods = 0
     fx_hedge_notional_days = 0.0
     fx_hedge_days = 0
+    option_premium_eur = 0.0
+    option_payoff_eur = 0.0
+    option_pnl_eur = 0.0
+    option_liability_eur = 0.0
+    option_open_premium_eur = 0.0
+    option_rolls = 0
     harvest_rows: list[dict] = []
     harvest_notional = 0.0
     harvest_fees = 0.0
@@ -543,7 +580,30 @@ def replay(
                 fx_hedge_notional_days += notional * days
                 fx_hedge_days += days
 
-        eq.append(cash + value)
+        if opt is not None:
+            row = opt.loc[d]
+            fxd = float(fx.loc[d])
+            cash_native = float(row["cash_native"])
+            pnl_native = float(row["pnl_native"])
+            premium_native = float(row["premium_native"])
+            payoff_native = float(row["payoff_native"])
+            option_liability_eur = float(row["liability_native"]) * fxd
+            option_open_premium_eur = float(row["open_premium_native"]) * fxd
+            if cash_native:
+                cash += cash_native * fxd
+            if premium_native:
+                option_premium_eur += premium_native * fxd
+                option_rolls += 1
+            if payoff_native:
+                option_payoff_eur += payoff_native * fxd
+            if pnl_native:
+                # Listed-option gains/losses enter the same annual CTO netting
+                # bucket as equity realizations; the yearly PFU loop applies.
+                pnl_eur = pnl_native * fxd
+                realized_year += pnl_eur
+                option_pnl_eur += pnl_eur
+
+        eq.append(cash + value - option_liability_eur)
         cashs.append(cash)
 
     equity = pd.Series(eq, index=dates, name="equity_eur")
@@ -555,7 +615,8 @@ def replay(
         cost = sum(lot[0] * lot[1] for lot in lots.get(ticker, []))
         unrealized += shares * p - cost
     carry_left = sum(x[1] for x in loss_carry)
-    net = realized_year + unrealized - carry_left
+    option_unrealized = option_open_premium_eur - option_liability_eur
+    net = realized_year + unrealized + option_unrealized - carry_left
     exit_rate = (
         cfg.tax_rate if cfg.tax_rate is not None else french_rate(int(dates[-1].year))
     )
@@ -601,6 +662,12 @@ def replay(
             fx_hedge_notional_days / fx_hedge_days if fx_hedge_days else 0.0
         ),
         fx_hedge_log=pd.DataFrame(hedge_logs),
+        option_premium_eur=option_premium_eur,
+        option_payoff_eur=option_payoff_eur,
+        option_pnl_eur=option_pnl_eur,
+        option_liability_eur=option_liability_eur,
+        option_rolls=option_rolls,
+        option_open_premium_eur=option_open_premium_eur,
         harvest_trades=(
             pd.DataFrame(harvest_rows)
             if harvest_rows
