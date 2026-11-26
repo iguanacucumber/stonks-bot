@@ -48,6 +48,19 @@ jobs:
             uv run python scripts/reproduce.py audit --allow-missing
           fi
 
+      # Full stack acceptance on a temp state. Without the committed 459 MB
+      # cache this must SKIP cleanly; with it, the run is ~15s and exercises
+      # backtest -> EUR ledger -> live plan/paper/reconcile -> ops -> advisor.
+      - name: End-to-end acceptance smoke
+        run: |
+          set -euo pipefail
+          if compgen -G "cache/bars/*.csv" >/dev/null; then
+            uv run python scripts/acceptance.py --json
+          else
+            echo "cache/bars absent in CI: full acceptance skipped cleanly"
+            uv run python scripts/acceptance.py --allow-missing-cache --json
+          fi
+
       - name: CLI smoke
         run: |
           uv run python -m bot.cli --help >/dev/null

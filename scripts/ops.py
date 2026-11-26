@@ -108,6 +108,7 @@ def _backup(args: argparse.Namespace) -> int:
         ROOT,
         out_dir=args.out,
         state_dir=args.state_dir or str(cfg.state_path.parent),
+        results_dir=args.results_dir,
         config_paths=paths,
     )
     payload = {
@@ -215,6 +216,11 @@ def build_parser() -> argparse.ArgumentParser:
     b = sub.add_parser("backup", help="create an atomic checksummed backup")
     _add_common(b)
     b.add_argument("--out", default=None)
+    b.add_argument(
+        "--results-dir",
+        default=None,
+        help="override paper CSV directory (tests/temp state); default results/",
+    )
     b.set_defaults(func=_backup)
 
     r = sub.add_parser("restore", help="verify and restore a backup")
