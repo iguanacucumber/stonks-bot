@@ -54,8 +54,12 @@ gate report; WAIT is the honest state, BLOCKED would be a release failure.
 - **Forward gate is 0/5 US, 1/5 TECH, 0/5 tax.** No book has five verified dates.
 - **Short3 report is merged and rejected.** `results/short3.md` is present on this
   base and the release check records `short3 verdict=reject`; no short satellite.
-- **No real-money broker path.** IBKR is a paper/DU adapter with read-only
-  reconciliation; there is no production order adapter or live keys.
+- **No real-money broker path; live access is not approved.** IBKR remains a
+  paper/DU adapter with read-only reconciliation; there is no production order
+  adapter, live key or account connection. The v11 approval/preflight gate is
+  present but paper-safe: `scripts/real_money_preflight.py` is read-only and
+  always fails closed at `real_money_execution_path`. The user decision on
+  2026-11-26 was to keep the bot paper-only; no credentials were requested.
 - **Alerts/backups need operator configuration.** Delivery endpoints and off-site
   retention are not provisioned here.
 - **Opt-in studies are not defaults.** Balanced/conservative, covered calls,
@@ -138,6 +142,9 @@ uv run python scripts/forward_daily.py --paper --tax
 | `scripts/acceptance.py`, `scripts/release_check.py` | end-to-end and release checks |
 | `scripts/reproduce.py` | baseline/EUR-ledger reproduction |
 | `scripts/live.py`, `scripts/forward_daily.py` | paper-only planner/logger |
+| `bot/live/approval.py`, `bot/live/preflight.py` | approval artifact and read-only real-money readiness gate |
+| `scripts/real_money_preflight.py` | paper-safe preflight; always blocked in this build |
+| `results/real_money_approval.md` | current approval/preflight status and blockers |
 | `bot/live/`, `bot/ops/`, `bot/dashboard/` | state, execution, ops, dashboard |
 | `tests/test_*.py` | synthetic/no-network test suite |
 
@@ -153,7 +160,11 @@ uv run python scripts/forward_daily.py --paper --tax
   2026-11-27; no forward edge claimed.
 - [x] Short3 report/verdict reviewed: `results/short3.md` is present; verdict is
   **reject** and release_check records PASS.
-- [ ] Paper-only boundary re-checked: no real broker credentials, no `.env`, no orders.
+- [x] Paper-only boundary re-checked: no real broker credentials, no `.env`, no
+  orders; `scripts/real_money_preflight.py` exits `2` with explicit blockers and
+  the user did not approve live access.
+- [x] Real-money approval/preflight gate present, read-only, fail-closed and covered
+  by fake-env/no-network tests (`results/real_money_approval.md`).
 - [x] README/RELEASE headline numbers and source links reviewed
   (`results/review_release.md`).
 - [x] Known risks communicated: survivorship, -56.4% drawdown, pre-tax paper ledger,
@@ -170,7 +181,10 @@ uv run python scripts/forward_daily.py --paper --tax
 - **Accounting.** The live paper ledger is pre-tax/average-cost; the EUR ledger is a
   research replay. Dividends are cached events, not a full custodian statement.
 - **Execution.** The only broker path is a paper adapter; a real adapter must add
-  reconciliation, rejects, partial fills and secrets management.
+  reconciliation, rejects, partial fills and secrets management. The v11
+  approval/preflight gate does not add one and must keep failing closed.
+- **Real money is not available.** There is no live order path, approval artifact or
+  credential. The preflight gate is a readiness report, not a trading switch.
 - **Alerts/ops.** Alert delivery needs operator secrets and a real endpoint test;
   backup retention/off-site policy is not included.
 - **High-churn docs.** Summaries and dashboard outputs are snapshots; regenerate or

@@ -271,10 +271,75 @@ Enable with `systemctl enable --now stonks-live.timer`. Add a separate timer for
 `reconcile` and `status` if you want a daily health alert; `status` exits `2` when
 blocked or stale.
 
-## Paper-only boundary and future real broker
+## Paper-only boundary, approval and real-money preflight
 
-No API keys, account numbers or secrets belong in this repo. The only integration
-point is `bot.live.broker.Broker`:
+This branch is **paper-only**. There is no real-money broker adapter, order path,
+credential or account connection. The user decision on 2026-11-26 was to keep the
+bot paper-only: no live access was approved and no credentials are requested.
+
+`scripts/real_money_preflight.py` is a read-only readiness report for one exact
+book/market/capital config. It does not contact a broker, read a password, print a
+secret, write state or send an order. Its final `real_money_execution_path` check is
+a deliberate blocker in this build, so the command exits `2` even if every other
+artifact is supplied. Current output and blockers are recorded in
+`results/real_money_approval.md`.
+
+```bash
+# Human-readable (read-only, exits 2 while the paper-only boundary stands)
+uv run python scripts/real_money_preflight.py --book monthly --market US
+
+# Machine-readable; same checks, no network
+uv run python scripts/real_money_preflight.py --book monthly --market US --json
+
+# Hash the exact config, for a future approval artifact; prints and exits
+uv run python scripts/real_money_preflight.py --book monthly --market US \
+  --print-config-hash
+```
+
+The preflight checks, all fail-closed:
+
+- **approval**: `state/live/APPROVAL.json` exists, is unexpired, covers the book,
+  market and capital, and pins the exact `config_sha256` (and optionally
+  `plan_sha256`);
+- **forward gate**: the selected book/market is `PASS 5/5` in
+  `results/forward_gate.md`, cross-checked against distinct verified dates in
+  `results/paper_audit.csv`;
+- **release check**: `results/release_check.md` says overall `PASS`;
+- **credentials env**: `IBKR_REAL_ACCOUNT` is present and is a `U...` id, not a `DU`
+  paper id; no password/token is read or printed, and this build has no code that
+  connects with it;
+- **read-only default**: `IBKR_REAL_READ_ONLY` must be explicitly `true`; absence is
+  not treated as read-only;
+- **risk rails**: drawdown breaker, gross/turnover/order/participation limits and
+  stale/pending limits are present and no looser than the shipped paper defaults;
+- **pending blocker**: live state has no blocked plan, pending risk cut, overdue
+  plan or config-signature mismatch;
+- **real-money execution path**: always fails in this paper-only build.
+
+Approval artifact schema (the path is gitignored; nothing is created by the tests or
+release check):
+
+```json
+{
+  "version": 1,
+  "approver": "Full human name",
+  "approved_at": "2026-11-26T18:00:00+00:00",
+  "expires_at": "2026-12-03T00:00:00+00:00",
+  "max_capital": 10000.0,
+  "allowed_books": ["monthly"],
+  "allowed_markets": ["US"],
+  "config_sha256": "<64 hex characters from --print-config-hash>",
+  "plan_sha256": "<optional 64 hex characters from the exact plan JSON>",
+  "note": "Scope and any conditions"
+}
+```
+
+Missing, expired, future-dated, out-of-scope, capital-exceeding or hash-mismatched
+approval is a blocker. Unknown fields and naive timestamps are rejected. An approval
+file never enables an order path by itself; the execution-path check still blocks
+this build.
+
+The future real-broker integration point remains `bot.live.broker.Broker`:
 
 1. Implement `execute(plan, bars, now, portfolio) -> list[Fill]` against the broker's
    own fills; do not trust local prices for execution.
@@ -284,11 +349,12 @@ point is `bot.live.broker.Broker`:
    next plan; a mismatch must block, not auto-correct.
 4. Use raw prices and corporate actions, integer lot sizes, venue spreads, FX
    conversion, dividends and tax lots. The paper model is not a substitute.
-5. Read credentials from the environment/keyring, never from a committed file.
+5. Keep credentials out of the repository and out of preflight output.
 6. Keep a hard kill switch and a maximum order notional independent of this config.
 
-The CLI deliberately has no `--live` or `--broker` flag. Adding one is a separate
-review with a real account, a small capital cap and a manual confirmation.
+Adding a real adapter is a separate reviewed change with a real account, a small
+capital cap, the approval artifact and a manual confirmation. It is not approved or
+implemented here.
 
 ## Known limitations / open risks
 
