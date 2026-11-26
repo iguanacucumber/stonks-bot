@@ -197,6 +197,21 @@ forward-validation book; `--profile tax` selects the core-only book; `--fx-bps`
 sets your real conversion cost and auto-selects the book at ≥15 bps; `pnl` adds the
 same line; `report` appends the France section.
 
+## Paper autopilot
+
+```bash
+uv run python scripts/live.py plan  --book monthly --market US
+uv run python scripts/live.py run   --book monthly --market US --paper
+uv run python scripts/live.py status --book monthly --market US
+uv run python scripts/live.py reconcile --book monthly --market US
+```
+
+Dry-run is the default; `--paper` is the only writer. State is atomic under
+`state/live/`, orders are idempotent, and rails block stale data, holidays,
+excess gross/turnover and duplicate orders. The paper ledger is **pre-tax,
+average-cost**: it is not the after-tax EUR ledger. No real broker, no keys.
+See `docs/live.md` and `results/live_demo.md`.
+
 **Cross-market:** the same config on **39 markets** (9 stock-level including a 49-name
 NASDAQ tech book, 30 country/tech ETFs) is profitable in **39/39** and beats the local
 index in **39/39** over 2015-2026, at 1x and at the shipped 2.5x + trend, at 10 bps and at

@@ -126,6 +126,17 @@ uv run python -m bot.cli pnl --country fr --capital 10000
 
 `--country fr` utilise le livre US mensuel, Interactive Brokers et un CTO par défaut. La commande affiche le multiple terminal et le **grand livre EUR** (66,7x pour US). `--market TECH` restaure le livre TECH du suivi forward, `--profile tax` la variante core-only, `--fx-bps` ton vrai coût de conversion. Aucun ordre n'est envoyé, aucune clé n'est nécessaire.
 
+## Le pilote papier
+
+```bash
+uv run python scripts/live.py plan --book monthly --market US
+uv run python scripts/live.py run  --book monthly --market US --paper
+uv run python scripts/live.py status  --book monthly --market US
+uv run python scripts/live.py reconcile --book monthly --market US
+```
+
+Le dry-run est le défaut ; `--paper` est le seul mode qui écrit. L'état est atomique sous `state/live/`, les ordres sont idempotents, les rails bloquent les données périmées, les jours fériés, le gross/turnover excessif et les doublons. Le ledger papier est **pré-impôt et au coût moyen** : il ne remplace pas le grand livre EUR après impôt. Aucun broker réel, aucune clé.
+
 Les détails techniques sont dans le [README anglais](README.en.md), les [résultats brokers](results/brokers.md), les [résultats France](results/france.md) et le [test de robustesse](results/robustness_best.md).
 
 <sub>Les performances passées ne préjugent pas des performances futures. Dernière mise à jour : 26 novembre 2026, données au 25 novembre 2026.</sub>

@@ -16,10 +16,10 @@
 
 | issue | branch | state |
 |---|---|---|
-| #17 live autopilot | `v2/live-autopilot` | PR #27 open, CI green; safety-review fixes in progress |
-| #18 alpha lab | `v2/alpha-lab` | final: cross-asset reject, PIT IT retains 107%, short horizon reject, no new allocation |
-| #19 risk & allocation | `v2/risk-alloc` | pre-registered; runner/tests/gate fixes in progress |
-| #20 data & evaluation | `v2/data-eval` | package + reports committed; reviewer P1 fixes in progress |
+| #17 live autopilot | `v2/live-autopilot` | **merged #27 at `25bd661`**; pre-tax paper ledger, rails, state |
+| #18 alpha lab | `v2/alpha-lab` | PR #29 open; reviewer fixes (gates, BIL, EUR tax) in progress |
+| #19 risk & allocation | `v2/risk-alloc` | sweeps done; runner/tests/gate fixes in progress |
+| #20 data & evaluation | `v2/data-eval` | PR #28 open; rebasing EUR tax fix |
 
 Each branch is in its own worktree; they merge after main-session review. Four
 independent reviewer sessions are auditing idempotency, methodology, risk math and
