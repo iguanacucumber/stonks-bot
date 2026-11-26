@@ -14,6 +14,7 @@ results/*.log
 !results/paper_audit.csv
 !results/eval_trials.csv
 !results/intraday_events.csv
+!results/earn_intraday_trials.csv
 !results/covered_calls.csv
 
 # worktree symlinks
