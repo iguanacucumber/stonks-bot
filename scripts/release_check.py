@@ -322,6 +322,22 @@ def parse_forward_gate(path: str | Path) -> tuple[dict, list[str]]:
                 out["books"].append(row)
         elif in_table and clean and not clean.startswith("|"):
             in_table = False
+    # forward_gate.md has a summary table and a "required sessions" table.
+    # Merge rows by (book, market); fill only missing fields so a later table
+    # cannot blank out status/verified from the summary table.
+    merged: dict[tuple[str, str], dict] = {}
+    for row in out["books"]:
+        key = (str(row.get("book", "")), str(row.get("market", "")))
+        if key not in merged:
+            merged[key] = dict(row)
+        else:
+            for k, v in row.items():
+                if k not in merged[key] or not merged[key][k] or merged[key][k] == "?":
+                    merged[key][k] = v
+    for row in merged.values():
+        if not row.get("next_required") and row.get("next"):
+            row["next_required"] = row["next"]
+    out["books"] = list(merged.values())
     return out, []
 
 
