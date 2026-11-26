@@ -9,18 +9,18 @@ base, 10 bps 2x; annual French PFU. 5m is execution-quality only.
 
 | symbol | strategy | trades | sessions | hit | mean net | after-tax | CAGR | maxDD |
 |---|---|---:|---:|---:|---:|---:|---:|---:|
-| SPY | gap_fade | 149 | 501 | 43.6% | +0.1% | 1.04x | +6.9% | -12.2% |
-| SPY | opening_range | 424 | 501 | 36.6% | -0.1% | 0.70x | -18.9% | -33.2% |
-| SPY | vwap_reversion | 435 | 501 | 33.1% | -0.1% | 0.62x | -24.3% | -38.0% |
-| SPY | last_hour_momentum | 499 | 501 | 21.8% | -0.1% | 0.55x | -25.7% | -44.6% |
-| QQQ | gap_fade | 236 | 501 | 41.1% | -0.1% | 0.83x | -18.1% | -28.2% |
-| QQQ | opening_range | 398 | 501 | 39.2% | -0.1% | 0.75x | -16.4% | -34.2% |
-| QQQ | vwap_reversion | 435 | 501 | 37.7% | -0.1% | 0.61x | -25.0% | -39.3% |
-| QQQ | last_hour_momentum | 499 | 501 | 25.1% | -0.1% | 0.55x | -26.1% | -45.1% |
-| SMH | gap_fade | 356 | 501 | 46.9% | -0.1% | 0.61x | -29.5% | -47.8% |
-| SMH | opening_range | 332 | 501 | 44.9% | -0.0% | 0.92x | -6.5% | -25.0% |
-| SMH | vwap_reversion | 429 | 501 | 43.6% | -0.1% | 0.65x | -22.2% | -36.8% |
-| SMH | last_hour_momentum | 499 | 501 | 33.7% | -0.1% | 0.49x | -30.5% | -51.1% |
+| SPY | gap_fade | 149 | 501 | 43.6% | +0.1% | 1.04x | +2.1% | -12.2% |
+| SPY | opening_range | 424 | 501 | 36.6% | -0.1% | 0.70x | -16.2% | -33.2% |
+| SPY | vwap_reversion | 435 | 501 | 33.1% | -0.1% | 0.62x | -21.4% | -38.0% |
+| SPY | last_hour_momentum | 499 | 501 | 21.8% | -0.1% | 0.55x | -25.6% | -44.6% |
+| QQQ | gap_fade | 236 | 501 | 41.1% | -0.1% | 0.83x | -9.0% | -28.2% |
+| QQQ | opening_range | 398 | 501 | 39.2% | -0.1% | 0.75x | -13.2% | -34.2% |
+| QQQ | vwap_reversion | 435 | 501 | 37.7% | -0.1% | 0.61x | -22.0% | -39.3% |
+| QQQ | last_hour_momentum | 499 | 501 | 25.1% | -0.1% | 0.55x | -25.9% | -45.1% |
+| SMH | gap_fade | 356 | 501 | 46.9% | -0.1% | 0.61x | -22.0% | -47.8% |
+| SMH | opening_range | 332 | 501 | 44.9% | -0.0% | 0.92x | -4.3% | -25.0% |
+| SMH | vwap_reversion | 429 | 501 | 43.6% | -0.1% | 0.65x | -19.2% | -36.8% |
+| SMH | last_hour_momentum | 499 | 501 | 33.7% | -0.1% | 0.49x | -30.3% | -51.1% |
 
 2x-cost intraday rows (10 bps/side):
 

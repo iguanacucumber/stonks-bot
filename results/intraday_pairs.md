@@ -11,104 +11,104 @@ PFU. 5m is a 60-day execution-quality sample, not 2-year robustness.
 
 | variant | n | hit | mean net | after-tax | CAGR | maxDD |
 |---|---:|---:|---:|---:|---:|---:|
-| QQQ lag=1 momentum thr=0.000% | 3475 | 32.1% | -0.107% | 0.023x | -84.9% | -97.6% |
-| QQQ lag=1 momentum thr=0.100% | 2777 | 33.6% | -0.107% | 0.051x | -77.7% | -94.9% |
-| QQQ lag=1 momentum thr=0.250% | 1943 | 35.0% | -0.107% | 0.123x | -65.8% | -87.6% |
-| QQQ lag=1 reversal thr=0.000% | 3475 | 34.6% | -0.093% | 0.039x | -80.5% | -96.2% |
-| QQQ lag=1 reversal thr=0.100% | 2777 | 35.4% | -0.093% | 0.073x | -73.3% | -92.9% |
-| QQQ lag=1 reversal thr=0.250% | 1943 | 36.8% | -0.093% | 0.160x | -60.8% | -84.6% |
-| QQQ lag=2 momentum thr=0.000% | 3474 | 34.5% | -0.093% | 0.039x | -80.6% | -96.2% |
-| QQQ lag=2 momentum thr=0.100% | 2776 | 35.2% | -0.087% | 0.086x | -70.9% | -91.6% |
-| QQQ lag=2 momentum thr=0.250% | 1942 | 36.9% | -0.086% | 0.185x | -57.6% | -81.9% |
-| QQQ lag=2 reversal thr=0.000% | 3474 | 32.2% | -0.107% | 0.024x | -84.8% | -97.7% |
-| QQQ lag=2 reversal thr=0.100% | 2776 | 32.4% | -0.113% | 0.043x | -79.5% | -95.8% |
-| QQQ lag=2 reversal thr=0.250% | 1942 | 33.1% | -0.114% | 0.107x | -67.9% | -89.4% |
-| QQQ lag=3 momentum thr=0.000% | 3473 | 34.1% | -0.092% | 0.039x | -80.4% | -96.1% |
-| QQQ lag=3 momentum thr=0.100% | 2775 | 34.2% | -0.095% | 0.071x | -73.6% | -92.9% |
-| QQQ lag=3 momentum thr=0.250% | 1941 | 35.0% | -0.095% | 0.157x | -61.1% | -84.5% |
-| QQQ lag=3 reversal thr=0.000% | 3473 | 32.7% | -0.108% | 0.023x | -85.0% | -97.7% |
-| QQQ lag=3 reversal thr=0.100% | 2775 | 33.4% | -0.105% | 0.052x | -77.4% | -94.8% |
-| QQQ lag=3 reversal thr=0.250% | 1941 | 34.2% | -0.105% | 0.127x | -65.2% | -87.3% |
-| QQQ regression | 3375 | 34.8% | -0.087% | 0.052x | -78.3% | -95.0% |
-| SPY lag=1 momentum thr=0.000% | 3474 | 28.0% | -0.102% | 0.028x | -83.4% | -97.2% |
-| SPY lag=1 momentum thr=0.100% | 2777 | 30.0% | -0.102% | 0.058x | -76.0% | -94.1% |
-| SPY lag=1 momentum thr=0.250% | 1943 | 30.7% | -0.103% | 0.133x | -64.4% | -86.6% |
-| SPY lag=1 reversal thr=0.000% | 3474 | 29.3% | -0.098% | 0.033x | -82.0% | -96.7% |
-| SPY lag=1 reversal thr=0.100% | 2777 | 30.5% | -0.098% | 0.064x | -74.9% | -93.6% |
-| SPY lag=1 reversal thr=0.250% | 1943 | 32.2% | -0.097% | 0.150x | -62.1% | -85.0% |
-| SPY lag=2 momentum thr=0.000% | 3473 | 29.9% | -0.096% | 0.036x | -81.3% | -96.4% |
-| SPY lag=2 momentum thr=0.100% | 2776 | 31.1% | -0.090% | 0.080x | -71.9% | -91.9% |
-| SPY lag=2 momentum thr=0.250% | 1942 | 32.5% | -0.089% | 0.175x | -58.7% | -82.4% |
-| SPY lag=2 reversal thr=0.000% | 3473 | 27.3% | -0.104% | 0.026x | -84.0% | -97.4% |
-| SPY lag=2 reversal thr=0.100% | 2776 | 27.6% | -0.110% | 0.047x | -78.5% | -95.3% |
-| SPY lag=2 reversal thr=0.250% | 1942 | 28.8% | -0.111% | 0.114x | -66.8% | -88.6% |
-| SPY lag=3 momentum thr=0.000% | 3472 | 29.6% | -0.094% | 0.038x | -80.7% | -96.2% |
-| SPY lag=3 momentum thr=0.100% | 2775 | 30.3% | -0.096% | 0.069x | -73.9% | -93.0% |
-| SPY lag=3 momentum thr=0.250% | 1941 | 31.2% | -0.096% | 0.154x | -61.5% | -84.7% |
-| SPY lag=3 reversal thr=0.000% | 3472 | 27.6% | -0.106% | 0.025x | -84.5% | -97.5% |
-| SPY lag=3 reversal thr=0.100% | 2775 | 28.4% | -0.104% | 0.054x | -76.9% | -94.5% |
-| SPY lag=3 reversal thr=0.250% | 1941 | 29.4% | -0.104% | 0.131x | -64.5% | -86.8% |
-| SPY regression | 3374 | 29.9% | -0.091% | 0.046x | -79.7% | -95.6% |
+| QQQ lag=1 momentum thr=0.000% | 2975 | 31.1% | -0.104% | 0.045x | -78.9% | -95.5% |
+| QQQ lag=1 momentum thr=0.100% | 2398 | 32.7% | -0.104% | 0.082x | -71.5% | -91.8% |
+| QQQ lag=1 momentum thr=0.250% | 1711 | 34.1% | -0.107% | 0.158x | -60.4% | -84.2% |
+| QQQ lag=1 reversal thr=0.000% | 2975 | 32.7% | -0.096% | 0.056x | -76.4% | -94.4% |
+| QQQ lag=1 reversal thr=0.100% | 2398 | 33.9% | -0.096% | 0.098x | -68.8% | -90.2% |
+| QQQ lag=1 reversal thr=0.250% | 1711 | 36.1% | -0.093% | 0.201x | -55.2% | -79.8% |
+| QQQ lag=2 momentum thr=0.000% | 2976 | 33.0% | -0.098% | 0.053x | -77.0% | -94.7% |
+| QQQ lag=2 momentum thr=0.100% | 2413 | 34.0% | -0.094% | 0.101x | -68.3% | -89.9% |
+| QQQ lag=2 momentum thr=0.250% | 1720 | 35.9% | -0.093% | 0.197x | -55.6% | -80.2% |
+| QQQ lag=2 reversal thr=0.000% | 2976 | 30.8% | -0.102% | 0.047x | -78.4% | -95.3% |
+| QQQ lag=2 reversal thr=0.100% | 2413 | 31.3% | -0.106% | 0.077x | -72.4% | -92.4% |
+| QQQ lag=2 reversal thr=0.250% | 1720 | 32.3% | -0.107% | 0.158x | -60.4% | -84.5% |
+| QQQ lag=3 momentum thr=0.000% | 2974 | 32.8% | -0.092% | 0.064x | -74.7% | -93.5% |
+| QQQ lag=3 momentum thr=0.100% | 2409 | 33.2% | -0.095% | 0.100x | -68.5% | -90.0% |
+| QQQ lag=3 momentum thr=0.250% | 1717 | 34.2% | -0.095% | 0.192x | -56.2% | -80.8% |
+| QQQ lag=3 reversal thr=0.000% | 2974 | 31.1% | -0.108% | 0.039x | -80.3% | -96.1% |
+| QQQ lag=3 reversal thr=0.100% | 2409 | 32.0% | -0.105% | 0.078x | -72.1% | -92.2% |
+| QQQ lag=3 reversal thr=0.250% | 1717 | 33.1% | -0.105% | 0.163x | -59.7% | -83.7% |
+| QQQ regression | 3375 | 34.8% | -0.087% | 0.052x | -78.2% | -95.0% |
+| SPY lag=1 momentum thr=0.000% | 2974 | 26.6% | -0.101% | 0.049x | -78.0% | -95.1% |
+| SPY lag=1 momentum thr=0.100% | 2397 | 28.5% | -0.101% | 0.088x | -70.3% | -91.1% |
+| SPY lag=1 momentum thr=0.250% | 1711 | 29.3% | -0.103% | 0.171x | -58.8% | -82.8% |
+| SPY lag=1 reversal thr=0.000% | 2974 | 27.9% | -0.099% | 0.052x | -77.3% | -94.8% |
+| SPY lag=1 reversal thr=0.100% | 2397 | 29.4% | -0.099% | 0.091x | -69.8% | -90.8% |
+| SPY lag=1 reversal thr=0.250% | 1711 | 31.2% | -0.097% | 0.188x | -56.7% | -81.2% |
+| SPY lag=2 momentum thr=0.000% | 2975 | 28.2% | -0.099% | 0.052x | -77.4% | -94.8% |
+| SPY lag=2 momentum thr=0.100% | 2413 | 29.5% | -0.095% | 0.099x | -68.6% | -90.0% |
+| SPY lag=2 momentum thr=0.250% | 1719 | 31.3% | -0.095% | 0.193x | -56.1% | -80.6% |
+| SPY lag=2 reversal thr=0.000% | 2975 | 26.3% | -0.101% | 0.049x | -77.9% | -95.1% |
+| SPY lag=2 reversal thr=0.100% | 2413 | 26.6% | -0.105% | 0.079x | -72.0% | -92.1% |
+| SPY lag=2 reversal thr=0.250% | 1719 | 28.3% | -0.105% | 0.163x | -59.7% | -83.9% |
+| SPY lag=3 momentum thr=0.000% | 2973 | 28.6% | -0.092% | 0.063x | -74.9% | -93.6% |
+| SPY lag=3 momentum thr=0.100% | 2409 | 29.2% | -0.095% | 0.100x | -68.4% | -89.9% |
+| SPY lag=3 momentum thr=0.250% | 1718 | 30.2% | -0.095% | 0.193x | -56.1% | -80.7% |
+| SPY lag=3 reversal thr=0.000% | 2973 | 26.0% | -0.108% | 0.040x | -80.0% | -96.0% |
+| SPY lag=3 reversal thr=0.100% | 2409 | 26.7% | -0.105% | 0.079x | -72.0% | -92.1% |
+| SPY lag=3 reversal thr=0.250% | 1718 | 27.6% | -0.105% | 0.164x | -59.6% | -83.6% |
+| SPY regression | 3374 | 29.9% | -0.091% | 0.046x | -79.6% | -95.6% |
 ### Intraday pairs
 
 | variant | n | hit | mean net | after-tax | CAGR | maxDD |
 |---|---:|---:|---:|---:|---:|---:|
-| SMH/SOXX lb=20 z=1.5 hold=1 neutral | 567 | 3.5% | -0.200% | 0.322x | -62.4% | -67.5% |
-| SMH/SOXX lb=20 z=1.5 hold=1 long_only | 567 | 48.9% | -0.058% | 0.697x | -26.8% | -31.1% |
-| SMH/SOXX lb=20 z=1.5 hold=3 neutral | 394 | 5.3% | -0.202% | 0.451x | -50.1% | -54.6% |
-| SMH/SOXX lb=20 z=1.5 hold=3 long_only | 394 | 51.5% | -0.071% | 0.728x | -24.2% | -28.5% |
-| SMH/SOXX lb=20 z=2.0 hold=1 neutral | 223 | 4.9% | -0.205% | 0.633x | -52.9% | -36.3% |
-| SMH/SOXX lb=20 z=2.0 hold=1 long_only | 223 | 46.6% | -0.135% | 0.731x | -40.3% | -28.5% |
-| SMH/SOXX lb=20 z=2.0 hold=3 neutral | 161 | 4.3% | -0.211% | 0.711x | -43.0% | -28.6% |
-| SMH/SOXX lb=20 z=2.0 hold=3 long_only | 161 | 52.2% | -0.055% | 0.899x | -16.1% | -15.1% |
-| SMH/SOXX lb=40 z=1.5 hold=1 neutral | 579 | 3.6% | -0.202% | 0.310x | -68.6% | -68.9% |
-| SMH/SOXX lb=40 z=1.5 hold=1 long_only | 579 | 49.7% | -0.003% | 0.936x | -6.4% | -23.9% |
-| SMH/SOXX lb=40 z=1.5 hold=3 neutral | 391 | 6.4% | -0.196% | 0.464x | -52.6% | -53.5% |
-| SMH/SOXX lb=40 z=1.5 hold=3 long_only | 391 | 52.9% | +0.038% | 1.078x | +7.6% | -19.2% |
-| SMH/SOXX lb=40 z=2.0 hold=1 neutral | 231 | 2.2% | -0.198% | 0.633x | -59.6% | -36.6% |
-| SMH/SOXX lb=40 z=2.0 hold=1 long_only | 231 | 46.3% | -0.071% | 0.838x | -29.6% | -23.8% |
-| SMH/SOXX lb=40 z=2.0 hold=3 neutral | 167 | 4.2% | -0.199% | 0.717x | -48.7% | -28.2% |
-| SMH/SOXX lb=40 z=2.0 hold=3 long_only | 167 | 50.9% | -0.006% | 0.976x | -4.8% | -17.8% |
-| SMH/SOXX lb=80 z=1.5 hold=1 neutral | 599 | 5.0% | -0.193% | 0.314x | -70.1% | -68.5% |
-| SMH/SOXX lb=80 z=1.5 hold=1 long_only | 599 | 46.2% | -0.042% | 0.730x | -27.9% | -38.8% |
-| SMH/SOXX lb=80 z=1.5 hold=3 neutral | 390 | 7.2% | -0.188% | 0.479x | -52.5% | -51.9% |
-| SMH/SOXX lb=80 z=1.5 hold=3 long_only | 390 | 49.5% | -0.040% | 0.810x | -19.2% | -30.2% |
-| SMH/SOXX lb=80 z=2.0 hold=1 neutral | 262 | 3.4% | -0.197% | 0.596x | -65.7% | -40.3% |
-| SMH/SOXX lb=80 z=2.0 hold=1 long_only | 262 | 48.5% | -0.047% | 0.866x | -25.7% | -19.8% |
-| SMH/SOXX lb=80 z=2.0 hold=3 neutral | 183 | 6.6% | -0.200% | 0.693x | -52.2% | -30.5% |
-| SMH/SOXX lb=80 z=2.0 hold=3 long_only | 183 | 52.5% | +0.017% | 1.002x | +0.5% | -15.6% |
-| QQQ/SPY lb=20 z=1.5 hold=1 neutral | 589 | 2.4% | -0.208% | 0.294x | -64.4% | -70.6% |
-| QQQ/SPY lb=20 z=1.5 hold=1 long_only | 589 | 37.0% | -0.138% | 0.439x | -50.0% | -56.8% |
-| QQQ/SPY lb=20 z=1.5 hold=3 neutral | 408 | 5.1% | -0.211% | 0.422x | -52.1% | -57.9% |
-| QQQ/SPY lb=20 z=1.5 hold=3 long_only | 408 | 40.7% | -0.134% | 0.572x | -37.9% | -45.8% |
-| QQQ/SPY lb=20 z=2.0 hold=1 neutral | 229 | 1.7% | -0.210% | 0.618x | -52.0% | -38.1% |
-| QQQ/SPY lb=20 z=2.0 hold=1 long_only | 229 | 40.2% | -0.111% | 0.772x | -32.6% | -23.9% |
-| QQQ/SPY lb=20 z=2.0 hold=3 neutral | 171 | 4.7% | -0.218% | 0.689x | -43.4% | -31.3% |
-| QQQ/SPY lb=20 z=2.0 hold=3 long_only | 171 | 42.7% | -0.161% | 0.754x | -35.0% | -27.6% |
-| QQQ/SPY lb=40 z=1.5 hold=1 neutral | 619 | 3.9% | -0.203% | 0.284x | -69.6% | -71.6% |
-| QQQ/SPY lb=40 z=1.5 hold=1 long_only | 619 | 37.2% | -0.104% | 0.519x | -46.1% | -50.2% |
-| QQQ/SPY lb=40 z=1.5 hold=3 neutral | 418 | 8.1% | -0.205% | 0.424x | -54.8% | -57.7% |
-| QQQ/SPY lb=40 z=1.5 hold=3 long_only | 418 | 40.7% | -0.109% | 0.626x | -35.2% | -39.8% |
-| QQQ/SPY lb=40 z=2.0 hold=1 neutral | 287 | 3.1% | -0.205% | 0.555x | -62.8% | -44.0% |
-| QQQ/SPY lb=40 z=2.0 hold=1 long_only | 287 | 37.3% | -0.112% | 0.722x | -42.1% | -28.7% |
-| QQQ/SPY lb=40 z=2.0 hold=3 neutral | 203 | 4.9% | -0.213% | 0.648x | -51.5% | -35.0% |
-| QQQ/SPY lb=40 z=2.0 hold=3 long_only | 203 | 40.4% | -0.111% | 0.794x | -32.0% | -23.5% |
-| QQQ/SPY lb=80 z=1.5 hold=1 neutral | 605 | 5.1% | -0.203% | 0.292x | -74.9% | -70.6% |
-| QQQ/SPY lb=80 z=1.5 hold=1 long_only | 605 | 39.3% | -0.104% | 0.526x | -51.5% | -50.6% |
-| QQQ/SPY lb=80 z=1.5 hold=3 neutral | 392 | 6.4% | -0.208% | 0.442x | -58.1% | -55.8% |
-| QQQ/SPY lb=80 z=1.5 hold=3 long_only | 392 | 41.1% | -0.127% | 0.599x | -42.0% | -43.3% |
-| QQQ/SPY lb=80 z=2.0 hold=1 neutral | 286 | 6.6% | -0.194% | 0.574x | -66.7% | -42.8% |
-| QQQ/SPY lb=80 z=2.0 hold=1 long_only | 286 | 36.7% | -0.038% | 0.891x | -20.5% | -22.1% |
-| QQQ/SPY lb=80 z=2.0 hold=3 neutral | 193 | 10.4% | -0.196% | 0.685x | -53.4% | -32.0% |
-| QQQ/SPY lb=80 z=2.0 hold=3 long_only | 193 | 40.4% | -0.042% | 0.915x | -16.5% | -19.1% |
+| SMH/SOXX lb=20 z=1.5 hold=1 neutral | 528 | 0.9% | -0.202% | 0.343x | -41.8% | -65.4% |
+| SMH/SOXX lb=20 z=1.5 hold=1 long_only | 528 | 48.1% | -0.067% | 0.687x | -17.3% | -31.1% |
+| SMH/SOXX lb=20 z=1.5 hold=3 neutral | 380 | 2.4% | -0.202% | 0.464x | -32.3% | -53.3% |
+| SMH/SOXX lb=20 z=1.5 hold=3 long_only | 380 | 51.1% | -0.048% | 0.805x | -10.4% | -21.3% |
+| SMH/SOXX lb=20 z=2.0 hold=1 neutral | 212 | 1.4% | -0.215% | 0.634x | -20.7% | -36.2% |
+| SMH/SOXX lb=20 z=2.0 hold=1 long_only | 212 | 45.3% | -0.133% | 0.746x | -13.8% | -27.1% |
+| SMH/SOXX lb=20 z=2.0 hold=3 neutral | 152 | 0.7% | -0.222% | 0.714x | -15.7% | -28.3% |
+| SMH/SOXX lb=20 z=2.0 hold=3 long_only | 152 | 51.3% | -0.113% | 0.832x | -8.9% | -19.3% |
+| SMH/SOXX lb=40 z=1.5 hold=1 neutral | 519 | 1.3% | -0.204% | 0.347x | -41.6% | -65.1% |
+| SMH/SOXX lb=40 z=1.5 hold=1 long_only | 519 | 44.7% | -0.075% | 0.664x | -18.8% | -38.3% |
+| SMH/SOXX lb=40 z=1.5 hold=3 neutral | 355 | 2.8% | -0.203% | 0.486x | -30.6% | -51.3% |
+| SMH/SOXX lb=40 z=1.5 hold=3 long_only | 355 | 49.0% | -0.028% | 0.873x | -6.7% | -20.4% |
+| SMH/SOXX lb=40 z=2.0 hold=1 neutral | 222 | 1.4% | -0.198% | 0.644x | -20.0% | -35.5% |
+| SMH/SOXX lb=40 z=2.0 hold=1 long_only | 222 | 45.5% | -0.057% | 0.873x | -6.6% | -17.8% |
+| SMH/SOXX lb=40 z=2.0 hold=3 neutral | 160 | 3.8% | -0.196% | 0.730x | -14.7% | -26.9% |
+| SMH/SOXX lb=40 z=2.0 hold=3 long_only | 160 | 51.2% | +0.009% | 1.000x | -0.0% | -12.0% |
+| SMH/SOXX lb=80 z=1.5 hold=1 neutral | 523 | 1.7% | -0.200% | 0.350x | -41.6% | -64.9% |
+| SMH/SOXX lb=80 z=1.5 hold=1 long_only | 523 | 46.5% | -0.056% | 0.718x | -15.6% | -35.9% |
+| SMH/SOXX lb=80 z=1.5 hold=3 neutral | 359 | 3.6% | -0.199% | 0.489x | -30.7% | -51.1% |
+| SMH/SOXX lb=80 z=1.5 hold=3 long_only | 359 | 49.9% | -0.049% | 0.806x | -10.5% | -27.4% |
+| SMH/SOXX lb=80 z=2.0 hold=1 neutral | 234 | 1.3% | -0.206% | 0.618x | -22.0% | -38.1% |
+| SMH/SOXX lb=80 z=2.0 hold=1 long_only | 234 | 47.0% | -0.061% | 0.857x | -7.7% | -18.3% |
+| SMH/SOXX lb=80 z=2.0 hold=3 neutral | 164 | 3.7% | -0.202% | 0.718x | -15.7% | -28.3% |
+| SMH/SOXX lb=80 z=2.0 hold=3 long_only | 164 | 51.8% | +0.061% | 1.053x | +2.7% | -13.0% |
+| QQQ/SPY lb=20 z=1.5 hold=1 neutral | 542 | 1.5% | -0.202% | 0.335x | -42.5% | -66.5% |
+| QQQ/SPY lb=20 z=1.5 hold=1 long_only | 542 | 36.0% | -0.123% | 0.509x | -28.9% | -49.7% |
+| QQQ/SPY lb=20 z=1.5 hold=3 neutral | 384 | 3.9% | -0.204% | 0.456x | -32.7% | -54.5% |
+| QQQ/SPY lb=20 z=1.5 hold=3 long_only | 384 | 39.8% | -0.122% | 0.619x | -21.5% | -40.4% |
+| QQQ/SPY lb=20 z=2.0 hold=1 neutral | 225 | 1.3% | -0.209% | 0.624x | -21.2% | -37.5% |
+| QQQ/SPY lb=20 z=2.0 hold=1 long_only | 225 | 38.7% | -0.107% | 0.783x | -11.6% | -22.7% |
+| QQQ/SPY lb=20 z=2.0 hold=3 neutral | 167 | 4.8% | -0.213% | 0.700x | -16.5% | -30.2% |
+| QQQ/SPY lb=20 z=2.0 hold=3 long_only | 167 | 43.1% | -0.140% | 0.788x | -11.4% | -24.2% |
+| QQQ/SPY lb=40 z=1.5 hold=1 neutral | 549 | 1.3% | -0.204% | 0.326x | -43.4% | -67.4% |
+| QQQ/SPY lb=40 z=1.5 hold=1 long_only | 549 | 35.7% | -0.100% | 0.573x | -24.7% | -45.1% |
+| QQQ/SPY lb=40 z=1.5 hold=3 neutral | 377 | 3.4% | -0.207% | 0.457x | -32.8% | -54.3% |
+| QQQ/SPY lb=40 z=1.5 hold=3 long_only | 377 | 39.3% | -0.089% | 0.707x | -16.1% | -32.4% |
+| QQQ/SPY lb=40 z=2.0 hold=1 neutral | 269 | 1.9% | -0.204% | 0.577x | -24.5% | -41.9% |
+| QQQ/SPY lb=40 z=2.0 hold=1 long_only | 269 | 37.2% | -0.094% | 0.774x | -12.3% | -23.6% |
+| QQQ/SPY lb=40 z=2.0 hold=3 neutral | 186 | 3.8% | -0.208% | 0.679x | -18.0% | -32.0% |
+| QQQ/SPY lb=40 z=2.0 hold=3 long_only | 186 | 41.4% | -0.064% | 0.884x | -6.1% | -17.3% |
+| QQQ/SPY lb=80 z=1.5 hold=1 neutral | 531 | 1.5% | -0.207% | 0.334x | -43.1% | -66.4% |
+| QQQ/SPY lb=80 z=1.5 hold=1 long_only | 531 | 36.0% | -0.100% | 0.585x | -24.0% | -44.0% |
+| QQQ/SPY lb=80 z=1.5 hold=3 neutral | 357 | 2.8% | -0.212% | 0.469x | -32.2% | -53.0% |
+| QQQ/SPY lb=80 z=1.5 hold=3 long_only | 357 | 38.9% | -0.109% | 0.674x | -18.3% | -35.4% |
+| QQQ/SPY lb=80 z=2.0 hold=1 neutral | 254 | 3.1% | -0.198% | 0.604x | -22.9% | -39.2% |
+| QQQ/SPY lb=80 z=2.0 hold=1 long_only | 254 | 36.6% | -0.065% | 0.844x | -8.3% | -19.1% |
+| QQQ/SPY lb=80 z=2.0 hold=3 neutral | 177 | 6.2% | -0.200% | 0.701x | -16.7% | -29.7% |
+| QQQ/SPY lb=80 z=2.0 hold=3 long_only | 177 | 41.2% | -0.061% | 0.895x | -5.6% | -15.0% |
 ### Cross-sectional
 
 | variant | n | hit | mean net | after-tax | CAGR | maxDD |
 |---|---:|---:|---:|---:|---:|---:|
-| xsec lb=1 long_only | 2981 | 35.9% | -0.102% | 0.046x | -78.6% | -95.5% |
+| xsec lb=1 long_only | 2981 | 35.9% | -0.102% | 0.046x | -78.5% | -95.5% |
 | xsec lb=1 neutral | 2981 | 16.1% | -0.208% | 0.002x | -95.6% | -99.8% |
-| xsec lb=3 long_only | 2980 | 35.9% | -0.103% | 0.045x | -79.1% | -95.7% |
-| xsec lb=3 neutral | 2980 | 16.6% | -0.212% | 0.002x | -95.9% | -99.8% |
+| xsec lb=3 long_only | 2980 | 35.9% | -0.103% | 0.045x | -78.9% | -95.7% |
+| xsec lb=3 neutral | 2980 | 16.6% | -0.212% | 0.002x | -95.8% | -99.8% |
 
 QQQ same 2y window: 1.25x gross buy & hold.
 
@@ -118,96 +118,96 @@ QQQ same 2y window: 1.25x gross buy & hold.
 
 | variant | n | hit | mean net | after-tax | CAGR | maxDD |
 |---|---:|---:|---:|---:|---:|---:|
-| QQQ lag=1 momentum thr=0.000% | 4661 | 13.1% | -0.103% | 0.008x | -100.0% | -99.1% |
-| QQQ lag=1 momentum thr=0.100% | 2291 | 19.1% | -0.101% | 0.099x | -100.0% | -89.9% |
-| QQQ lag=1 momentum thr=0.250% | 858 | 25.8% | -0.095% | 0.441x | -97.0% | -55.5% |
-| QQQ lag=1 reversal thr=0.000% | 4661 | 13.9% | -0.097% | 0.011x | -100.0% | -98.8% |
-| QQQ lag=1 reversal thr=0.100% | 2291 | 18.6% | -0.099% | 0.102x | -100.0% | -89.5% |
-| QQQ lag=1 reversal thr=0.250% | 858 | 24.2% | -0.105% | 0.406x | -97.9% | -59.2% |
-| QQQ lag=2 momentum thr=0.000% | 4660 | 13.6% | -0.099% | 0.010x | -100.0% | -99.0% |
-| QQQ lag=2 momentum thr=0.100% | 2290 | 18.5% | -0.100% | 0.101x | -100.0% | -89.7% |
-| QQQ lag=2 momentum thr=0.250% | 857 | 23.9% | -0.101% | 0.421x | -97.5% | -57.7% |
-| QQQ lag=2 reversal thr=0.000% | 4660 | 13.4% | -0.101% | 0.009x | -100.0% | -99.0% |
-| QQQ lag=2 reversal thr=0.100% | 2290 | 18.3% | -0.100% | 0.101x | -100.0% | -89.7% |
-| QQQ lag=2 reversal thr=0.250% | 857 | 24.9% | -0.099% | 0.426x | -97.4% | -57.0% |
-| QQQ lag=3 momentum thr=0.000% | 4659 | 13.1% | -0.101% | 0.009x | -100.0% | -99.0% |
-| QQQ lag=3 momentum thr=0.100% | 2289 | 18.3% | -0.102% | 0.096x | -100.0% | -90.2% |
-| QQQ lag=3 momentum thr=0.250% | 857 | 22.8% | -0.105% | 0.406x | -97.9% | -59.1% |
-| QQQ lag=3 reversal thr=0.000% | 4659 | 13.8% | -0.099% | 0.010x | -100.0% | -98.9% |
-| QQQ lag=3 reversal thr=0.100% | 2289 | 19.0% | -0.098% | 0.106x | -100.0% | -89.1% |
-| QQQ lag=3 reversal thr=0.250% | 857 | 25.3% | -0.095% | 0.442x | -96.9% | -55.5% |
+| QQQ lag=1 momentum thr=0.000% | 4602 | 12.9% | -0.103% | 0.009x | -100.0% | -99.1% |
+| QQQ lag=1 momentum thr=0.100% | 2253 | 18.9% | -0.102% | 0.101x | -100.0% | -89.7% |
+| QQQ lag=1 momentum thr=0.250% | 846 | 25.4% | -0.098% | 0.436x | -97.3% | -56.0% |
+| QQQ lag=1 reversal thr=0.000% | 4602 | 13.7% | -0.097% | 0.012x | -100.0% | -98.8% |
+| QQQ lag=1 reversal thr=0.100% | 2253 | 18.5% | -0.098% | 0.108x | -100.0% | -88.9% |
+| QQQ lag=1 reversal thr=0.250% | 846 | 24.2% | -0.102% | 0.421x | -97.7% | -57.7% |
+| QQQ lag=2 momentum thr=0.000% | 4602 | 13.4% | -0.100% | 0.010x | -100.0% | -98.9% |
+| QQQ lag=2 momentum thr=0.100% | 2258 | 18.3% | -0.100% | 0.105x | -100.0% | -89.3% |
+| QQQ lag=2 momentum thr=0.250% | 848 | 23.8% | -0.101% | 0.423x | -97.6% | -57.5% |
+| QQQ lag=2 reversal thr=0.000% | 4602 | 13.2% | -0.100% | 0.010x | -100.0% | -98.9% |
+| QQQ lag=2 reversal thr=0.100% | 2258 | 18.0% | -0.100% | 0.103x | -100.0% | -89.4% |
+| QQQ lag=2 reversal thr=0.250% | 848 | 24.8% | -0.099% | 0.432x | -97.4% | -56.4% |
+| QQQ lag=3 momentum thr=0.000% | 4600 | 13.1% | -0.100% | 0.010x | -100.0% | -98.9% |
+| QQQ lag=3 momentum thr=0.100% | 2273 | 18.3% | -0.100% | 0.102x | -100.0% | -89.6% |
+| QQQ lag=3 momentum thr=0.250% | 851 | 22.8% | -0.102% | 0.420x | -97.7% | -57.7% |
+| QQQ lag=3 reversal thr=0.000% | 4600 | 13.5% | -0.100% | 0.010x | -100.0% | -98.9% |
+| QQQ lag=3 reversal thr=0.100% | 2273 | 18.7% | -0.100% | 0.103x | -100.0% | -89.4% |
+| QQQ lag=3 reversal thr=0.250% | 851 | 25.0% | -0.098% | 0.433x | -97.4% | -56.4% |
 | QQQ regression | 4561 | 13.9% | -0.100% | 0.010x | -100.0% | -98.9% |
-| SPY lag=1 momentum thr=0.000% | 4661 | 7.0% | -0.102% | 0.009x | -100.0% | -99.1% |
-| SPY lag=1 momentum thr=0.100% | 2291 | 10.7% | -0.100% | 0.100x | -100.0% | -89.8% |
-| SPY lag=1 momentum thr=0.250% | 858 | 16.3% | -0.097% | 0.434x | -97.2% | -56.3% |
-| SPY lag=1 reversal thr=0.000% | 4661 | 7.8% | -0.098% | 0.010x | -100.0% | -98.9% |
-| SPY lag=1 reversal thr=0.100% | 2291 | 10.7% | -0.100% | 0.102x | -100.0% | -89.5% |
-| SPY lag=1 reversal thr=0.250% | 858 | 16.6% | -0.103% | 0.413x | -97.7% | -58.4% |
-| SPY lag=2 momentum thr=0.000% | 4660 | 7.6% | -0.100% | 0.010x | -100.0% | -99.0% |
-| SPY lag=2 momentum thr=0.100% | 2290 | 11.1% | -0.099% | 0.104x | -100.0% | -89.4% |
-| SPY lag=2 momentum thr=0.250% | 857 | 15.9% | -0.098% | 0.431x | -97.3% | -56.6% |
-| SPY lag=2 reversal thr=0.000% | 4660 | 7.2% | -0.100% | 0.009x | -100.0% | -99.0% |
-| SPY lag=2 reversal thr=0.100% | 2290 | 10.7% | -0.101% | 0.098x | -100.0% | -89.9% |
-| SPY lag=2 reversal thr=0.250% | 857 | 15.3% | -0.102% | 0.417x | -97.6% | -58.0% |
-| SPY lag=3 momentum thr=0.000% | 4659 | 7.1% | -0.101% | 0.009x | -100.0% | -99.0% |
-| SPY lag=3 momentum thr=0.100% | 2289 | 10.6% | -0.102% | 0.097x | -100.0% | -90.1% |
-| SPY lag=3 momentum thr=0.250% | 857 | 15.3% | -0.105% | 0.407x | -97.9% | -59.0% |
-| SPY lag=3 reversal thr=0.000% | 4659 | 7.6% | -0.099% | 0.010x | -100.0% | -98.9% |
-| SPY lag=3 reversal thr=0.100% | 2289 | 11.1% | -0.098% | 0.106x | -100.0% | -89.1% |
-| SPY lag=3 reversal thr=0.250% | 857 | 16.5% | -0.095% | 0.442x | -96.9% | -55.5% |
+| SPY lag=1 momentum thr=0.000% | 4602 | 6.8% | -0.102% | 0.009x | -100.0% | -99.0% |
+| SPY lag=1 momentum thr=0.100% | 2253 | 10.5% | -0.101% | 0.103x | -100.0% | -89.5% |
+| SPY lag=1 momentum thr=0.250% | 846 | 15.8% | -0.098% | 0.434x | -97.3% | -56.2% |
+| SPY lag=1 reversal thr=0.000% | 4602 | 7.6% | -0.098% | 0.011x | -100.0% | -98.8% |
+| SPY lag=1 reversal thr=0.100% | 2253 | 10.5% | -0.099% | 0.107x | -100.0% | -89.0% |
+| SPY lag=1 reversal thr=0.250% | 846 | 16.4% | -0.102% | 0.423x | -97.6% | -57.4% |
+| SPY lag=2 momentum thr=0.000% | 4602 | 7.4% | -0.100% | 0.010x | -100.0% | -98.9% |
+| SPY lag=2 momentum thr=0.100% | 2258 | 11.0% | -0.099% | 0.107x | -100.0% | -89.1% |
+| SPY lag=2 momentum thr=0.250% | 848 | 15.8% | -0.099% | 0.433x | -97.4% | -56.4% |
+| SPY lag=2 reversal thr=0.000% | 4602 | 7.0% | -0.100% | 0.010x | -100.0% | -98.9% |
+| SPY lag=2 reversal thr=0.100% | 2258 | 10.5% | -0.101% | 0.102x | -100.0% | -89.6% |
+| SPY lag=2 reversal thr=0.250% | 848 | 15.1% | -0.101% | 0.423x | -97.6% | -57.4% |
+| SPY lag=3 momentum thr=0.000% | 4600 | 6.9% | -0.100% | 0.010x | -100.0% | -98.9% |
+| SPY lag=3 momentum thr=0.100% | 2273 | 10.5% | -0.101% | 0.100x | -100.0% | -89.7% |
+| SPY lag=3 momentum thr=0.250% | 851 | 15.3% | -0.103% | 0.417x | -97.8% | -58.0% |
+| SPY lag=3 reversal thr=0.000% | 4600 | 7.4% | -0.100% | 0.010x | -100.0% | -98.9% |
+| SPY lag=3 reversal thr=0.100% | 2273 | 10.8% | -0.099% | 0.105x | -100.0% | -89.2% |
+| SPY lag=3 reversal thr=0.250% | 851 | 16.1% | -0.097% | 0.436x | -97.3% | -56.1% |
 | SPY regression | 4561 | 7.3% | -0.100% | 0.010x | -100.0% | -98.9% |
 ### Intraday pairs
 
 | variant | n | hit | mean net | after-tax | CAGR | maxDD |
 |---|---:|---:|---:|---:|---:|---:|
-| SMH/SOXX lb=20 z=1.5 hold=1 neutral | 764 | 0.3% | -0.203% | 0.212x | -99.9% | -78.5% |
-| SMH/SOXX lb=20 z=1.5 hold=1 long_only | 764 | 32.3% | -0.106% | 0.441x | -96.8% | -56.8% |
-| SMH/SOXX lb=20 z=1.5 hold=3 neutral | 496 | 1.4% | -0.197% | 0.376x | -98.3% | -62.1% |
-| SMH/SOXX lb=20 z=1.5 hold=3 long_only | 496 | 35.3% | -0.127% | 0.526x | -93.3% | -50.3% |
-| SMH/SOXX lb=20 z=2.0 hold=1 neutral | 334 | 0.0% | -0.203% | 0.507x | -94.2% | -49.2% |
-| SMH/SOXX lb=20 z=2.0 hold=1 long_only | 334 | 32.6% | -0.102% | 0.707x | -76.7% | -29.2% |
-| SMH/SOXX lb=20 z=2.0 hold=3 neutral | 243 | 0.4% | -0.205% | 0.607x | -87.7% | -39.2% |
-| SMH/SOXX lb=20 z=2.0 hold=3 long_only | 243 | 40.7% | -0.117% | 0.747x | -70.6% | -25.9% |
-| SMH/SOXX lb=40 z=1.5 hold=1 neutral | 753 | 0.4% | -0.204% | 0.215x | -99.8% | -78.4% |
-| SMH/SOXX lb=40 z=1.5 hold=1 long_only | 753 | 33.2% | -0.106% | 0.444x | -96.7% | -55.5% |
-| SMH/SOXX lb=40 z=1.5 hold=3 neutral | 448 | 1.3% | -0.202% | 0.405x | -97.8% | -59.4% |
-| SMH/SOXX lb=40 z=1.5 hold=3 long_only | 448 | 37.9% | -0.147% | 0.512x | -94.0% | -48.8% |
-| SMH/SOXX lb=40 z=2.0 hold=1 neutral | 381 | 0.5% | -0.203% | 0.460x | -96.4% | -53.4% |
-| SMH/SOXX lb=40 z=2.0 hold=1 long_only | 381 | 35.2% | -0.130% | 0.602x | -88.5% | -39.8% |
-| SMH/SOXX lb=40 z=2.0 hold=3 neutral | 242 | 1.7% | -0.201% | 0.614x | -87.5% | -38.1% |
-| SMH/SOXX lb=40 z=2.0 hold=3 long_only | 242 | 38.4% | -0.148% | 0.691x | -79.4% | -32.4% |
-| SMH/SOXX lb=80 z=1.5 hold=1 neutral | 726 | 0.4% | -0.200% | 0.233x | -99.8% | -76.4% |
-| SMH/SOXX lb=80 z=1.5 hold=1 long_only | 726 | 34.7% | -0.102% | 0.472x | -95.9% | -52.5% |
-| SMH/SOXX lb=80 z=1.5 hold=3 neutral | 407 | 1.2% | -0.199% | 0.445x | -96.8% | -55.3% |
-| SMH/SOXX lb=80 z=1.5 hold=3 long_only | 407 | 40.5% | -0.128% | 0.588x | -89.7% | -41.0% |
-| SMH/SOXX lb=80 z=2.0 hold=1 neutral | 424 | 0.9% | -0.203% | 0.423x | -97.8% | -57.3% |
-| SMH/SOXX lb=80 z=2.0 hold=1 long_only | 424 | 34.2% | -0.134% | 0.562x | -92.2% | -43.9% |
-| SMH/SOXX lb=80 z=2.0 hold=3 neutral | 243 | 1.2% | -0.203% | 0.610x | -88.4% | -38.7% |
-| SMH/SOXX lb=80 z=2.0 hold=3 long_only | 243 | 38.7% | -0.162% | 0.671x | -82.4% | -33.3% |
-| QQQ/SPY lb=20 z=1.5 hold=1 neutral | 738 | 0.3% | -0.199% | 0.229x | -99.8% | -76.9% |
-| QQQ/SPY lb=20 z=1.5 hold=1 long_only | 738 | 17.9% | -0.097% | 0.488x | -95.1% | -51.3% |
-| QQQ/SPY lb=20 z=1.5 hold=3 neutral | 475 | 1.1% | -0.202% | 0.383x | -98.2% | -61.4% |
-| QQQ/SPY lb=20 z=1.5 hold=3 long_only | 475 | 21.1% | -0.105% | 0.606x | -87.8% | -40.6% |
-| QQQ/SPY lb=20 z=2.0 hold=1 neutral | 336 | 1.5% | -0.199% | 0.512x | -94.0% | -48.6% |
-| QQQ/SPY lb=20 z=2.0 hold=1 long_only | 336 | 22.6% | -0.082% | 0.758x | -68.8% | -24.2% |
-| QQQ/SPY lb=20 z=2.0 hold=3 neutral | 240 | 2.1% | -0.200% | 0.618x | -86.7% | -37.9% |
-| QQQ/SPY lb=20 z=2.0 hold=3 long_only | 240 | 28.3% | -0.082% | 0.821x | -56.3% | -19.5% |
-| QQQ/SPY lb=40 z=1.5 hold=1 neutral | 738 | 0.8% | -0.199% | 0.229x | -99.8% | -77.0% |
-| QQQ/SPY lb=40 z=1.5 hold=1 long_only | 738 | 21.1% | -0.098% | 0.484x | -95.3% | -51.6% |
-| QQQ/SPY lb=40 z=1.5 hold=3 neutral | 435 | 1.6% | -0.204% | 0.411x | -97.6% | -58.8% |
-| QQQ/SPY lb=40 z=1.5 hold=3 long_only | 435 | 25.7% | -0.103% | 0.638x | -84.8% | -36.1% |
-| QQQ/SPY lb=40 z=2.0 hold=1 neutral | 380 | 1.3% | -0.200% | 0.467x | -95.9% | -53.2% |
-| QQQ/SPY lb=40 z=2.0 hold=1 long_only | 380 | 21.3% | -0.110% | 0.659x | -82.7% | -34.2% |
-| QQQ/SPY lb=40 z=2.0 hold=3 neutral | 244 | 2.0% | -0.204% | 0.607x | -87.7% | -39.1% |
-| QQQ/SPY lb=40 z=2.0 hold=3 long_only | 244 | 25.8% | -0.118% | 0.749x | -70.3% | -25.0% |
-| QQQ/SPY lb=80 z=1.5 hold=1 neutral | 690 | 0.7% | -0.200% | 0.251x | -99.8% | -74.2% |
-| QQQ/SPY lb=80 z=1.5 hold=1 long_only | 690 | 20.9% | -0.105% | 0.483x | -95.8% | -51.2% |
-| QQQ/SPY lb=80 z=1.5 hold=3 neutral | 376 | 1.3% | -0.203% | 0.467x | -96.4% | -52.6% |
-| QQQ/SPY lb=80 z=1.5 hold=3 long_only | 376 | 26.6% | -0.114% | 0.650x | -84.6% | -34.6% |
-| QQQ/SPY lb=80 z=2.0 hold=1 neutral | 437 | 1.1% | -0.199% | 0.419x | -98.1% | -57.3% |
-| QQQ/SPY lb=80 z=2.0 hold=1 long_only | 437 | 23.3% | -0.106% | 0.628x | -88.1% | -36.8% |
-| QQQ/SPY lb=80 z=2.0 hold=3 neutral | 246 | 1.6% | -0.200% | 0.611x | -89.6% | -38.1% |
-| QQQ/SPY lb=80 z=2.0 hold=3 long_only | 246 | 28.0% | -0.120% | 0.743x | -74.4% | -25.4% |
+| SMH/SOXX lb=20 z=1.5 hold=1 neutral | 750 | 0.3% | -0.203% | 0.218x | -99.9% | -78.0% |
+| SMH/SOXX lb=20 z=1.5 hold=1 long_only | 750 | 32.7% | -0.090% | 0.506x | -94.8% | -50.4% |
+| SMH/SOXX lb=20 z=1.5 hold=3 neutral | 496 | 0.6% | -0.202% | 0.367x | -98.7% | -63.1% |
+| SMH/SOXX lb=20 z=1.5 hold=3 long_only | 496 | 36.5% | -0.095% | 0.619x | -87.6% | -40.8% |
+| SMH/SOXX lb=20 z=2.0 hold=1 neutral | 325 | 0.6% | -0.203% | 0.516x | -94.3% | -48.2% |
+| SMH/SOXX lb=20 z=2.0 hold=1 long_only | 325 | 35.1% | -0.057% | 0.827x | -56.1% | -17.9% |
+| SMH/SOXX lb=20 z=2.0 hold=3 neutral | 240 | 0.4% | -0.206% | 0.609x | -88.4% | -39.0% |
+| SMH/SOXX lb=20 z=2.0 hold=3 long_only | 240 | 43.3% | -0.054% | 0.875x | -43.9% | -15.6% |
+| SMH/SOXX lb=40 z=1.5 hold=1 neutral | 737 | 0.3% | -0.206% | 0.219x | -99.9% | -77.9% |
+| SMH/SOXX lb=40 z=1.5 hold=1 long_only | 737 | 33.2% | -0.100% | 0.475x | -96.1% | -52.8% |
+| SMH/SOXX lb=40 z=1.5 hold=3 neutral | 441 | 0.5% | -0.206% | 0.403x | -98.1% | -59.6% |
+| SMH/SOXX lb=40 z=1.5 hold=3 long_only | 441 | 37.9% | -0.124% | 0.574x | -91.1% | -43.4% |
+| SMH/SOXX lb=40 z=2.0 hold=1 neutral | 371 | 0.5% | -0.206% | 0.465x | -96.6% | -53.0% |
+| SMH/SOXX lb=40 z=2.0 hold=1 long_only | 371 | 35.0% | -0.108% | 0.665x | -83.3% | -33.5% |
+| SMH/SOXX lb=40 z=2.0 hold=3 neutral | 237 | 0.8% | -0.208% | 0.610x | -88.6% | -38.5% |
+| SMH/SOXX lb=40 z=2.0 hold=3 long_only | 237 | 38.0% | -0.112% | 0.763x | -69.6% | -24.3% |
+| SMH/SOXX lb=80 z=1.5 hold=1 neutral | 722 | 0.3% | -0.200% | 0.235x | -99.8% | -76.2% |
+| SMH/SOXX lb=80 z=1.5 hold=1 long_only | 722 | 35.2% | -0.096% | 0.497x | -95.4% | -50.0% |
+| SMH/SOXX lb=80 z=1.5 hold=3 neutral | 401 | 0.5% | -0.200% | 0.449x | -97.1% | -54.9% |
+| SMH/SOXX lb=80 z=1.5 hold=3 long_only | 401 | 40.6% | -0.109% | 0.642x | -85.8% | -35.6% |
+| SMH/SOXX lb=80 z=2.0 hold=1 neutral | 421 | 0.7% | -0.203% | 0.426x | -97.7% | -57.0% |
+| SMH/SOXX lb=80 z=2.0 hold=1 long_only | 421 | 34.2% | -0.114% | 0.615x | -88.2% | -38.6% |
+| SMH/SOXX lb=80 z=2.0 hold=3 neutral | 239 | 0.8% | -0.205% | 0.613x | -88.4% | -38.4% |
+| SMH/SOXX lb=80 z=2.0 hold=3 long_only | 239 | 38.1% | -0.144% | 0.705x | -78.5% | -29.5% |
+| QQQ/SPY lb=20 z=1.5 hold=1 neutral | 728 | 0.1% | -0.198% | 0.237x | -99.8% | -76.1% |
+| QQQ/SPY lb=20 z=1.5 hold=1 long_only | 728 | 17.9% | -0.096% | 0.496x | -95.2% | -50.2% |
+| QQQ/SPY lb=20 z=1.5 hold=3 neutral | 478 | 0.6% | -0.198% | 0.387x | -98.4% | -61.0% |
+| QQQ/SPY lb=20 z=1.5 hold=3 long_only | 478 | 21.8% | -0.100% | 0.618x | -87.6% | -39.3% |
+| QQQ/SPY lb=20 z=2.0 hold=1 neutral | 330 | 0.6% | -0.197% | 0.522x | -94.1% | -47.6% |
+| QQQ/SPY lb=20 z=2.0 hold=1 long_only | 330 | 22.4% | -0.081% | 0.764x | -69.1% | -23.7% |
+| QQQ/SPY lb=20 z=2.0 hold=3 neutral | 240 | 1.2% | -0.196% | 0.624x | -87.1% | -37.3% |
+| QQQ/SPY lb=20 z=2.0 hold=3 long_only | 240 | 27.9% | -0.077% | 0.831x | -55.2% | -18.3% |
+| QQQ/SPY lb=40 z=1.5 hold=1 neutral | 730 | 0.1% | -0.201% | 0.231x | -99.8% | -76.9% |
+| QQQ/SPY lb=40 z=1.5 hold=1 long_only | 730 | 20.0% | -0.101% | 0.479x | -95.9% | -52.0% |
+| QQQ/SPY lb=40 z=1.5 hold=3 neutral | 436 | 1.1% | -0.201% | 0.415x | -97.8% | -58.4% |
+| QQQ/SPY lb=40 z=1.5 hold=3 long_only | 436 | 25.2% | -0.105% | 0.631x | -86.5% | -36.8% |
+| QQQ/SPY lb=40 z=2.0 hold=1 neutral | 375 | 0.3% | -0.199% | 0.474x | -96.1% | -52.5% |
+| QQQ/SPY lb=40 z=2.0 hold=1 long_only | 375 | 20.8% | -0.105% | 0.674x | -82.0% | -32.6% |
+| QQQ/SPY lb=40 z=2.0 hold=3 neutral | 245 | 0.8% | -0.200% | 0.613x | -88.1% | -38.6% |
+| QQQ/SPY lb=40 z=2.0 hold=3 long_only | 245 | 25.7% | -0.107% | 0.769x | -68.1% | -23.3% |
+| QQQ/SPY lb=80 z=1.5 hold=1 neutral | 687 | 0.4% | -0.201% | 0.251x | -99.8% | -74.2% |
+| QQQ/SPY lb=80 z=1.5 hold=1 long_only | 687 | 20.7% | -0.107% | 0.479x | -96.1% | -51.6% |
+| QQQ/SPY lb=80 z=1.5 hold=3 neutral | 377 | 1.1% | -0.203% | 0.465x | -96.5% | -52.7% |
+| QQQ/SPY lb=80 z=1.5 hold=3 long_only | 377 | 25.7% | -0.117% | 0.641x | -85.8% | -35.4% |
+| QQQ/SPY lb=80 z=2.0 hold=1 neutral | 434 | 0.7% | -0.201% | 0.418x | -97.8% | -57.4% |
+| QQQ/SPY lb=80 z=2.0 hold=1 long_only | 434 | 23.5% | -0.105% | 0.634x | -86.5% | -36.1% |
+| QQQ/SPY lb=80 z=2.0 hold=3 neutral | 243 | 1.6% | -0.201% | 0.613x | -88.4% | -37.9% |
+| QQQ/SPY lb=80 z=2.0 hold=3 long_only | 243 | 29.6% | -0.117% | 0.752x | -71.4% | -24.4% |
 ### Cross-sectional
 
 | variant | n | hit | mean net | after-tax | CAGR | maxDD |
@@ -221,8 +221,8 @@ QQQ same 60-day window: 0.90x gross.
 
 ## 2x costs (best rows)
 
-- 1h: best 2x row pair SMH/SOXX 0.837x, n=183.
-- 5m: best 2x row pair QQQ/SPY 0.646x, n=240.
+- 1h: best 2x row pair SMH/SOXX 0.912x, n=164.
+- 5m: best 2x row pair SMH/SOXX 0.689x, n=240.
 
 ## Verdict
 
@@ -231,7 +231,7 @@ QQQ same 60-day window: 0.90x gross.
 - best 1h survives 2x costs: **FAIL**
 - best 5m after-tax beats QQQ 60d: **FAIL**
 
-**Verdict: `reject`.** Every intraday family loses after realistic costs. Best 1h row is pair at 1.078x vs QQQ 1.25x; best 5m row is 0.821x on a 60-day sample. There is no implementable satellite edge; keep the monthly book.
+**Verdict: `reject`.** Every intraday family loses after realistic costs. Best 1h row is pair at 1.053x vs QQQ 1.25x; best 5m row is 0.875x on a 60-day sample. There is no implementable satellite edge; keep the monthly book.
 
 ## Sample limits
 

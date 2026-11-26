@@ -30,7 +30,8 @@ def load_bars(symbol: str, interval: str, range_: str) -> pd.DataFrame:
     df["ts"] = ts
     df["session"] = ts.dt.normalize()
     df = df[(ts.dt.time >= pd.Timestamp("09:30").time()) & (ts.dt.time <= pd.Timestamp("16:00").time())]
-    df = df.dropna(subset=["open", "close"]).sort_values("ts").reset_index(drop=True)
+    df = df.dropna(subset=["open", "close"]).sort_values("ts")
+    df = df.drop_duplicates("ts", keep="last").reset_index(drop=True)
     return df
 
 
@@ -83,10 +84,14 @@ def summarize_trades(trades: pd.DataFrame, n_sessions: int) -> dict:
     daily = trades.groupby("session")["net"].apply(lambda x: float(np.prod(1.0 + x) - 1.0))
     daily = daily.sort_index()
     equity, tax = _tax_equity(daily)
-    years = len(daily) / 252.0
+    # CAGR must use the calendar span, not the number of active trade days:
+    # a sparse strategy with 20 trades over two years is not a 0.08-year path.
+    span_days = max((daily.index[-1] - daily.index[0]).days, 1)
+    years = span_days / 365.25
     return {
         "n": int(len(trades)),
         "sessions": int(n_sessions),
+        "years": float(years),
         "multiple": float(equity.iloc[-1]),
         "cagr": float(equity.iloc[-1] ** (1.0 / years) - 1.0) if years > 0 else 0.0,
         "maxdd": float((equity / equity.cummax() - 1.0).min()),

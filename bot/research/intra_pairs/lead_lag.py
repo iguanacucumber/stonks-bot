@@ -41,6 +41,13 @@ def lead_lag_trades(
     if mode == "reversal":
         direction = -direction
     active = (direction != 0.0) & (src_ret.abs() >= threshold) & tgt_next.notna()
+    # Do not use the next session's first bar as an "intraday" trade.
+    same_session = pd.Series(
+        [pd.Timestamp(df.index[i]).normalize() == pd.Timestamp(df.index[i + 1]).normalize()
+         if i + 1 < len(df) else False for i in range(len(df))],
+        index=df.index,
+    )
+    active &= same_session
     rows = []
     for ts in df.index[active]:
         i = df.index.get_loc(ts)

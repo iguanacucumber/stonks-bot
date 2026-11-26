@@ -39,6 +39,9 @@ def pair_trades(
         if not np.isfinite(zi):
             continue
         if state == 0:
+            # Never enter at the next session's open from a last-bar signal.
+            if i + 1 >= len(df) or df.index[i].normalize() != df.index[i + 1].normalize():
+                continue
             if zi <= -entry_z:
                 state, entry_i = 1, i + 1
                 entry_a = float(df["a_open"].iloc[i + 1])
@@ -51,15 +54,19 @@ def pair_trades(
                 continue
         if state != 0:
             held = i + 1 - entry_i
-            at_session_end = i + 2 >= len(df) or df.index[i + 1].normalize() != df.index[i + 2].normalize()
+            at_session_end = (
+                i + 1 >= len(df)
+                or df.index[i].normalize() != df.index[i + 1].normalize()
+            )
             exit_now = (
                 abs(zi) <= exit_z
                 or held >= max_hold
                 or at_session_end
             )
             if exit_now and entry_a and entry_b:
-                exit_a = float(df["a_close"].iloc[i + 1])
-                exit_b = float(df["b_close"].iloc[i + 1])
+                exit_i = i if at_session_end else i + 1
+                exit_a = float(df["a_close"].iloc[exit_i])
+                exit_b = float(df["b_close"].iloc[exit_i])
                 ra = exit_a / entry_a - 1.0
                 rb = exit_b / entry_b - 1.0
                 if mode == "neutral":
@@ -72,6 +79,7 @@ def pair_trades(
                     {
                         "session": pd.Timestamp(df.index[entry_i]).normalize(),
                         "entry_ts": df.index[entry_i],
+                        "exit_ts": df.index[exit_i],
                         "direction": float(state),
                         "gross": gross,
                         "net": gross - cost,
