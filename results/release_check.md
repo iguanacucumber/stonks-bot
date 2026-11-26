@@ -1,20 +1,20 @@
 # Release check — v7
 
 - Overall: **PASS**
-- Generated: 2026-11-26T16:56:00+00:00
-- Commit: `85a7b7d`
+- Generated: 2026-11-26T16:58:33+00:00
+- Commit: `4082c18`
 - Data snapshot: **2026-11-25**
 - Checks: 9 PASS · 1 WAIT · 0 SKIP · 0 FAIL
 
 | check | status | detail | seconds | command |
 |---|---|---|---:|---|
 | cache | **PASS** | snapshot=2026-11-25 | 0.0 | `cache/bars` |
-| tests | **PASS** | 30/30 test scripts passed | 19.8 | `for t in tests/test_*.py; do python $t; done` |
+| tests | **PASS** | 30/30 test scripts passed | 19.7 | `for t in tests/test_*.py; do python $t; done` |
 | acceptance | **PASS** | 12/12 checks pass | 12.6 | `python scripts/acceptance.py --json` |
 | reproduce_baseline | **PASS** | 4/4 baseline rows; exit 0 | 5.0 | `python scripts/reproduce.py baseline --no-write` |
 | eur_ledger | **PASS** | TECH/monthly=52.98x, TECH/tax=48.80x, US/monthly=66.17x, US/tax=48.80x | 0.0 | `parsed from reproduce_baseline` |
-| live_plan_us | **PASS** | orders=6 status=OK | 1.3 | `python scripts/live.py plan --book monthly --market US --as-of 2026-11-25 --state-dir /tmp/opencode/stonks-release-0rbsgv5e --json` |
-| live_plan_tech | **PASS** | orders=6 status=OK | 0.6 | `python scripts/live.py plan --book monthly --market TECH --as-of 2026-11-25 --state-dir /tmp/opencode/stonks-release-0rbsgv5e --json` |
+| live_plan_us | **PASS** | orders=6 status=OK | 1.3 | `python scripts/live.py plan --book monthly --market US --as-of 2026-11-25 --state-dir /tmp/opencode/stonks-release-34105nyq --json` |
+| live_plan_tech | **PASS** | orders=6 status=OK | 0.6 | `python scripts/live.py plan --book monthly --market TECH --as-of 2026-11-25 --state-dir /tmp/opencode/stonks-release-34105nyq --json` |
 | forward_gate | **WAIT** | next_session=2026-11-27; monthly/TECH=1/5, monthly/US=0/5 | 0.0 | `results/forward_status.md + paper_audit.csv` |
 | dashboard_check | **PASS** | DASHBOARD CHECK OK  books=2  warnings=1  failures=0  synthetic=False | 0.3 | `python scripts/dashboard.py --check` |
 | no_secrets | **PASS** | 299 tracked text files scanned; no obvious secrets | 0.1 | `git ls-files + pattern scan` |
