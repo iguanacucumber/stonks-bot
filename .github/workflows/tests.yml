@@ -40,11 +40,11 @@ jobs:
       - name: Cache-aware reproduction smoke
         run: |
           set -euo pipefail
-          if compgen -G "cache/bars/*.csv" >/dev/null; then
+          if [ -f cache/bars/SPY.csv ] && [ -f cache/bars/SMH.csv ] && [ -f cache/panel.parquet ]; then
             uv run python scripts/reproduce.py headline --paths 100 --no-strict
             uv run python scripts/reproduce.py audit
           else
-            echo "cache/bars absent in CI: full-cache reproduction skipped"
+            echo "full cache absent in CI: full-cache reproduction skipped"
             uv run python scripts/reproduce.py audit --allow-missing
           fi
 
