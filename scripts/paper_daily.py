@@ -345,6 +345,8 @@ def main():
         help="recompute the last close-valid row from final bars (keeps live prices)",
     )
     args = ap.parse_args()
+    if args.refresh:
+        refresh(args.market)
     daily_path = book_paths(args.book)[0]
     ledger_path = ledger_file(args.book, args.market)
     replay_path = replay_file(args.book, args.market)

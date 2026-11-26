@@ -44,6 +44,12 @@ def main() -> None:
     assert data.target_session(
         datetime(2026, 11, 28, 15, 0, tzinfo=utc)
     ) == pd.Timestamp("2026-11-27")
+    assert data.target_session(
+        datetime(2026, 11, 28, 23, 0, tzinfo=utc)
+    ) == pd.Timestamp("2026-11-27")
+    assert data.target_session(
+        datetime(2026, 11, 29, 23, 0, tzinfo=utc)
+    ) == pd.Timestamp("2026-11-27")
 
     with TemporaryDirectory() as tmp:
         tmp = Path(tmp)

@@ -83,10 +83,14 @@ def _parse(res: dict) -> pd.DataFrame:
 
 
 def target_session(now: datetime | None = None) -> pd.Timestamp:
-    """Last completed US session date at 16:30 ET, else the prior business day."""
+    """Last completed US session date at 16:30 ET, else the prior business day.
+
+    The 16:30 cutoff is a data-safety delay, not the market close: it gives
+    Yahoo time to publish the final daily bar. Weekends always roll back.
+    """
     et = (now or datetime.now(timezone.utc)).astimezone(ZoneInfo("America/New_York"))
     d = pd.Timestamp(et.date())
-    if et.hour < 16 or (et.hour == 16 and et.minute < 30):
+    if d.weekday() >= 5 or et.hour < 16 or (et.hour == 16 and et.minute < 30):
         d -= pd.offsets.BDay(1)
     return d
 

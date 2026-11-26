@@ -7,6 +7,7 @@ from dataclasses import replace
 from datetime import datetime, timezone
 from pathlib import Path
 from tempfile import TemporaryDirectory
+from unittest.mock import patch
 from zoneinfo import ZoneInfo
 
 import numpy as np
@@ -17,6 +18,7 @@ sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(ROOT / "scripts"))
 
 from bot import backtest, france, markets, strategy, universe  # noqa: E402
+import paper_daily as paper_cli  # noqa: E402
 from paper_daily import (  # noqa: E402
     book_config,
     book_paths,
@@ -513,6 +515,16 @@ def main():
     assert replay_file("monthly", "US").name == "paper_replay_us.csv"
     assert ledger_file("monthly", "TECH") == book_paths("monthly")[1]
     assert ledger_file("monthly", "US").name == "paper_ledger_us.csv"
+
+    # --refresh must actually call the incremental updater before loading
+    with patch.object(sys, "argv", ["paper_daily.py", "--market", "TECH", "--refresh"]):
+        with patch.object(paper_cli, "refresh") as refresh_mock:
+            with patch.object(paper_cli, "load", side_effect=SystemExit("stop")):
+                try:
+                    paper_cli.main()
+                except SystemExit:
+                    pass
+    assert refresh_mock.call_args.args == ("TECH",), "paper --refresh is a no-op"
 
     # a holiday row must not inherit yesterday's close as a new track-record day
     last = pd.Timestamp("2026-11-25")
