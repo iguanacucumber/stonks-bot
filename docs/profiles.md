@@ -4,11 +4,17 @@ All numbers: €10k, 2015-01-02..2026-11-25, IBKR CTO, French tax, EUR ledger.
 `net` subtracts the risk workstream's dividend-tax scalar; the EUR-ledger column
 is the annual tax-lot replay. These are liquidation values, not promises.
 
-| profile | allocation | EUR ledger | net | maxDD | 2022 |
-|---|---|---:|---:|---:|---:|
-| **max_growth** (default) | 100% US monthly 2.5x | **66.17x** | 61.64x* | -56.9% | -33.7% |
-| **balanced** (paper opt-in) | 70% US monthly book + 30% SPY, total gross 2.05 before the trend cut | **36.56x** | 34.36x* | -46.9% | -27.4% |
-| **conservative** (paper opt-in) | 100% US monthly at 1.5x | **19.27x** | 18.51x* | -40.4% | -20.3% |
+| profile | allocation | EUR ledger (gross div.) | net | maxDD (gross) | maxDD (net) | 2022 gross | 2022 net |
+|---|---|---:|---:|---:|---:|---:|---:|
+| **max_growth** (default) | 100% US monthly 2.5x | **66.17x** | 61.64x* | -56.9% | -56.7% | -33.7% | -33.2% |
+| **balanced** (paper opt-in) | 70% US monthly book + 30% SPY, total gross 2.05 before the trend cut | **36.56x** | 34.36x* | -46.9% | -46.0% | -27.6% | -27.4% |
+| **conservative** (paper opt-in) | 100% US monthly at 1.5x | **19.27x** | 18.51x* | -40.4% | -40.2% | -20.5% | -20.3% |
+
+The table now separates the gross-distribution EUR-ledger path from the net
+scalar-dividend path; the previous balanced row mixed a gross maxDD (-46.9%) with
+a net 2022 (-27.4%). The `net` column is the risk workstream's scalar dividend
+stress, not the exact dividend-event ledger. See `results/review_risk.md` for the
+audit and `results/risk_v3.md` for the decision table.
 
 ## Read this before choosing
 
