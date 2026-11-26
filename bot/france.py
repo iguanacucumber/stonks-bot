@@ -14,6 +14,16 @@ from . import data, markets
 # Broker tariffs. `broker_grid`/`us_grid`: (max ticket in EUR, fixed fee in EUR).
 # Above the last bracket the broker's bps rate applies.
 BROKERS = {
+    "Interactive Brokers": dict(
+        # PEA: 0.05%, min 1.25 EUR; US: 0.005 USD/share, min 1 USD (~0.25 bps);
+        # FX 0.002%. Lowest all-in cost for the US core.
+        broker_grid=((2500, 1.25),),
+        broker_bps=5.0,
+        us_grid=((40000, 1.0),),
+        us_bps=0.25,
+        fx_bps=2.0,
+        custody_bps=0.0,
+    ),
     "Bourse Direct": dict(
         broker_grid=((500, 0.99), (1000, 1.90), (2000, 2.90), (4400, 3.80)),
         broker_bps=9.0,
@@ -35,7 +45,13 @@ BROKERS = {
 ALIASES = {
     "bourse-direct": "Bourse Direct",
     "trade-republic": "Trade Republic",
+    "interactive-brokers": "Interactive Brokers",
+    "ibkr": "Interactive Brokers",
 }
+
+# The CLI picks this automatically for --country fr. Other presets stay for
+# research/comparison, but the default is the lowest all-in cost for the US core.
+DEFAULT_BROKER = "Interactive Brokers"
 
 CURRENCY = {
     "US": "USD",
@@ -85,7 +101,7 @@ def tax_kwargs(
 
 def kwargs(
     market: str,
-    broker: str = "trade-republic",
+    broker: str = DEFAULT_BROKER,
     wrapper: str = "cto",
     capital: float = 10000.0,
     panel: pd.DataFrame | None = None,

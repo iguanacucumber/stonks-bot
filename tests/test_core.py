@@ -465,6 +465,12 @@ def main():
     assert abs(fr["after_tax_native"] - 18000.0) < 1e-6
     assert abs(fr["after_tax_eur"] - 18000.0) < 1e-6
 
+    # the French CLI defaults to the lowest all-in-cost broker
+    assert france.DEFAULT_BROKER == "Interactive Brokers"
+    fr_kw = france.kwargs("TECH")
+    assert fr_kw["fx_bps"] == 2.0
+    assert fr_kw["us_bps"] == 0.25
+
     # forward books: monthly stays the shipped default, tax is the core-only shape
     assert book_config("monthly") == {}
     tax_book = book_config("tax")
