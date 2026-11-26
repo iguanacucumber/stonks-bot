@@ -20,6 +20,8 @@ jobs:
         run: uv run python tests/test_core.py
       - name: PEA audit tests
         run: uv run python tests/test_pea.py
+      - name: Broker matrix tests
+        run: uv run python tests/test_brokers.py
       - name: CLI smoke
         run: |
           uv run python -m bot.cli --help >/dev/null

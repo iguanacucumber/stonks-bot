@@ -149,20 +149,34 @@ the preset uses. At 10 bps DEGIRO looks like the runner-up at 46.32x; at the pub
 the requested study assumption and is optimistic; the sensitivity row
 is the realistic DEGIRO number.
 
+## Best book at IBKR: monthly vs core-only (TECH €10k)
+
+| IBKR FX | monthly | core-only tax |
+|---:|---:|---:|
+| 2 bps | **57.01x** | 50.89x |
+| 3 bps (auto) | **55.59x** | 50.33x |
+| 10 bps | 46.63x | 46.59x |
+| 25 bps | 31.86x | **39.47x** |
+
+At IBKR's 2–3 bps the **monthly book is the best** and is the CLI default. At
+10 bps the two books tie. At 25 bps the core-only tax book wins, and Trade
+Republic's 39.50x tax book is the practical fallback. The book choice is
+therefore a function of the FX cost, not a fixed rule.
+
 ## What this changes
 
-1. **Best CTO broker: Interactive Brokers**, at the modelled FX. It is
-   **50.89x at €10k and 51.12x at €100k**. Trade Republic is the
-   fallback if the investor cannot get IBKR's spot FX, and it is also the
-   simplest €1-ticket broker. The CLI now defaults to
-   `interactive-brokers` for `--country fr`; the other presets stay for
-   comparison.
+1. **Best CTO book+broker: monthly TECH at Interactive Brokers.** It is
+   **57.01x at €10k** on the 2 bps model (55.59x at the 3 bps auto rate), and
+   the core-only tax book is 50.89x. At 25 bps the monthly book falls to
+   31.86x and the core-only book (39.47x at IBKR, 39.50x at Trade Republic)
+   is the better fallback. The CLI now defaults to monthly + IBKR for
+   `--country fr`; `--profile tax` selects the core-only book.
 2. **Best PEA broker: XTB**, but effectively a tie with
    Trade Republic, IBKR and Bourse Direct. Use the PEA only if the
    money is already trapped there; the wrapper decision is not about the
    ticket.
-3. **Broker choice does not change CTO vs PEA.** The best CTO broker
-   turns €10k into **50.89x** after tax; the best PEA
+3. **Broker choice does not change CTO vs PEA.** The best CTO book+broker
+   turns €10k into **57.01x** after tax; the best PEA
    broker turns it into **5.77x** on PUST. Even the
    worst CTO broker on the TECH book (**BoursoBank**, 22.70x) is far ahead. The PEA saves ~12.8 pp of
    tax, but it cannot hold SMH or borrow; that exposure gap is the

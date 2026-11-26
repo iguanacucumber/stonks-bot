@@ -53,7 +53,7 @@ Private repo `iguanacucumber/stonks-bot`, one issue per workstream. Orchestrator
 
 - [x] forward — PR #6 merged at `0c26f1c`; tax-book automation `aut_217921c67001Ab2ef18eRqknWO` at 23:35 UTC
 - [x] pea-ucits — PR #8 merged at `0993f87`; no pure semis UCITS is PEA-eligible; PUST 5.08x vs CTO 38.80x
-- [ ] execution
+- [x] execution — PR #10 merged at `896b401`; real core opens default; limit orders stay off
 - [x] risk — PR #7 merged at `9ff23b7`; docs/scripts only, merged early because it does not touch the engine; verdict: keep defaults
-- [ ] brokers
+- [ ] brokers — rebasing on the corrected engine; default is now monthly + IBKR (`7415f45`)
 - [ ] merged and re-tested

@@ -78,7 +78,7 @@ def _load(
     limit_bps: float | None = None,
     core_close_fill: bool = False,
 ):
-    profile = profile or ("tax" if country == "fr" else "monthly")
+    profile = profile or "monthly"
     broker = broker or (france.DEFAULT_BROKER if country == "fr" else "none")
     if wrapper == "pea":
         if market != "FR":
@@ -166,7 +166,7 @@ def _random_bench(mkt, seeds: int) -> pd.DataFrame:
 
 
 def cmd_backtest(args):
-    profile = args.profile or ("tax" if args.country == "fr" else "monthly")
+    profile = args.profile or "monthly"
     broker = args.broker or (france.DEFAULT_BROKER if args.country == "fr" else "none")
     panel, mem, mkt, cfg = _load(
         args.start,
@@ -437,7 +437,8 @@ def cmd_report(args):
         lines += [
             "",
             "The US table above is pre-tax. This section is after French PFU/PEA, "
-            "FTT, broker tickets and EUR translation; see `results/france.md`.",
+            "FTT, broker tickets and EUR translation. These are the last CLI runs; "
+            "`results/brokers.md` is the corrected full matrix.",
             "",
         ]
 
@@ -568,7 +569,7 @@ def _risk_scale(mkt, date, cfg) -> float:
 
 
 def cmd_pnl(args):
-    profile = args.profile or ("tax" if args.country == "fr" else "monthly")
+    profile = args.profile or "monthly"
     broker = args.broker or (france.DEFAULT_BROKER if args.country == "fr" else "none")
     panel, mem, mkt, cfg = _load(
         "2015-01-01",
@@ -639,7 +640,7 @@ def cmd_pnl(args):
 
 
 def cmd_paper(args):
-    profile = args.profile or ("tax" if args.country == "fr" else "monthly")
+    profile = args.profile or "monthly"
     broker = args.broker or (france.DEFAULT_BROKER if args.country == "fr" else "none")
     panel, mem, mkt, cfg = _load(
         "2026-01-02",

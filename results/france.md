@@ -16,6 +16,11 @@ old close-fill baseline: the merged honest-open engine gives Trade Republic
 **39.50x** and Interactive Brokers **50.89x** on the €10k core-only CTO, so the
 38.80x in this file is **legacy** and not directly comparable to `brokers.md`.
 
+> **Post-fix (2026-11-26):** US/TECH core opens are now real. TECH monthly at
+> Trade Republic is 31.90x, core-only tax 39.50x; at Interactive Brokers monthly
+> is 57.01x and core-only 50.89x. The table below keeps the pre-fix close-fill
+> rows for Bourse Direct and the French book; `results/brokers.md` is the
+> corrected broker matrix.
 ## French rules used
 
 | item | rule |
