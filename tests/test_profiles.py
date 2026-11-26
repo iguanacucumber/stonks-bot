@@ -54,6 +54,12 @@ def main() -> None:
     assert abs(sum(w.values()) - 0.82) < 1e-12, sum(w.values())
     assert abs(w["SMH"] - 0.70) < 1e-12, w
     assert abs(w["SPY"] - 0.30 / 2.5) < 1e-12, w
+    # The engine multiplies these unscaled weights by cfg.leverage=2.5:
+    # 70% core * 2.5 + 30% SPY = 2.05 target gross before the daily trend cut.
+    scaled = {t: x * cfg.leverage for t, x in w.items()}
+    assert abs(sum(scaled.values()) - 2.05) < 1e-12, scaled
+    assert abs(scaled["SPY"] - 0.30) < 1e-12, scaled
+    assert abs(scaled["SMH"] - 1.75) < 1e-12, scaled
     assert profiles.selector_for("balanced") is profiles.balanced_selector
     assert profiles.selector_for("monthly") is None
     try:
