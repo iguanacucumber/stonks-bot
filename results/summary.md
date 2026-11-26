@@ -40,10 +40,10 @@ no trailing stop.
 
 ## France (after tax, real broker tariffs)
 
-| market | wrapper | book | broker | account | after tax (EUR) | native | tax paid | exit tax | fees (incl. FTT) |
-|---|---|---|---|---:|---:|---:|---:|---:|---:|
-| TECH | cto | monthly | Interactive Brokers | €10,000 | **57.01x** | 51.82x | €135,224 | €179,830 | €26,423 |
-| TECH | cto | tax | Interactive Brokers | €10,000 | **50.89x** | 46.26x | €60,651 | €231,799 | €9,952 |
+| market | wrapper | book | broker | account | FX bps | after tax (EUR) | native | tax paid | exit tax | fees (incl. FTT) |
+|---|---|---|---|---:|---:|---:|---:|---:|---:|---:|
+| TECH | cto | monthly | Interactive Brokers | €10,000 | 2.0 | **57.01x** | 51.82x | €135,224 | €179,830 | €26,423 |
+| TECH | cto | tax | Interactive Brokers | €10,000 | 2.0 | **50.89x** | 46.26x | €60,651 | €231,799 | €9,952 |
 
 The US table above is pre-tax. This section is after French PFU/PEA, FTT, broker tickets and EUR translation. These are the last CLI runs; `results/brokers.md` is the corrected full matrix.
 

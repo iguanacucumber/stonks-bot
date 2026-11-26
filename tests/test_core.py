@@ -469,6 +469,10 @@ def main():
     # the French CLI defaults to the lowest all-in-cost broker
     assert france.DEFAULT_BROKER == "Interactive Brokers"
     assert france.DEFAULT_MARKET == "TECH"
+    assert france.best_profile("fr", None, 3.0) == "monthly"
+    assert france.best_profile("fr", None, 25.0) == "tax"
+    assert france.best_profile("fr", "monthly", 25.0) == "monthly"
+    assert france.best_profile("us", None, 25.0) == "monthly"
     fr_kw = france.kwargs("TECH")
     assert fr_kw["fx_bps"] == 2.0
     assert fr_kw["us_bps"] == 0.25

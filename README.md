@@ -124,7 +124,9 @@ book wins (39.5x/34.7x versus 31.9x/11.7x monthly), because their 25 bps FX make
 core-only tax book at Trade Republic (39.5x) is the fallback if spot FX is not
 available.
 The optimum depends on the broker's cost structure. `--country fr` now defaults to
-**TECH + monthly + IBKR**; `--profile tax` selects the core-only book.
+**TECH + monthly + IBKR**; `--profile tax` selects the core-only book. Pass your actual
+`--fx-bps` (per side) to let the CLI choose: at **≥15 bps** it switches the default to
+the core-only tax book (39.47x at 25 bps).
 
 Bourse Direct's €8.50 US ticket still makes it the wrong broker for a €10k US book.
 No pure semiconductor UCITS is PEA-eligible (the fund must hold >75% EU/EEA
@@ -135,8 +137,9 @@ translating the price series to EUR before the rule changes the trend timing and
 hurts. `results/france.md`, `results/brokers.md`, `results/pea_ucits.md`,
 `scripts/france.py`, `scripts/brokers.py`, `scripts/pea_ucits.py`.
 CLI: `backtest --country fr` defaults to TECH + monthly + Interactive Brokers and
-prints the after-tax block; `--profile tax` selects the core-only book; `pnl` adds the same
-line; `report` appends the France section.
+prints the after-tax block; `--profile tax` selects the core-only book; `--fx-bps`
+sets your real conversion cost and auto-selects the book at ≥15 bps; `pnl` adds the
+same line; `report` appends the France section.
 
 **Cross-market:** the same config on **39 markets** (9 stock-level including a 49-name
 NASDAQ tech book, 30 country/tech ETFs) is profitable in **39/39** and beats the local

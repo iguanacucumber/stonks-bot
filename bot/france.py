@@ -182,6 +182,21 @@ CURRENCY = {
 }
 
 
+def best_profile(
+    country: str, profile: str | None, fx_bps: float | None
+) -> str:
+    """Choose the book for the user's actual FX cost.
+
+    Explicit --profile wins. Otherwise the monthly book is best at IBKR's 2-3 bps;
+    at >=15 bps the core-only tax book wins because it trades far less.
+    """
+    if profile:
+        return profile
+    if country == "fr" and fx_bps is not None and fx_bps >= 15.0:
+        return "tax"
+    return "monthly"
+
+
 def broker_name(broker: str) -> str:
     return ALIASES.get(broker, broker)
 

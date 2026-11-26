@@ -170,7 +170,8 @@ therefore a function of the FX cost, not a fixed rule.
    the core-only tax book is 50.89x. At 25 bps the monthly book falls to
    31.86x and the core-only book (39.47x at IBKR, 39.50x at Trade Republic)
    is the better fallback. The CLI now defaults to TECH + monthly + IBKR for
-   `--country fr`; `--profile tax` selects the core-only book.
+   `--country fr`; `--profile tax` selects the core-only book, and `--fx-bps`
+   sets the real conversion cost; at >=15 bps the CLI switches to the tax book.
 2. **Best PEA broker: XTB**, but effectively a tie with
    Trade Republic, IBKR and Bourse Direct. Use the PEA only if the
    money is already trapped there; the wrapper decision is not about the

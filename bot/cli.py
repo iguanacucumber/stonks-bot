@@ -75,6 +75,7 @@ def _load(
     broker: str | None = None,
     wrapper: str = "cto",
     capital: float = 10000.0,
+    fx_bps: float | None = None,
     limit_bps: float | None = None,
     core_close_fill: bool = False,
 ):
@@ -101,6 +102,8 @@ def _load(
         kw.update(france.kwargs(market, broker, wrapper, capital, panel))
     elif broker and broker != "none":
         kw.update(france.broker_kwargs(broker, capital))
+    if fx_bps is not None:
+        kw["fx_bps"] = float(fx_bps)
     if core:
         kw["core"] = core
     if dd_stop:
@@ -167,7 +170,7 @@ def _random_bench(mkt, seeds: int) -> pd.DataFrame:
 
 
 def cmd_backtest(args):
-    profile = args.profile or "monthly"
+    profile = france.best_profile(args.country, args.profile, args.fx_bps)
     market = args.market or (france.DEFAULT_MARKET if args.country == "fr" else "US")
     broker = args.broker or (france.DEFAULT_BROKER if args.country == "fr" else "none")
     panel, mem, mkt, cfg = _load(
@@ -194,6 +197,7 @@ def cmd_backtest(args):
         broker,
         args.wrapper,
         args.capital,
+        fx_bps=args.fx_bps,
         limit_bps=args.limit_bps,
         core_close_fill=args.core_close_fill,
     )
@@ -238,6 +242,7 @@ def cmd_backtest(args):
             broker=france.broker_name(broker),
             wrapper=args.wrapper,
             profile="pea" if args.wrapper == "pea" else profile,
+            fx_bps=float(cfg.fx_bps),
         )
         print(
             f"\nFrance {args.wrapper.upper()} · {f['broker']} · "
@@ -261,7 +266,7 @@ def cmd_backtest(args):
         if path.exists():
             old = pd.read_csv(path)
             same = pd.Series(True, index=old.index)
-            for key in ("market", "wrapper", "broker", "capital", "profile"):
+            for key in ("market", "wrapper", "broker", "capital", "profile", "fx_bps"):
                 if key not in old.columns:
                     old[key] = f.get(key)
                 same &= old[key] == f[key]
@@ -424,14 +429,20 @@ def cmd_report(args):
         fdf = pd.read_csv(frp)
         lines += ["## France (after tax, real broker tariffs)", ""]
         lines += [
-            "| market | wrapper | book | broker | account | after tax (EUR) | native | tax paid | exit tax | fees (incl. FTT) |",
-            "|---|---|---|---|---:|---:|---:|---:|---:|---:|",
+            "| market | wrapper | book | broker | account | FX bps | after tax (EUR) | native | tax paid | exit tax | fees (incl. FTT) |",
+            "|---|---|---|---|---:|---:|---:|---:|---:|---:|---:|",
         ]
         for _, r in fdf.iterrows():
             cap = float(r["capital"])
+            fx_bps = (
+                float(r["fx_bps"])
+                if "fx_bps" in r.index and pd.notna(r["fx_bps"])
+                else float("nan")
+            )
+            fx_cell = f"{fx_bps:.1f}" if pd.notna(fx_bps) else "—"
             lines.append(
                 f"| {r['market']} | {r['wrapper']} | {r['profile']} | {r['broker']} | "
-                f"€{cap:,.0f} | **{r['after_tax_eur'] / cap:.2f}x** | "
+                f"€{cap:,.0f} | {fx_cell} | **{r['after_tax_eur'] / cap:.2f}x** | "
                 f"{r['after_tax_native'] / cap:.2f}x | "
                 f"€{r['tax_paid_eur']:,.0f} | €{r['exit_tax_eur']:,.0f} | "
                 f"€{r['fees_eur']:,.0f} |"
@@ -571,7 +582,7 @@ def _risk_scale(mkt, date, cfg) -> float:
 
 
 def cmd_pnl(args):
-    profile = args.profile or "monthly"
+    profile = france.best_profile(args.country, args.profile, args.fx_bps)
     market = args.market or (france.DEFAULT_MARKET if args.country == "fr" else "US")
     broker = args.broker or (france.DEFAULT_BROKER if args.country == "fr" else "none")
     panel, mem, mkt, cfg = _load(
@@ -598,6 +609,7 @@ def cmd_pnl(args):
         broker,
         args.wrapper,
         args.capital,
+        fx_bps=args.fx_bps,
     )
     res = backtest.run(mkt)
     d = mkt.dates[-1]
@@ -643,7 +655,7 @@ def cmd_pnl(args):
 
 
 def cmd_paper(args):
-    profile = args.profile or "monthly"
+    profile = france.best_profile(args.country, args.profile, args.fx_bps)
     market = args.market or (france.DEFAULT_MARKET if args.country == "fr" else "US")
     broker = args.broker or (france.DEFAULT_BROKER if args.country == "fr" else "none")
     panel, mem, mkt, cfg = _load(
@@ -670,6 +682,7 @@ def cmd_paper(args):
         broker,
         args.wrapper,
         args.capital,
+        fx_bps=args.fx_bps,
     )
     d = mkt.dates[-1]
     res = backtest.run(mkt)
@@ -743,6 +756,12 @@ def _add_fr_args(p, with_capital: bool = True):
         default=None,
     )
     p.add_argument("--wrapper", choices=["cto", "pea"], default="cto")
+    p.add_argument(
+        "--fx-bps",
+        type=float,
+        default=None,
+        help="broker FX cost per side; >=15 switches France default to the tax book",
+    )
     if with_capital:
         p.add_argument("--capital", type=float, default=10000.0)
 
