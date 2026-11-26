@@ -1,9 +1,10 @@
-# v7 release — paper-only systematic book
+# v8 / v1.1 release — paper-only systematic book
 
-**Status:** release candidate. The main session merges, tags and creates the GitHub
-release; this branch only prepares the acceptance evidence and documentation.
+**Status:** paper release candidate. The main session merges, tags and creates the
+GitHub release; this branch only prepares the acceptance evidence and documentation.
+This is **not** a claim of a proven forward edge: the gate is still WAIT.
 
-**Data snapshot:** 2026-11-25, `master`/`v7/release` base. No real orders, no broker
+**Data snapshot:** 2026-11-25, `master`/`v8/release` base. No real orders, no broker
 keys, no network calls in the release check.
 
 ## Headline: what a French CTO keeps
@@ -40,12 +41,25 @@ conservative are **post-hoc `paper` opt-ins**, not forward-validated. Details:
 |---|---|---|
 | EUR-ledger backtest | historical simulation with French tax/FX/fees | 66.17x US, 52.98x TECH |
 | live paper loop | `scripts/live.py` / `scripts/forward_daily.py`, atomic state, no real broker | running; pre-tax average-cost ledger |
-| forward gate | verified live/shadow dates in `results/paper_audit.csv` | **US 0/5, TECH 1/5 — no forward edge proven** |
-| IBKR adapter | Client Portal **paper** (DU) adapter only | opt-in; no live-money path |
+| forward gate | verified live/shadow dates in `results/paper_audit.csv` | **WAIT: US 0/5, TECH 1/5, tax 0/5; next required 2026-11-27 — no forward edge proven** |
+| IBKR adapter | Client Portal **paper** (DU) adapter plus read-only reconciliation | opt-in; no live-money write path |
 
 A backtest is a consistency check, not proof. A forward gate below 5/5 must never be
 presented as evidence of forward returns. The live paper ledger is not the after-tax
-EUR ledger (it is pre-tax and average-cost).
+EUR ledger (it is pre-tax and average-cost). `results/forward_gate.md` is the current
+gate report; WAIT is the honest state, BLOCKED would be a release failure.
+
+## What is not done
+
+- **Forward gate is 0/5 US, 1/5 TECH, 0/5 tax.** No book has five verified dates.
+- **Short3 report is not merged into this base.** The v8/short3 workstream's report is
+  a `reject`; the release check marks it WAIT until that file is on the release branch.
+- **No real-money broker path.** IBKR is a paper/DU adapter with read-only
+  reconciliation; there is no production order adapter or live keys.
+- **Alerts/backups need operator configuration.** Delivery endpoints and off-site
+  retention are not provisioned here.
+- **Opt-in studies are not defaults.** Balanced/conservative, covered calls,
+  assurance-vie, UCITS/PEA and futures remain paper/conditional or rejected.
 
 ## Research verdicts at release
 
@@ -53,6 +67,11 @@ EUR ledger (it is pre-tax and average-cost).
   and overnight close-to-open were tested walk-forward with costs and PFU. Best
   close-to-close OOS 2.64x after tax vs QQQ 5.49x; at 2x costs 1.13x, below BIL 1.20x.
   No short satellite. `results/alpha_short.md`.
+- **Short III: reject (v8/short3).** The best 1-hour row (SPY gap-fade) made 1.04x
+  after tax over two years vs QQQ 1.26x; at 2x costs it falls to 0.92x. The 5-minute
+  sample is only ~60 days and is execution-quality, not evidence; daily gap-fade and
+  cross-sectional reversal are below QQQ after tax. No satellite. The report is
+  `results/short3.md` (pending merge of the v8/short3 branch).
 - **PIT Nasdaq-100: paper robustness, not a replacement.** EUR ledger 50.29x vs 52.98x
   static; retains ~95% of the static TECH terminal. US all-PIT remains the default.
   `results/pit_tech.md`.
@@ -113,6 +132,8 @@ uv run python scripts/forward_daily.py --paper --tax
 | `docs/live.md`, `docs/forward.md` | paper loop, gates, scheduler |
 | `docs/ops.md`, `docs/dashboard.md` | operations and static cockpit |
 | `results/v2_summary.md` … `v6_summary.md` | wave evidence and decisions |
+| `results/forward_gate.md` | current US/TECH/tax WAIT gate and next required session |
+| `results/short3.md` | v8 intraday/cross-section short study verdict (pending merge) |
 | `results/release_check.md` | regenerated release acceptance table |
 | `scripts/acceptance.py`, `scripts/release_check.py` | end-to-end and release checks |
 | `scripts/reproduce.py` | baseline/EUR-ledger reproduction |
@@ -128,7 +149,10 @@ uv run python scripts/forward_daily.py --paper --tax
 - [ ] Commit, tag, release notes and GitHub release created by the **main session**
   after merge; this branch does not tag.
 - [ ] Data snapshot 2026-11-25 and cache checksum/retention recorded.
-- [ ] Forward gate remains honest: **US 0/5, TECH 1/5**; no forward edge claimed.
+- [ ] Forward gate remains honest: **WAIT US 0/5, TECH 1/5, tax 0/5**; next required
+  2026-11-27; no forward edge claimed.
+- [ ] Short3 report/verdict reviewed (currently WAIT in release_check until the
+  `results/short3.md` workstream file is merged; the study verdict is reject).
 - [ ] Paper-only boundary re-checked: no real broker credentials, no `.env`, no orders.
 - [ ] README/RELEASE headline numbers and source links reviewed.
 - [ ] Known risks communicated: survivorship, -56.9% drawdown, pre-tax paper ledger,
@@ -136,7 +160,8 @@ uv run python scripts/forward_daily.py --paper --tax
 
 ## Known risks
 
-- **Forward evidence is thin.** US has 0/5 verified dates, TECH 1/5; no forward edge.
+- **Forward evidence is thin.** US 0/5, TECH 1/5, tax 0/5; next required 2026-11-27;
+  no forward edge. Short3 is still pending merge in this release base.
 - **Survivorship.** Static-49 TECH is chosen today; US PIT drops 16.2% of 2014+ members
   with no Yahoo history. Treat stock-sleeve alpha as unproven.
 - **Drawdown.** The 2.5x growth book lost 56.9% peak-to-trough in the EUR ledger and
@@ -150,5 +175,5 @@ uv run python scripts/forward_daily.py --paper --tax
 - **High-churn docs.** Summaries and dashboard outputs are snapshots; regenerate or
   re-check before quoting a later data vintage.
 
-*Generated by the v7 release workstream. No real orders were sent; no tag or GitHub
-release is created here.*
+*Generated by the v8 / v1.1 release workstream. No real orders were sent; no tag or
+GitHub release is created here.*

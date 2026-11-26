@@ -51,7 +51,11 @@ EXPECTED_EUR = {
     ("US", "tax"): 48.80,
     ("TECH", "tax"): 48.80,
 }
-EXPECTED_GATES = {("monthly", "US"): 0, ("monthly", "TECH"): 1}
+EXPECTED_GATES = {
+    ("monthly", "US"): 0,
+    ("monthly", "TECH"): 1,
+    ("tax", "TECH"): 0,
+}
 TOL = 0.05
 SECRET_PATTERNS = (
     r"-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----",
@@ -266,6 +270,177 @@ def check_gate_results(
     ):
         return "PASS", detail
     return "WAIT", detail
+
+
+def parse_verified(text: str | None) -> tuple[int, int] | None:
+    match = re.search(r"(\d+)\s*/\s*(\d+)", str(text or ""))
+    return (int(match.group(1)), int(match.group(2))) if match else None
+
+
+def parse_forward_gate(path: str | Path) -> tuple[dict, list[str]]:
+    """Parse the table written by scripts/forward_gate.py.
+
+    Unlike the older ``forward_status.md`` table this one carries an explicit
+    PASS/WAIT/BLOCKED state per book, including the optional tax book.
+    """
+    path = Path(path)
+    out: dict = {
+        "generated": None,
+        "session": None,
+        "overall": None,
+        "books": [],
+        "path": str(path),
+    }
+    if not path.exists():
+        return out, [f"{path.name} is missing"]
+    try:
+        lines = path.read_text().splitlines()
+    except Exception as exc:  # noqa: BLE001
+        return out, [f"{path.name} unreadable: {exc}"]
+    headers: list[str] = []
+    in_table = False
+    for line in lines:
+        clean = line.strip()
+        if clean.startswith("Generated:"):
+            out["generated"] = clean.split(":", 1)[1].strip()
+        elif clean.startswith("Session:"):
+            out["session"] = clean.split(":", 1)[1].strip()
+        elif clean.startswith("Overall:"):
+            out["overall"] = clean.split(":", 1)[1].strip().replace("*", "")
+        elif clean.startswith("| book |") or clean.startswith("|book|"):
+            headers = [_norm_header(x) for x in clean.strip("|").split("|")]
+            in_table = True
+        elif in_table and clean.startswith("|"):
+            cells = [
+                x.strip().replace("**", "").replace("`", "")
+                for x in clean.strip("|").split("|")
+            ]
+            if not cells or all(set(x) <= {"-", ":"} for x in cells):
+                continue
+            row = dict(zip(headers, cells))
+            if row.get("book") and row.get("market"):
+                out["books"].append(row)
+        elif in_table and clean and not clean.startswith("|"):
+            in_table = False
+    return out, []
+
+
+def _norm_header(value: str) -> str:
+    return re.sub(r"[^a-z0-9]+", "_", value.strip().lower()).strip("_")
+
+
+def check_forward_gate(
+    gate_path: Path,
+    audit_path: Path,
+    expected: dict[tuple[str, str], int] | None = None,
+) -> tuple[str, str]:
+    """Validate actual forward gate status. WAIT is allowed; BLOCKED is not."""
+    expected = expected or {("monthly", "US"): 0, ("monthly", "TECH"): 1}
+    gate, warnings = parse_forward_gate(gate_path)
+    gates, audit_warnings = gates_from_audit(audit_path)
+    rows = {
+        (str(r.get("book", "")), str(r.get("market", ""))): r
+        for r in gate.get("books", [])
+    }
+    hard = list(warnings)
+    notes: list[str] = []
+    overall = str(gate.get("overall", "")).upper()
+    if overall in {"BLOCKED", "FAIL", "ERROR"}:
+        hard.append(f"forward gate overall={overall}")
+    for key in {("monthly", "US"), ("monthly", "TECH")} | set(expected):
+        row = rows.get(key)
+        if row is None:
+            if key in {("monthly", "US"), ("monthly", "TECH")}:
+                hard.append(f"forward gate missing {key[0]}/{key[1]}")
+            continue
+        status = str(row.get("status", "")).upper()
+        if status in {"BLOCKED", "FAIL", "ERROR"}:
+            hard.append(f"{key[0]}/{key[1]} status={status}")
+        elif status not in {"PASS", "WAIT"}:
+            hard.append(f"{key[0]}/{key[1]} unknown status={status or 'blank'}")
+        parsed = parse_verified(row.get("verified"))
+        if parsed is None:
+            hard.append(f"{key[0]}/{key[1]} verified count unreadable")
+            continue
+        n, total = parsed
+        if total != 5:
+            hard.append(f"{key[0]}/{key[1]} target {total} != 5")
+        if n < 0 or n > total:
+            hard.append(f"{key[0]}/{key[1]} count {n}/{total} out of range")
+        audit_gate = gates.get(key)
+        audit_n = 0 if audit_gate is None else audit_gate.verified
+        if n > 0 and audit_gate is None:
+            hard.append(f"{key[0]}/{key[1]} positive gate but no paper_audit row")
+        elif audit_gate is not None and audit_n != n:
+            hard.append(f"{key[0]}/{key[1]} audit {audit_n} != status {n}")
+        expected_n = expected.get(key)
+        if expected_n is not None and n != expected_n:
+            notes.append(
+                f"{key[0]}/{key[1]} now {n}/{total}, release snapshot {expected_n}/5"
+            )
+    if audit_warnings:
+        notes.extend(audit_warnings)
+    detail = (
+        ", ".join(
+            f"{b}/{m}={row.get('status', '?')} {row.get('verified', '?')}"
+            for (b, m), row in sorted(rows.items())
+        )
+        or "no gate rows"
+    )
+    next_sessions = sorted(
+        {
+            str(row.get("next_required"))
+            for row in rows.values()
+            if row.get("next_required")
+        }
+    )
+    if next_sessions:
+        detail += f"; next={','.join(next_sessions)}"
+    if notes:
+        detail += "; note: " + "; ".join(notes)
+    if hard:
+        return "FAIL", detail + "; " + "; ".join(hard)
+    required_rows = [rows.get(k) for k in (("monthly", "US"), ("monthly", "TECH"))]
+    if all(
+        row is not None
+        and str(row.get("status", "")).upper() == "PASS"
+        and (parse_verified(row.get("verified")) or (0, 5))[0] >= 5
+        for row in required_rows
+    ):
+        return "PASS", detail
+    return "WAIT", detail
+
+
+def parse_short3_verdict(text: str) -> str | None:
+    """Extract a short-horizon III verdict from a markdown report."""
+    match = re.search(
+        r"(?im)^\s*(?:\*\*)?verdict(?:\*\*)?\s*[:=—-]\s*(?:\*\*)?([a-z_-]+)",
+        text,
+    )
+    if match:
+        return match.group(1).lower()
+    match = re.search(
+        r"(?i)\bverdict\b[^\n]{0,60}\b(reject|paper|accept|fail|blocked|pending)\b",
+        text,
+    )
+    return match.group(1).lower() if match else None
+
+
+def check_short3(path: Path) -> tuple[str, str]:
+    if not path.exists():
+        return "WAIT", f"{path.name} not present; v8 short3 workstream pending"
+    try:
+        text = path.read_text()
+    except Exception as exc:  # noqa: BLE001
+        return "FAIL", f"{path.name} unreadable: {exc}"
+    verdict = parse_short3_verdict(text)
+    if verdict is None:
+        return "FAIL", "short3 report has no explicit verdict"
+    if verdict in {"reject", "paper", "accept"}:
+        return "PASS", f"short3 verdict={verdict}"
+    if verdict == "pending":
+        return "WAIT", "short3 verdict=pending"
+    return "FAIL", f"short3 verdict={verdict}"
 
 
 def scan_for_secrets(paths: list[Path]) -> list[str]:
@@ -524,8 +699,8 @@ def run_checks(
             )
 
     def gate_check() -> tuple[str, str]:
-        return check_gate_results(
-            ROOT / "results" / "forward_status.md",
+        return check_forward_gate(
+            ROOT / "results" / "forward_gate.md",
             ROOT / "results" / "paper_audit.csv",
             EXPECTED_GATES,
         )
@@ -534,7 +709,18 @@ def run_checks(
         _run(
             "forward_gate",
             gate_check,
-            command="results/forward_status.md + paper_audit.csv",
+            command="results/forward_gate.md + paper_audit.csv",
+        )
+    )
+
+    def short3_check() -> tuple[str, str]:
+        return check_short3(ROOT / "results" / "short3.md")
+
+    report.checks.append(
+        _run(
+            "short3",
+            short3_check,
+            command="results/short3.md verdict",
         )
     )
 
@@ -574,8 +760,12 @@ def render_markdown(report: ReleaseReport) -> str:
     status = "PASS" if report.ok else "FAIL"
     gate = next((c for c in report.checks if c.name == "forward_gate"), None)
     gate_mark = "x" if gate is not None and gate.status in {"PASS", "WAIT"} else " "
+    short3 = next((c for c in report.checks if c.name == "short3"), None)
+    short3_mark = (
+        "x" if short3 is not None and short3.status in {"PASS", "WAIT"} else " "
+    )
     lines = [
-        "# Release check — v7",
+        "# Release check — v8 / v1.1",
         "",
         f"- Overall: **{status}**",
         f"- Generated: {report.generated_at}",
@@ -602,7 +792,8 @@ def render_markdown(report: ReleaseReport) -> str:
         f"- [{'x' if not report.cache_missing else ' '}] committed data snapshot {report.snapshot} present",
         "- [ ] CI green on the merged commit (GitHub Actions)",
         "- [ ] no open PRs / release-blocking issues",
-        f"- [{gate_mark}] forward gate honesty: US 0/5, TECH 1/5 is WAIT, not an edge",
+        f"- [{gate_mark}] forward gate honesty: US 0/5, TECH 1/5, tax 0/5 is WAIT, not an edge",
+        f"- [{short3_mark}] short3 report/verdict reviewed (WAIT is allowed if the workstream is not merged)",
         "- [ ] paper-only; no real orders, broker keys or secrets",
         "- [ ] README/RELEASE links and headline numbers reviewed",
         "- [ ] main session tags/creates the GitHub release after merge",
@@ -610,13 +801,15 @@ def render_markdown(report: ReleaseReport) -> str:
         "## Known risks",
         "",
         "- Backtests are consistency checks, not forward evidence. US has 0/5 verified "
-        "dates, TECH 1/5.",
+        "dates, TECH 1/5, tax 0/5.",
         "- Static-49 TECH is survivor-biased; US PIT drops 16.2% of 2014+ members "
         "without a Yahoo history.",
         "- The 2.5x growth book can lose more than half; balanced/conservative are "
         "post-hoc `paper` opt-ins.",
         "- The live paper ledger is pre-tax/average-cost, not the after-tax EUR ledger.",
-        "- IBKR paper adapter is opt-in; no live-money order path exists here.",
+        "- IBKR paper/read-only adapter is opt-in; no live-money order path exists here.",
+        "- Short3 evidence may be pending in this release branch; never upgrade a "
+        "missing/pending short study into a production allocation.",
         "",
         "## Commands",
         "",

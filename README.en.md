@@ -364,11 +364,15 @@ tests/test_core.py
 ```
 
 
-## Release v7
+## Release v8 / v1.1
 
-[RELEASE.md](RELEASE.md) is the single release acceptance sheet: headline
-**66.17x EUR ledger**, maxDD **-56.9%**, 2022 **-33.7%**, profiles, paper-only
-boundaries, research verdicts, quick start, file map and checklist.
+One-screen status: EUR-ledger backtest **66.17x US / 52.98x TECH**, but the
+forward gate is **WAIT US 0/5, TECH 1/5, tax 0/5** (next required 2026-11-27)
+and short3 is **reject**. This is not forward evidence.
+
+[RELEASE.md](RELEASE.md) is the release acceptance sheet: headline, profiles,
+paper-only boundaries, research verdicts, what is not done, quick start, file map
+and checklist.
 
 Before tagging, run:
 
@@ -377,9 +381,9 @@ uv run python scripts/release_check.py
 ```
 
 It runs every test script, the acceptance harness, the EUR-ledger baseline,
-US/TECH paper plans, the forward gate and the dashboard, then writes
-`results/release_check.md`. The forward gate remains **WAIT US 0/5, TECH 1/5**;
-that is tracking information, not forward evidence. This branch does not tag or
+US/TECH paper plans, the `forward_gate.md` status, the short3 verdict and the
+dashboard, then writes `results/release_check.md`. WAIT is allowed for a paper
+release; BLOCKED or a real check failure is FAIL. This branch does not tag or
 create a GitHub release.
 
 See `docs/feature_matrix.md` for the command map and `results/v2_summary.md` for the four-workstream v2 evidence, `results/v3_summary.md` for the real-life layer, `results/v4_summary.md` for PIT/tax/FX/forward, `results/v5_summary.md` for wrappers/estate/PEA/income, `results/v6_summary.md` for AV/futures/acceptance/dashboard, the EUR-ledger baseline, the rejected alpha/short-horizon studies, and the live/evaluation merge hashes.
