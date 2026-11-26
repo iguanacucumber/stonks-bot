@@ -25,11 +25,13 @@ sys.path.insert(0, str(ROOT / "tests"))
 
 from bot.live.broker import BrokerError  # noqa: E402
 from bot.live.brokers.ibkr import (  # noqa: E402
+    ClientPortalTransport,
     IBKRDuplicateOrder,
     IBKRPaperBroker,
     IBKRPaperConfig,
     IBKRReadOnlySnapshot,
     IBKRReadOnlyError,
+    IBKRRequestError,
     IBKRTransientError,
     IBKRUnavailable,
 )
@@ -45,6 +47,7 @@ from bot.live.models import (  # noqa: E402
 )
 from bot.live.signal import SnapshotError  # noqa: E402
 from bot.live.state import LiveState, StateStore  # noqa: E402
+from fake_ibkr_server import FakeIBKRState, fake_server  # noqa: E402
 
 
 class FakeTransport:
@@ -687,6 +690,141 @@ def test_cli_status_read_only_exposes_broker_view() -> None:
     assert fake.replace_calls == []
 
 
+def _http_broker(
+    srv,
+    *,
+    read_only: bool = True,
+    timeout: float = 2.0,
+    max_retries: int = 0,
+) -> IBKRPaperBroker:
+    cfg = IBKRPaperConfig(
+        account_id=srv.account,
+        base_url=srv.base_url,
+        timeout=timeout,
+        poll_interval=0.0,
+        max_poll_seconds=0.0,
+        max_retries=max_retries,
+        backoff_base=0.0,
+        verify_ssl=False,
+    )
+    return IBKRPaperBroker(
+        ClientPortalTransport(cfg), cfg, sleeper=lambda _: None, read_only=read_only
+    )
+
+
+def test_fake_http_readonly_real_get_cycle_and_zero_writes() -> None:
+    with fake_server() as srv:
+        srv.state.summary = {
+            "accountcode": srv.account,
+            "netliquidation": 10_000.0,
+        }
+        srv.state.positions = [{"ticker": "SMH", "position": 10.0, "avgCost": 10.0}]
+        srv.state.cash = 9_900.0
+        srv.state.orders = []
+        srv.state.executions = [
+            {
+                "execution_id": "E1",
+                "ticker": "SMH",
+                "side": "BUY",
+                "quantity": 10.0,
+                "trade_time": "2026-01-02",
+            }
+        ]
+        broker = _http_broker(srv)
+        assert broker.read_only
+        snap = broker.read_snapshot(now="2026-01-02T22:00:00+00:00")
+        assert snap.account_id == srv.account
+        assert snap.summary["accountcode"] == srv.account
+        assert snap.positions[0]["ticker"] == "SMH"
+        assert snap.cash == 9_900.0
+        assert snap.executions[0]["execution_id"] == "E1"
+        srv.state.conids["SMH"] = 4242
+        srv.state.contracts[4242] = {"conid": 4242, "symbol": "SMH"}
+        assert broker.contract_info(4242)["symbol"] == "SMH"
+
+        PL = _plan(
+            OrderIntent("ro-http", "SMH", "BUY", 1.0, 10.0, "test", "2026-01-02")
+        )
+        for call, args in (
+            (broker.submit, (PL.orders[0], "2026-01-02", "t")),
+            (broker.cancel, ("OID1",)),
+            (broker.replace, ("OID1",)),
+            (broker.execute, (PL, {}, "t", Portfolio(cash=1_000.0))),
+        ):
+            try:
+                call(*args)
+                raise AssertionError(f"{call.__name__} must refuse in read-only HTTP")
+            except IBKRReadOnlyError:
+                pass
+        assert srv.state.write_calls == []
+        assert srv.state.requests
+        assert all(method == "GET" for method, _ in srv.state.requests)
+
+
+def test_fake_http_retry_malformed_timeout() -> None:
+    with fake_server() as srv:
+        srv.state.fail_times = 1
+        broker = _http_broker(srv, max_retries=2)
+        snap = broker.read_snapshot(now="2026-01-02T22:00:00+00:00")
+        assert snap.account_id == srv.account
+        assert len([r for r in srv.state.requests if r[0] == "GET"]) >= 2
+        assert srv.state.write_calls == []
+
+    with fake_server() as srv:
+        srv.state.malformed = True
+        broker = _http_broker(srv, max_retries=0)
+        try:
+            broker.read_snapshot(now="2026-01-02T22:00:00+00:00")
+            raise AssertionError("malformed JSON must fail closed")
+        except IBKRRequestError as exc:
+            assert "malformed" in str(exc).lower()
+        assert srv.state.write_calls == []
+
+    with fake_server() as srv:
+        srv.state.delay = 0.25
+        broker = _http_broker(srv, timeout=0.05, max_retries=0)
+        try:
+            broker.read_snapshot(now="2026-01-02T22:00:00+00:00")
+            raise AssertionError("timeout must fail closed")
+        except IBKRUnavailable:
+            pass
+        assert srv.state.write_calls == []
+
+
+def test_fake_http_strict_mismatch_and_unknown_execution() -> None:
+    with fake_server() as srv:
+        srv.state.positions = [
+            {"ticker": "SMH", "position": 9.0},
+            {"ticker": "QQQ", "position": 2.0},
+        ]
+        srv.state.cash = 998.0
+        srv.state.executions = [
+            {
+                "execution_id": "E9",
+                "ticker": "SMH",
+                "side": "BUY",
+                "quantity": 99.0,
+                "trade_time": "2026-01-02",
+            }
+        ]
+        broker = _http_broker(srv)
+        portfolio = Portfolio(cash=1_000.0)
+        portfolio.positions["SMH"] = Position(10.0, 10.0, 10.0)
+        state = SimpleNamespace(plans={}, all_fills=lambda: [], pending_plan=None)
+        rep = broker.reconcile_strict(
+            portfolio,
+            state=state,
+            snapshot=broker.read_snapshot(now="2026-01-02T22:00:00+00:00"),
+            now="2026-01-02T22:00:00+00:00",
+        )
+        assert not rep.ok
+        assert "SMH" in rep.position_diffs
+        assert "QQQ" in rep.extra_positions
+        assert rep.unknown_executions
+        assert any("cash" in issue for issue in rep.issues)
+        assert srv.state.write_calls == []
+
+
 def test_engine_end_to_end_submit_fill_reconcile() -> None:
     # Reuse the synthetic live panel and FX patch from the live test.
     from test_live import _cfg, fixed_fx, synthetic
@@ -744,6 +882,9 @@ def main() -> None:
         test_read_only_cli_refuses_paper_writes,
         test_cli_reconcile_read_only_uses_strict_broker,
         test_cli_status_read_only_exposes_broker_view,
+        test_fake_http_readonly_real_get_cycle_and_zero_writes,
+        test_fake_http_retry_malformed_timeout,
+        test_fake_http_strict_mismatch_and_unknown_execution,
         test_engine_end_to_end_submit_fill_reconcile,
     ]
     for fn in checks:

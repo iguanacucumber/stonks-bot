@@ -5,6 +5,10 @@
 `paper` broker remains the default. There is no real-money adapter, no live-account
 switch, and no credential in this repository.
 
+Read-only inspection/reconciliation is in `docs/ibkr_readonly.md`; the localhost
+fake-server drills are in `docs/ibkr_fake_server.md`; split/dividend state
+accounting is in `docs/corporate_actions.md`.
+
 ## Why the Client Portal Web API
 
 `ib_insync` is a good library, but it would add another runtime dependency and a
