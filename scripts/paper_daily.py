@@ -81,8 +81,9 @@ def load(
     trend_ma: int,
     trend_scale: float,
     book: str = "monthly",
+    core_close_fill: bool = False,
 ):
-    panel, mem = markets.build(market)
+    panel, mem = markets.build(market, core_close_fill=core_close_fill)
     if market != "US":
         universe.canonical = lambda t: t
     cfg = strategy.Config(
@@ -201,7 +202,15 @@ def replay(mkt, res, cfg, n: int, panel, path: Path = REPLAY):
     return df
 
 
-def reconcile(market, capital, leverage, trend_ma, trend_scale, book="monthly"):
+def reconcile(
+    market,
+    capital,
+    leverage,
+    trend_ma,
+    trend_scale,
+    book="monthly",
+    core_close_fill=False,
+):
     """Recompute the last close-valid row from final bars, keeping its live prices.
 
     This is for a row whose log-time panel was missing closes (Yahoo publishes the
@@ -212,7 +221,9 @@ def reconcile(market, capital, leverage, trend_ma, trend_scale, book="monthly"):
     if not daily_path.exists():
         print(f"no {daily_path.name} rows to reconcile")
         return
-    panel, mkt, res, cfg = load(market, leverage, trend_ma, trend_scale, book)
+    panel, mkt, res, cfg = load(
+        market, leverage, trend_ma, trend_scale, book, core_close_fill
+    )
     df = pd.read_csv(daily_path)
     for c in ("data_complete", "reconciled"):
         if c not in df.columns:
@@ -289,6 +300,11 @@ def main():
     ap.add_argument("--trend-ma", type=int, default=200)
     ap.add_argument("--trend-scale", type=float, default=0.5)
     ap.add_argument("--capital", type=float, default=10000.0)
+    ap.add_argument(
+        "--core-close-fill",
+        action="store_true",
+        help="old synthetic core fill (open == close) for comparison",
+    )
     ap.add_argument("--replay", type=int, default=0)
     ap.add_argument("--refresh", action="store_true")
     ap.add_argument(
@@ -300,7 +316,12 @@ def main():
     daily_path, ledger_path, replay_path = book_paths(args.book)
 
     panel, mkt, res, cfg = load(
-        args.market, args.leverage, args.trend_ma, args.trend_scale, args.book
+        args.market,
+        args.leverage,
+        args.trend_ma,
+        args.trend_scale,
+        args.book,
+        args.core_close_fill,
     )
     d = mkt.dates[-1]
 
@@ -312,6 +333,7 @@ def main():
             args.trend_ma,
             args.trend_scale,
             args.book,
+            args.core_close_fill,
         )
         return
 

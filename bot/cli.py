@@ -76,14 +76,17 @@ def _load(
     wrapper: str = "cto",
     capital: float = 10000.0,
     limit_bps: float | None = None,
+    core_close_fill: bool = False,
 ):
     profile = profile or ("tax" if country == "fr" else "monthly")
     broker = broker or ("trade-republic" if country == "fr" else "none")
     if wrapper == "pea" and market != "FR":
         raise SystemExit("--wrapper pea is only modelled for --market FR")
-    # Passing --limit-bps (even 0) opts into the raw-bar open/high/low panel, so
-    # the k=0 baseline is the same honest next-open path as the limit runs.
-    panel, mem = markets.build(market, with_range=limit_bps is not None)
+    # Passing --limit-bps (even 0) opts into the raw-bar high/low panel, so the
+    # k=0 baseline is the same honest next-open path as the limit runs.
+    panel, mem = markets.build(
+        market, with_range=limit_bps is not None, core_close_fill=core_close_fill
+    )
     if market != "US":
         # Yahoo Europe/Asia keep the "." in symbols; the S&P alias map does not.
         universe.canonical = lambda t: t
@@ -185,6 +188,7 @@ def cmd_backtest(args):
         args.wrapper,
         args.capital,
         limit_bps=args.limit_bps,
+        core_close_fill=args.core_close_fill,
     )
     print(
         f"dates {mkt.dates[0].date()} -> {mkt.dates[-1].date()}  tickers {mkt.px.shape[1]}"
@@ -766,6 +770,11 @@ def main(argv=None):
         type=float,
         default=None,
         help="opt-in limit-at-open: buy open*(1-k), sell open*(1+k), k in bps",
+    )
+    pb.add_argument(
+        "--core-close-fill",
+        action="store_true",
+        help="old synthetic core fill (open == close) for US/TECH comparison",
     )
     pb.add_argument("--profile", choices=sorted(PROFILES), default=None)
     pb.add_argument("--leverage", type=float, default=DEFAULT_LEVERAGE)

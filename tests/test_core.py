@@ -5,6 +5,7 @@ from __future__ import annotations
 import sys
 from dataclasses import replace
 from pathlib import Path
+from tempfile import TemporaryDirectory
 
 import numpy as np
 import pandas as pd
@@ -13,7 +14,7 @@ ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(ROOT / "scripts"))
 
-from bot import backtest, france, strategy, universe  # noqa: E402
+from bot import backtest, france, markets, strategy, universe  # noqa: E402
 from paper_daily import book_config, book_paths  # noqa: E402
 
 
@@ -354,6 +355,73 @@ def main():
         raise AssertionError("limit_bps with exec_price=close should be rejected")
     except ValueError:
         pass
+
+    # default TECH uses real core opens; core_close_fill restores the old path
+    with TemporaryDirectory() as tmp:
+        bars_dir = Path(tmp)
+        bdates = pd.bdate_range("2020-01-01", periods=12)
+        for sym, base in (("SMH", 100.0), ("SOXX", 200.0)):
+            px = base + np.arange(len(bdates), dtype=float)
+            pd.DataFrame(
+                {
+                    "date": bdates,
+                    "open": px + 0.5,
+                    "high": px + 1.0,
+                    "low": px - 0.5,
+                    "close": px,
+                    "adjclose": px,
+                    "volume": 1_000_000,
+                }
+            ).to_csv(bars_dir / f"{sym}.csv", index=False)
+
+        def fake_core(sym, currency, calendar=None):
+            px = 100.0 + np.arange(len(bdates), dtype=float)
+            return pd.Series(px, index=bdates)
+
+        def fake_fetch(symbols, force=False, workers=6):
+            px = 100.0 + np.arange(len(bdates), dtype=float)
+            frame = pd.DataFrame(
+                {
+                    "date": bdates,
+                    "open": px,
+                    "high": px + 1.0,
+                    "low": px - 1.0,
+                    "close": px,
+                    "adjclose": px,
+                    "volume": 1_000_000,
+                }
+            )
+            return {"QQQ": frame, "AAPL": frame.copy()}
+
+        old_bars = markets.data.BARS
+        old_fetch = markets.data.fetch_all
+        old_core = markets.local_core
+        try:
+            markets.data.BARS = bars_dir
+            markets.data.fetch_all = fake_fetch
+            markets.local_core = fake_core
+            markets._CACHE.clear()
+            markets._CORE_CACHE.clear()
+            real, _ = markets.build("TECH")
+            old, _ = markets.build("TECH", core_close_fill=True)
+        finally:
+            markets.data.BARS = old_bars
+            markets.data.fetch_all = old_fetch
+            markets.local_core = old_core
+            markets._CACHE.clear()
+            markets._CORE_CACHE.clear()
+
+    real_smh = real[real["ticker"] == "SMH"].set_index("date")
+    old_smh = old[old["ticker"] == "SMH"].set_index("date")
+    want_open = 100.0 + np.arange(len(bdates), dtype=float) + 0.5
+    assert np.allclose(real_smh["open"].values, want_open), "default core not real-open"
+    assert not np.allclose(real_smh["open"].values, real_smh["close"].values), (
+        "default still close-filled"
+    )
+    assert np.allclose(old_smh["open"].values, old_smh["close"].values), (
+        "opt-out did not restore close-fill"
+    )
+    assert strategy.Config().limit_bps == 0.0
 
     # P&L windows: 1/5/21/252 trading days, chained with the live day
     eq = pd.Series(1.01 ** np.arange(300))

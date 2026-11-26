@@ -1,9 +1,9 @@
 """Limit-at-open execution study for the French core book.
 
 Baseline: shipped TECH tax book (SMH core, 2.5x, daily 200-day cut, month-end
-decision, next-open fill, 10k Trade Republic CTO). The shipped TECH core series
-has no intraday bars, so its "open" is the adjusted close; the limit study uses
-the real adjusted SMH open/high/low from cache/bars (read-only).
+decision, intended next-open fill, 10k Trade Republic CTO). US/TECH now use the
+real adjusted SMH open/high/low by default; `core_close_fill=True` restores the
+old synthetic close-fill path for comparison. Non-US markets keep the quirk.
 
 Run: uv run python scripts/execution.py
 """
@@ -37,8 +37,10 @@ BASE = dict(
 )
 
 
-def load(range_: bool):
-    panel, mem = markets.build("TECH", with_range=range_)
+def load(range_: bool, core_close_fill: bool = False):
+    panel, mem = markets.build(
+        "TECH", with_range=range_, core_close_fill=core_close_fill
+    )
     universe.canonical = lambda t: t
     return panel, mem
 
@@ -149,14 +151,28 @@ def bps(x: float) -> str:
 
 
 def main() -> None:
-    p_ship, m_ship = load(False)
+    # old synthetic core close-fill path, kept only for comparison
+    p_ship, m_ship = load(False, core_close_fill=True)
     r_ship, f_ship = run(p_ship, m_ship, 0.0)
+    # new default: real adjusted SMH open/high/low
     p, m = load(True)
     r_base, f_base = run(p, m, 0.0)
 
     ship_mult = f_ship["after_tax_eur"] / CAPITAL
     base_mult = f_base["after_tax_eur"] / CAPITAL
-    assert abs(ship_mult - 38.80) < 0.02, f"shipped baseline moved: {ship_mult:.2f}x"
+    assert abs(ship_mult - 38.80) < 0.02, (
+        f"old close-fill baseline moved: {ship_mult:.2f}x"
+    )
+
+    def monthly(close_fill: bool):
+        panel, mem = load(False, core_close_fill=close_fill)
+        kw = dict(BASE)
+        kw.update(france.kwargs("TECH", "trade-republic", "cto", CAPITAL, panel))
+        res = backtest.run(strategy.Market(panel, mem, strategy.Config(**kw)))
+        return res, france.after_tax(res, CAPITAL, "TECH")
+
+    r_mon, f_mon = monthly(False)
+    r_mon_old, f_mon_old = monthly(True)
 
     rows = []
     path_rows = []
@@ -232,37 +248,58 @@ def main() -> None:
         "- Price improvement on a fill is `+k` bps by construction. The interesting",
         "  quantities are the fill rate and the signed cost of the misses.",
         "- The full path is rerun with `Config.limit_bps=k`; the estimate on the",
-        "  shipped 38.8x book is the measured relative change applied to 38.8x.",
+        "  old close-fill 38.8x book is the measured relative change applied to it.",
         "",
-        "## Data note: the shipped TECH core is close-filled",
+        "## Data note: real core open is now the default",
         "",
-        "`markets.local_core` builds the TECH core rows from adjusted closes only,",
-        "so `open == close` for SMH and the shipped TECH 38.8x actually fills SMH at",
-        "the adjusted close. That is a next-close fill, not the intended next-open.",
-        "For the execution test, `markets.build('TECH', with_range=True)` splices the",
-        "real adjusted SMH open/high/low from `cache/bars/SMH.csv`; the honest",
-        "next-open baseline is **39.50x**. The default path is unchanged and still",
-        "38.8x; `--limit-bps` opts into the raw-bar panel (even `--limit-bps 0`).",
+        "`markets.local_core` still has only adjusted closes, so the old synthetic",
+        "core rows used `open == close` and filled SMH at the adjusted close. The",
+        "default US/TECH panel now splices the real adjusted SMH/SOXX open/high/low",
+        "from `cache/bars`; `markets.build(..., core_close_fill=True)` or",
+        "`--core-close-fill` restores the old path for comparison. Non-US markets",
+        "still keep the `open == close` core quirk.",
+        "",
+        "The default TECH tax book therefore fills SMH at the real open: **39.50x**",
+        "after tax. The old close-fill path is **38.80x**; the difference is execution",
+        "data, not a strategy change.",
         "",
         "## Baseline",
         "",
         "| book | after tax (€10k) | multiple | trades | pending open orders | deleverage | fees | tax paid | exit tax |",
         "|---|---:|---:|---:|---:|---:|---:|---:|---:|",
-        f"| shipped TECH (close-filled core) | €{f_ship['after_tax_eur']:,.0f} | "
-        f"**{ship_mult:.2f}x** | {len(r_ship.trades)} | "
-        f"{int((r_ship.trades.reason != 'deleverage').sum())} | "
-        f"{int((r_ship.trades.reason == 'deleverage').sum())} | "
-        f"€{f_ship['fees_eur']:,.0f} | €{f_ship['tax_paid_eur']:,.0f} | "
-        f"€{f_ship['exit_tax_eur']:,.0f} |",
-        f"| TECH with real SMH bars (honest next-open) | €{f_base['after_tax_eur']:,.0f} | "
+        f"| TECH tax, real SMH open (**default**) | €{f_base['after_tax_eur']:,.0f} | "
         f"**{base_mult:.2f}x** | {len(r_base.trades)} | "
         f"{int((r_base.trades.reason != 'deleverage').sum())} | "
         f"{int((r_base.trades.reason == 'deleverage').sum())} | "
         f"€{f_base['fees_eur']:,.0f} | €{f_base['tax_paid_eur']:,.0f} | "
         f"€{f_base['exit_tax_eur']:,.0f} |",
+        f"| TECH tax, old close-fill (`--core-close-fill`) | €{f_ship['after_tax_eur']:,.0f} | "
+        f"**{ship_mult:.2f}x** | {len(r_ship.trades)} | "
+        f"{int((r_ship.trades.reason != 'deleverage').sum())} | "
+        f"{int((r_ship.trades.reason == 'deleverage').sum())} | "
+        f"€{f_ship['fees_eur']:,.0f} | €{f_ship['tax_paid_eur']:,.0f} | "
+        f"€{f_ship['exit_tax_eur']:,.0f} |",
         "",
-        "The honest baseline has one more order and one more deleverage than the",
-        "shipped close-filled path; the fill study uses its 174 open orders.",
+        "The default baseline has one more order and one more deleverage than the",
+        "old close-fill path; the fill study uses its 174 open orders.",
+        "",
+        "## TECH monthly book, same comparison",
+        "",
+        "| book | after tax (€10k) | multiple | trades | fees | exit tax |",
+        "|---|---:|---:|---:|---:|---:|",
+        f"| TECH monthly, real SMH open (**default**) | €{f_mon['after_tax_eur']:,.0f} | "
+        f"**{f_mon['after_tax_eur'] / CAPITAL:.2f}x** | {len(r_mon.trades)} | "
+        f"€{f_mon['fees_eur']:,.0f} | €{f_mon['exit_tax_eur']:,.0f} |",
+        f"| TECH monthly, old close-fill | €{f_mon_old['after_tax_eur']:,.0f} | "
+        f"**{f_mon_old['after_tax_eur'] / CAPITAL:.2f}x** | "
+        f"{len(r_mon_old.trades)} | €{f_mon_old['fees_eur']:,.0f} | "
+        f"€{f_mon_old['exit_tax_eur']:,.0f} |",
+        "",
+        "The monthly book is more sensitive than the core-only book: it rotates",
+        "between the SMH core and the stock sleeve, so the real core open changes",
+        "the path and the trade count too. The old close-fill row is the "
+        f"{f_mon_old['after_tax_eur'] / CAPITAL:.2f}x in the existing `france.md`; "
+        f"the corrected default is {f_mon['after_tax_eur'] / CAPITAL:.2f}x.",
         "",
         "## Fill rates and cost, baseline orders held fixed",
         "",
@@ -344,17 +381,15 @@ def main() -> None:
         "who does not chase a miss keeps the old position and may miss a risk-off",
         "cut, which is a larger risk than the few bps of spread saved.",
         "",
-        "4. **The live TECH 38.8x is close-filled, not open-filled.** The execution",
-        "quirk is separate from the limit question. Fixing it (real SMH open/high/low)",
-        "raises the honest baseline to 39.5x; then a 5 bps limit adds only ~0.3x.",
-        "Do not book the 39.5x and the limit gain together without fixing the core",
-        "series in the default path.",
+        "4. **The old 38.8x was close-filled; the default is now 39.5x.** The",
+        "default US/TECH panel uses the real SMH open. The old close-fill path is",
+        "only a `--core-close-fill` comparison and is not the shipped default.",
         "",
         "## Recommendation",
         "",
         "**Keep the default next-open fill. Do not enable limit orders on the core",
-        "book.** The only positive case is 5 bps, worth roughly +0.3x after tax on a",
-        "39.5x honest baseline (+0.7%), with 95% fills. It is not robust enough to",
+        "book.** The only positive case is 5 bps, worth roughly +0.3x after tax on the",
+        "39.5x default baseline (+0.7%), with 95% fills. It is not robust enough to",
         "pay for the operational risk: a missed buy on a trend day costs ~130 bps,",
         "and the strategy's edge is precisely to be long on those days. If the book",
         "is paper-traded, log `--limit-bps 5` as a shadow next to the default; promote",
@@ -370,11 +405,25 @@ def main() -> None:
         "- Missed-fill P&L is dominated by a few trend days (2023-02, 2024-03,",
         "  2025-06, 2025-10). A different sample or a different start date can flip",
         "  the 5 bps sign.",
-        "- The TECH core series still has `open == close` in the default path. The",
-        "  limit mode uses the raw-bar panel, but the shipped 38.8x does not. Treat",
-        "  the 39.5x honest baseline and the 38.8x shipped number as different",
-        "  execution assumptions, not as a strategy improvement.",
+        "- **Non-US markets still have the core quirk.** `local_core` remains",
+        "  close-filled for DE/FR/GB/etc.; only US/TECH use real core opens. Do not",
+        "  apply the 39.5x US/TECH correction to the French or 39-market tables.",
         "- No borrow squeeze, no market impact, no queue position, no partial fills.",
+        "",
+        "## Downstream docs to regenerate",
+        "",
+        "- `results/france.md`: core-only tax 38.80x -> **39.50x**, monthly 27.18x ->",
+        "  **31.90x**; `results/france.csv` and `metrics_france.csv` follow.",
+        "- `README.md`: the 38.8x/27.2x headline rows and the next-open wording.",
+        "- `results/pea_ucits.md`: the CTO 38.80x comparator.",
+        "- `results/risk_v2.md`: its 38.80x baseline and all rule deltas.",
+        "- `results/summary.md`: the 38.80x summary row.",
+        "- Forward paper shadow: `paper_daily_tax.csv`, `paper_ledger_tax.csv` and",
+        "  `paper_replay_tax.csv` were logged on the old close-fill path. Re-baseline",
+        "  the shadow; do not rewrite historical rows.",
+        "- 39-market cost tables (`results/costs_tax.md`, `tax_markets.md`,",
+        "  `universal.md`): only US/TECH rows move; non-US cores are still",
+        "  close-filled until `local_core` is fixed.",
         "",
         "## Reproduce",
         "",
@@ -382,10 +431,13 @@ def main() -> None:
         "uv run python scripts/execution.py",
         "uv run python -m bot.cli backtest --market TECH --country fr --profile tax \\",
         "  --broker trade-republic --capital 10000 --limit-bps 5 --random-seeds 0",
+        "uv run python -m bot.cli backtest --market TECH --country fr --profile tax \\",
+        "  --broker trade-republic --capital 10000 --core-close-fill --random-seeds 0",
         "```",
         "",
-        "`--limit-bps 0` loads the same raw-bar panel and gives the honest next-open",
-        "baseline (39.50x); omit the flag for the shipped 38.8x close-filled path.",
+        "The first CLI run uses the real core open and the opt-in 5 bps limit. The",
+        "second reproduces the old 38.8x close-fill path. `--limit-bps 0` gives the",
+        "default 39.5x baseline with the raw high/low panel loaded.",
         "",
         "Generated by `uv run python scripts/execution.py`.",
     ]
