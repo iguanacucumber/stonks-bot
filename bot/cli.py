@@ -79,6 +79,7 @@ def _load(
     core_close_fill: bool = False,
 ):
     profile = profile or "monthly"
+    market = market or (france.DEFAULT_MARKET if country == "fr" else "US")
     broker = broker or (france.DEFAULT_BROKER if country == "fr" else "none")
     if wrapper == "pea":
         if market != "FR":
@@ -167,6 +168,7 @@ def _random_bench(mkt, seeds: int) -> pd.DataFrame:
 
 def cmd_backtest(args):
     profile = args.profile or "monthly"
+    market = args.market or (france.DEFAULT_MARKET if args.country == "fr" else "US")
     broker = args.broker or (france.DEFAULT_BROKER if args.country == "fr" else "none")
     panel, mem, mkt, cfg = _load(
         args.start,
@@ -175,7 +177,7 @@ def cmd_backtest(args):
         args.core_mode,
         args.leverage,
         args.financing_bps,
-        args.market,
+        market,
         profile,
         args.core,
         args.dd_stop,
@@ -230,9 +232,9 @@ def cmd_backtest(args):
     table = pd.DataFrame(cols).T
     print(table.round(4).to_string())
     if args.country == "fr":
-        f = france.after_tax(res, args.capital, args.market)
+        f = france.after_tax(res, args.capital, market)
         f.update(
-            market=args.market,
+            market=market,
             broker=france.broker_name(broker),
             wrapper=args.wrapper,
             profile="pea" if args.wrapper == "pea" else profile,
@@ -266,7 +268,7 @@ def cmd_backtest(args):
             row = pd.concat([old[~same], row], ignore_index=True)
         row.to_csv(path, index=False)
     # the report is US-only, so a non-US run must not overwrite its inputs
-    suffix = "" if args.market == "US" else f"_{args.market.lower()}"
+    suffix = "" if market == "US" else f"_{market.lower()}"
     table.to_csv(RESULTS / f"metrics{suffix}.csv")
     res.equity.to_frame("equity").to_csv(RESULTS / f"equity{suffix}.csv")
     res.trades.to_csv(RESULTS / f"trades{suffix}.csv", index=False)
@@ -570,6 +572,7 @@ def _risk_scale(mkt, date, cfg) -> float:
 
 def cmd_pnl(args):
     profile = args.profile or "monthly"
+    market = args.market or (france.DEFAULT_MARKET if args.country == "fr" else "US")
     broker = args.broker or (france.DEFAULT_BROKER if args.country == "fr" else "none")
     panel, mem, mkt, cfg = _load(
         "2015-01-01",
@@ -578,7 +581,7 @@ def cmd_pnl(args):
         None,
         args.leverage,
         args.financing_bps,
-        args.market,
+        market,
         profile,
         args.core,
         args.dd_stop,
@@ -616,7 +619,7 @@ def cmd_pnl(args):
     if args.country == "fr":
         tag = f"  ·  {args.country}/{france.broker_name(broker)}/{args.wrapper}"
     head = [
-        f"STONKS-BOT  ·  {markets.MARKETS[args.market]['label']}  ·  paper P&L",
+        f"STONKS-BOT  ·  {markets.MARKETS[market]['label']}  ·  paper P&L",
         f"${args.capital:,.0f}  ·  {cfg.leverage:.1f}x  ·  {profile}{tag}  ·  "
         f"signal {d.date()}  ·  {stamp}",
     ]
@@ -629,7 +632,7 @@ def cmd_pnl(args):
         print(f"  risk: half size (core below its {cfg.trend_ma}d MA)")
     print(f"  hour quotes: {quoted}/{len(targets)} names")
     if args.country == "fr":
-        f = france.after_tax(res, args.capital, args.market)
+        f = france.after_tax(res, args.capital, market)
         print(
             f"  France {args.wrapper} via {france.broker_name(broker)}: "
             f"after tax {f['after_tax_eur'] / args.capital:.2f}x "
@@ -641,6 +644,7 @@ def cmd_pnl(args):
 
 def cmd_paper(args):
     profile = args.profile or "monthly"
+    market = args.market or (france.DEFAULT_MARKET if args.country == "fr" else "US")
     broker = args.broker or (france.DEFAULT_BROKER if args.country == "fr" else "none")
     panel, mem, mkt, cfg = _load(
         "2026-01-02",
@@ -649,7 +653,7 @@ def cmd_paper(args):
         args.core_mode,
         args.leverage,
         args.financing_bps,
-        args.market,
+        market,
         profile,
         args.core,
         args.dd_stop,
@@ -757,7 +761,7 @@ def main(argv=None):
     pb.add_argument("--random-seeds", type=int, default=100)
     pb.add_argument("--core-weight", type=float, default=None)
     pb.add_argument("--core-mode", default=None)
-    pb.add_argument("--market", choices=sorted(markets.MARKETS), default="US")
+    pb.add_argument("--market", choices=sorted(markets.MARKETS), default=None)
     pb.add_argument("--core", default=None, help="core ETF, default SMH")
     pb.add_argument("--dd-stop", type=float, default=0.0, help="drawdown stop, 0=off")
     pb.add_argument("--trend-ma", type=int, default=DEFAULT_TREND_MA)
@@ -800,7 +804,7 @@ def main(argv=None):
 
     pn = sub.add_parser("pnl")
     pn.add_argument("--capital", type=float, default=10000.0)
-    pn.add_argument("--market", choices=sorted(markets.MARKETS), default="US")
+    pn.add_argument("--market", choices=sorted(markets.MARKETS), default=None)
     pn.add_argument("--core", default=None, help="core ETF, default SMH")
     pn.add_argument("--dd-stop", type=float, default=0.0, help="drawdown stop, 0=off")
     pn.add_argument("--trend-ma", type=int, default=DEFAULT_TREND_MA)
@@ -826,7 +830,7 @@ def main(argv=None):
     pp.add_argument("--llm", action="store_true")
     pp.add_argument("--core-weight", type=float, default=None)
     pp.add_argument("--core-mode", default=None)
-    pp.add_argument("--market", choices=sorted(markets.MARKETS), default="US")
+    pp.add_argument("--market", choices=sorted(markets.MARKETS), default=None)
     pp.add_argument("--core", default=None, help="core ETF, default SMH")
     pp.add_argument("--dd-stop", type=float, default=0.0, help="drawdown stop, 0=off")
     pp.add_argument("--trend-ma", type=int, default=DEFAULT_TREND_MA)

@@ -167,6 +167,7 @@ ALIASES = {
 # The CLI picks this automatically for --country fr. Other presets stay for
 # research/comparison, but the default is the lowest all-in cost for the US core.
 DEFAULT_BROKER = "Interactive Brokers"
+DEFAULT_MARKET = "TECH"
 
 CURRENCY = {
     "US": "USD",

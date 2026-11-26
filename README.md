@@ -124,7 +124,7 @@ book wins (39.5x/34.7x versus 31.9x/11.7x monthly), because their 25 bps FX make
 core-only tax book at Trade Republic (39.5x) is the fallback if spot FX is not
 available.
 The optimum depends on the broker's cost structure. `--country fr` now defaults to
-monthly + IBKR; `--profile tax` selects the core-only book.
+**TECH + monthly + IBKR**; `--profile tax` selects the core-only book.
 
 Bourse Direct's €8.50 US ticket still makes it the wrong broker for a €10k US book.
 No pure semiconductor UCITS is PEA-eligible (the fund must hold >75% EU/EEA
@@ -134,8 +134,8 @@ a substitute for the US core. Keep the 200-day signal in the asset's own currenc
 translating the price series to EUR before the rule changes the trend timing and
 hurts. `results/france.md`, `results/brokers.md`, `results/pea_ucits.md`,
 `scripts/france.py`, `scripts/brokers.py`, `scripts/pea_ucits.py`.
-CLI: `backtest --country fr` defaults to monthly + Interactive Brokers and prints
-the after-tax block; `--profile tax` selects the core-only book; `pnl` adds the same
+CLI: `backtest --country fr` defaults to TECH + monthly + Interactive Brokers and
+prints the after-tax block; `--profile tax` selects the core-only book; `pnl` adds the same
 line; `report` appends the France section.
 
 **Cross-market:** the same config on **39 markets** (9 stock-level including a 49-name

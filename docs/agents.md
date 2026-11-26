@@ -56,4 +56,4 @@ Private repo `iguanacucumber/stonks-bot`, one issue per workstream. Orchestrator
 - [x] execution — PR #10 merged at `896b401`; real core opens default; limit orders stay off
 - [x] risk — PR #7 merged at `9ff23b7`; docs/scripts only, merged early because it does not touch the engine; verdict: keep defaults
 - [x] brokers — PR #11 merged at `d04787f`; 8 presets, best monthly+IBKR 57.01x at 2 bps, FX caveat; PEA field spans 0.056x
-- [x] merged and re-tested — master `d04787f`; `test_core`, `test_brokers`, `test_pea` pass; default CLI = monthly + IBKR
+- [x] merged and re-tested — master `d04787f`; `test_core`, `test_brokers`, `test_pea` pass; default CLI = TECH + monthly + IBKR

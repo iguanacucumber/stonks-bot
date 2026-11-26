@@ -169,7 +169,7 @@ therefore a function of the FX cost, not a fixed rule.
    **57.01x at €10k** on the 2 bps model (55.59x at the 3 bps auto rate), and
    the core-only tax book is 50.89x. At 25 bps the monthly book falls to
    31.86x and the core-only book (39.47x at IBKR, 39.50x at Trade Republic)
-   is the better fallback. The CLI now defaults to monthly + IBKR for
+   is the better fallback. The CLI now defaults to TECH + monthly + IBKR for
    `--country fr`; `--profile tax` selects the core-only book.
 2. **Best PEA broker: XTB**, but effectively a tie with
    Trade Republic, IBKR and Bourse Direct. Use the PEA only if the
