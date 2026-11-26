@@ -20,6 +20,7 @@ from . import (
     llm,
     markets,
     overlay,
+    profiles,
     report,
     strategy,
     universe,
@@ -43,6 +44,8 @@ DEFAULT_TREND_SCALE = 0.5
 # far more in costs than it earns: see results/short.md.
 PROFILES = {
     "monthly": {},
+    # 70% shipped book + 30% SPY; post-hoc, paper-only risk preference.
+    "balanced": {},
     # taxable account: no stock sleeve, wider leverage band, fewer realized gains
     "tax": {"core_mode": "always", "leverage_band": 0.30, "tax_lots": "hifo"},
     "weekly": {
@@ -220,7 +223,8 @@ def cmd_backtest(args):
         f"dates {mkt.dates[0].date()} -> {mkt.dates[-1].date()}  tickers {mkt.px.shape[1]}"
     )
 
-    res = backtest.run(mkt)
+    sel = profiles.selector_for(profile)
+    res = backtest.run(mkt, selector=sel)
     m, _ = backtest.summarize(res, mkt)
     spy_res = backtest.spy_result(mkt)
     m_spy, _ = backtest.summarize(spy_res, mkt)
@@ -615,7 +619,6 @@ def _eur_ledger(res, panel, market, cfg, broker, capital):
         market,
         eur_ledger.EurLedgerConfig(
             capital=capital,
-            tax_rate=0.314,
             financing_bps=cfg.financing_bps,
             spread_bps=cfg.cost_bps,
             fx_bps=cfg.fx_bps,
@@ -655,9 +658,11 @@ def cmd_pnl(args):
         args.capital,
         fx_bps=args.fx_bps,
     )
-    res = backtest.run(mkt)
+    sel = profiles.selector_for(profile)
+    res = backtest.run(mkt, selector=sel)
     d = mkt.dates[-1]
-    targets = backtest._default_selector(mkt, d, overlay.held_names(res, d), set())
+    base_selector = sel or backtest._default_selector
+    targets = base_selector(mkt, d, overlay.held_names(res, d), set())
     scale = _risk_scale(mkt, d, cfg)
     targets = {t: w * cfg.leverage * scale for t, w in targets.items()}
     hour_pct, day_pct, last_ts, quoted = _live_moves(targets, mkt, d)
@@ -735,9 +740,11 @@ def cmd_paper(args):
         fx_bps=args.fx_bps,
     )
     d = mkt.dates[-1]
-    res = backtest.run(mkt)
+    sel = profiles.selector_for(profile)
+    res = backtest.run(mkt, selector=sel)
     held = overlay.held_names(res, d)
-    targets = backtest._default_selector(mkt, d, held, set())
+    base_selector = sel or backtest._default_selector
+    targets = base_selector(mkt, d, held, set())
     if args.llm and (RESULTS / "llm_judgments.jsonl").exists():
         j = llm.load_judgments(RESULTS / "llm_judgments.jsonl")
         targets = llm.make_overlay(j, max_active=cfg.llm_active_share)(d, targets, mkt)

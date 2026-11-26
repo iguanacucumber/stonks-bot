@@ -7,7 +7,7 @@ with a constrained LLM news overlay. No broker connection, no orders, no keys.
 
 > **Accounting note.** For a French CTO, the real-life number is the **EUR ledger**
 > (`results/eur_ledger.md`): annual PFU on EUR gains, EUR cost basis at trade-date FX,
-> exit tax. It gives **66.0x for US monthly** and **52.9x for TECH monthly**, versus
+> exit tax. It gives **66.7x for US monthly** and **53.5x for TECH monthly**, versus
 > 70.9x/57.0x for the older terminal-FX headline. See `docs/accounting.md`. The default
 > for a new investor is US monthly; TECH remains the forward-validation book.
 
@@ -37,14 +37,30 @@ The S&P sleeve (used when SMH lags) is:
 6. **Evaluation**: SPY, equal-weight S&P, momentum-only, LLM, placebo-LLM (same names/dates,
    no news), random-20 null, block-bootstrap CIs, calibration and Brier score.
 
+## Which profile?
+
+| profile | allocation | EUR ledger | maxDD | 2022 |
+|---|---|---:|---:|---:|
+| **max_growth** (default) | US monthly 2.5x | **66.7x** | -56.4% | -32.8% |
+| balanced (paper opt-in) | 70% US book + 30% SPY | 36.9x | -46.0% | -27.4% |
+| conservative (paper opt-in) | US monthly 1.5x | 19.4x | -40.2% | -20.3% |
+
+`max_growth` maximizes terminal wealth but loses more than half at the worst
+peak-to-trough. `balanced` gives up about half the terminal wealth for roughly
+10 pp less drawdown; it is the profile for a human who must stay invested. Both
+opt-ins are post-hoc and labelled `paper`, not forward-validated. Run
+`uv run python -m bot.cli backtest --country fr --profile balanced` to reproduce
+the balanced book. See `docs/profiles.md`.
+
 ## Short horizons: tested, rejected
 
 Weekly/daily rebalancing of the same book, 1/5-day reversal, 20-day momentum and
 the close-to-open overnight effect were tested with walk-forward folds, realistic
 5 bps/side costs, French PFU and a 2x-cost run. The best close-to-close signal made
-**2.64x after tax out-of-sample versus QQQ 5.49x**; the overnight family made 1.01x,
-and 0.70x at 2x costs. The always-overnight comparator loses 88% on SPY before tax
-at a 10 bps daily round trip. Verdict: **reject**. No short-horizon satellite; the
+**2.64x after tax out-of-sample versus QQQ 5.49x**; at 2x costs it drops to 1.13x,
+below BIL (1.20x). The overnight family made 1.01x under optimistic costs, 0.82x
+all-in, and 0.60x at 2x costs. The always-overnight comparator loses 88% on SPY
+before tax at a 10 bps per side (20 bps round trip) daily cost. Verdict: **reject**. No short-horizon satellite; the
 monthly book remains the only production strategy. A market maker with sub-bp
 spreads might find a gross overnight edge, but that is not a French retail CTO.
 See `results/alpha_short.md` after merge.
@@ -64,7 +80,9 @@ by penny stocks) without changing the shipped result.
 
 Known bias: ~18% of 2015–2026 index members have no Yahoo history (mostly acquired/delisted
 names). They are dropped. Results are survivor-biased; treat them as a sanity check, not a
-promise.
+promise. A point-in-time S&P IT sleeve check retains ~107% of the static-49 TECH headline,
+so the TECH sleeve is not mainly a survivorship artifact; the US all-PIT book is still
+better on return and drawdown.
 
 ## Results (paper backtest, 10 bps, month-end rebalance, next-open fill, 2.5x gross)
 
@@ -132,17 +150,17 @@ On €10k after tax and real tariffs (`results/france.md`, `results/brokers.md`)
 
 | book (€10k) | Bourse Direct | Trade Republic | Interactive Brokers | index after tax |
 |---|---:|---:|---:|---:|
-| **US monthly sleeve (default)** | — | — | **66.0x EUR ledger** | 5.4x QQQ |
-| TECH monthly sleeve (forward) | 11.7x | 31.9x | **52.9x EUR ledger** | 5.4x QQQ |
-| TECH core-only tax book | 34.7x | 39.5x | 49.0x EUR ledger | 5.4x QQQ |
+| **US monthly sleeve (default)** | — | — | **66.7x EUR ledger** | 5.4x QQQ |
+| TECH monthly sleeve (forward) | 11.7x | 31.9x | **53.5x EUR ledger** | 5.4x QQQ |
+| TECH core-only tax book | 34.7x | 39.5x | 49.3x EUR ledger | 5.4x QQQ |
 | French CTO (CAC + SMH core) | 6.4x | 12.5x | — | 2.1x CAC |
 | French PEA (sleeve only) | 1.47x | 1.61x | — | 2.3x CAC |
 | PEA Nasdaq-100 proxy (PUST.PA) | 4.96x | 5.08x | — | 5.4x QQQ |
 
-At €10k the best book+broker is **monthly US at Interactive Brokers: 66.0x in the
-EUR ledger** (70.9x terminal-FX headline, €28.8k fees, €138k PFU + €210k exit tax).
-The TECH monthly book is 52.9x EUR ledger (57.0x terminal-FX) and remains the
-forward-validation track. The core-only tax book at IBKR is 49.0x EUR ledger; at Trade Republic and Bourse Direct the tax
+At €10k the best book+broker is **monthly US at Interactive Brokers: 66.7x in the
+EUR ledger** (70.9x terminal-FX headline, €28.8k fees, €132k PFU + €210k exit tax).
+The TECH monthly book is 53.5x EUR ledger (57.0x terminal-FX) and remains the
+forward-validation track. The core-only tax book at IBKR is 49.3x EUR ledger; at Trade Republic and Bourse Direct the tax
 book wins (39.5x/34.7x versus 31.9x/11.7x monthly), because their 25 bps FX makes
 ~1,800 sleeve trades expensive. At 25 bps IBKR monthly falls to 31.9x, so the
 core-only tax book at Trade Republic (39.5x) is the fallback if spot FX is not
@@ -168,8 +186,8 @@ Sleeve breadth: 4 names reaches **75.3x** after tax (p5 3.27x) but fails the
 6-name sleeve for the forward book; 4 is a risk-on candidate, not the default.
 `results/topn_fr.md`.
 
-Market choice: **US monthly at IBKR is 66.0x in the EUR ledger** (70.9x terminal-FX),
-maxDD -57.5%, versus TECH 52.9x (57.0x terminal-FX) / -66.0%. US wins the full window
+Market choice: **US monthly at IBKR is 66.7x in the EUR ledger** (70.9x terminal-FX),
+maxDD -56.4%, versus TECH 53.5x (57.0x terminal-FX) / -65.1%. US wins the full window
 and **7/7 five-year starts** (median **6.83x** vs SPY 1.74x, worst 2.95x), with lower
 drawdown. It is now the default for a new investor; TECH remains the forward-validation
 book because it has the only live paper history. `--market TECH` restores it.
@@ -183,7 +201,7 @@ the core-only tax book (39.47x at 25 bps).
 Bourse Direct's €8.50 US ticket still makes it the wrong broker for a €10k US book.
 No pure semiconductor UCITS is PEA-eligible (the fund must hold >75% EU/EEA
 companies), so the best 1x PEA tech proxy (PUST.PA) makes 5.08x after tax, and even
-the 2x Nasdaq PEA ETF (LQQ) is 14.4x, versus 66.0x for the best CTO. The PEA is not
+the 2x Nasdaq PEA ETF (LQQ) is 14.4x, versus 66.7x for the best CTO. The PEA is not
 a substitute for the US core. Keep the 200-day signal in the asset's own currency:
 translating the price series to EUR before the rule changes the trend timing and
 hurts. `results/france.md`, `results/brokers.md`, `results/pea_ucits.md`,
@@ -194,6 +212,21 @@ prints both the terminal-FX and EUR-ledger blocks; `--market TECH` restores the
 forward-validation book; `--profile tax` selects the core-only book; `--fx-bps`
 sets your real conversion cost and auto-selects the book at ≥15 bps; `pnl` adds the
 same line; `report` appends the France section.
+
+## Paper autopilot
+
+```bash
+uv run python scripts/live.py plan  --book monthly --market US
+uv run python scripts/live.py run   --book monthly --market US --paper
+uv run python scripts/live.py status --book monthly --market US
+uv run python scripts/live.py reconcile --book monthly --market US
+```
+
+Dry-run is the default; `--paper` is the only writer. State is atomic under
+`state/live/`, orders are idempotent, and rails block stale data, holidays,
+excess gross/turnover and duplicate orders. The paper ledger is **pre-tax,
+average-cost**: it is not the after-tax EUR ledger. No real broker, no keys.
+See `docs/live.md` and `results/live_demo.md`.
 
 **Cross-market:** the same config on **39 markets** (9 stock-level including a 49-name
 NASDAQ tech book, 30 country/tech ETFs) is profitable in **39/39** and beats the local
@@ -298,3 +331,6 @@ bot/report.py    markdown + SVG
 bot/cli.py       commands
 tests/test_core.py
 ```
+
+
+See `results/v2_summary.md` for the four-workstream v2 evidence, the EUR-ledger baseline, the rejected alpha/short-horizon studies, and the live/evaluation merge hashes.

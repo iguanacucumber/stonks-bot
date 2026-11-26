@@ -16,7 +16,7 @@ fees, and annual PFU settlement. Acceptance: reproduce the current USD-native nu
 a cross-check, then publish the EUR-ledger number and the difference.
 
 Status: `bot/eur_ledger.py`, `scripts/eur_ledger.py`, `results/eur_ledger.md` merged.
-TECH 57.01x terminal-FX -> 52.89x EUR ledger; US 70.86x -> 66.02x. Remaining work:
+TECH 57.01x terminal-FX -> 53.45x EUR ledger; US 70.86x -> 66.72x. Remaining work:
 dividend/withholding tax and CLI integration.
 
 ### 2. Dividend and withholding-tax drag

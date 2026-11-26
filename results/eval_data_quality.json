@@ -1,0 +1,446 @@
+{
+  "aliases": {
+    "cycles": [],
+    "hard_failures": [],
+    "info": [
+      {
+        "check": "alias_many_to_one",
+        "detail": "2 tickers map to this canonical symbol",
+        "symbol": "RTX"
+      },
+      {
+        "check": "alias_many_to_one",
+        "detail": "2 tickers map to this canonical symbol",
+        "symbol": "GEN"
+      }
+    ],
+    "ok": true,
+    "warnings": [
+      {
+        "check": "alias_self",
+        "detail": "identity alias is redundant",
+        "symbol": "GOOG"
+      },
+      {
+        "check": "alias_self",
+        "detail": "identity alias is redundant",
+        "symbol": "GOOGL"
+      }
+    ]
+  },
+  "bars_dir": "/home/user/projects/stonks-wt-v2-eval/cache/bars",
+  "fresh_symbols": 1175,
+  "gap_symbols": 5,
+  "generated_at": "2026-11-26T15:24:38+00:00",
+  "hard_failure_counts": {},
+  "hard_failures": [],
+  "info": [
+    {
+      "check": "adjustment_factor_change",
+      "detail": "1 adjustment-factor change(s) without a raw price jump",
+      "symbol": "AIV"
+    },
+    {
+      "check": "adjustment_factor_change",
+      "detail": "1 adjustment-factor change(s) without a raw price jump",
+      "symbol": "DHR"
+    },
+    {
+      "check": "adjustment_factor_change",
+      "detail": "1 adjustment-factor change(s) without a raw price jump",
+      "symbol": "DIA.MC"
+    },
+    {
+      "check": "split_adjusted",
+      "detail": "1 split-like raw close jump(s), adjusted series smooth",
+      "symbol": "ELE.MC"
+    },
+    {
+      "check": "adjustment_factor_change",
+      "detail": "1 adjustment-factor change(s) without a raw price jump",
+      "symbol": "GEN"
+    },
+    {
+      "check": "split_adjusted",
+      "detail": "1 split-like raw close jump(s), adjusted series smooth",
+      "symbol": "KDP"
+    },
+    {
+      "check": "split_adjusted",
+      "detail": "1 split-like raw close jump(s), adjusted series smooth",
+      "symbol": "LU"
+    },
+    {
+      "check": "split_adjusted",
+      "detail": "1 split-like raw close jump(s), adjusted series smooth",
+      "symbol": "MBI"
+    },
+    {
+      "check": "split_adjusted",
+      "detail": "1 split-like raw close jump(s), adjusted series smooth",
+      "symbol": "OCI.AS"
+    },
+    {
+      "check": "adjustment_factor_change",
+      "detail": "1 adjustment-factor change(s) without a raw price jump",
+      "symbol": "STLAP.PA"
+    },
+    {
+      "check": "alias_many_to_one",
+      "detail": "2 tickers map to this canonical symbol",
+      "symbol": "RTX"
+    },
+    {
+      "check": "alias_many_to_one",
+      "detail": "2 tickers map to this canonical symbol",
+      "symbol": "GEN"
+    }
+  ],
+  "info_counts": {
+    "adjustment_factor_change": 5,
+    "alias_many_to_one": 2,
+    "split_adjusted": 5
+  },
+  "membership": {
+    "end": "2026-10-30",
+    "hard_failures": [],
+    "info": [],
+    "ok": true,
+    "rows": 1353267,
+    "snapshots": 2724,
+    "start": "1996-01-02",
+    "tickers": 1214,
+    "warnings": []
+  },
+  "ok": true,
+  "panel": {
+    "dates": 3245,
+    "end": "2026-11-25",
+    "hard_failures": [],
+    "info": [],
+    "ok": true,
+    "rows": 2226017,
+    "start": "2014-01-02",
+    "tickers": 784,
+    "warnings": []
+  },
+  "rows_checked": 3515514,
+  "snapshot_date": "2026-11-25",
+  "split_adjusted": 5,
+  "stale": [
+    {
+      "last": "2026-11-11",
+      "symbol": "1COV.DE"
+    },
+    {
+      "last": "2026-08-14",
+      "symbol": "AVB"
+    },
+    {
+      "last": "2016-09-28",
+      "symbol": "BLY"
+    },
+    {
+      "last": "2026-01-30",
+      "symbol": "CMA"
+    },
+    {
+      "last": "2017-03-20",
+      "symbol": "DWD"
+    },
+    {
+      "last": "2026-08-04",
+      "symbol": "EA"
+    },
+    {
+      "last": "2026-08-17",
+      "symbol": "EQR"
+    },
+    {
+      "last": "2026-07-31",
+      "symbol": "FLTR.L"
+    },
+    {
+      "last": "2018-02-22",
+      "symbol": "GR"
+    },
+    {
+      "last": "2026-02-09",
+      "symbol": "HI"
+    },
+    {
+      "last": "2026-10-30",
+      "symbol": "KVUE"
+    },
+    {
+      "last": "2026-08-26",
+      "symbol": "LEG"
+    },
+    {
+      "last": "2017-03-13",
+      "symbol": "NLV"
+    },
+    {
+      "last": "2026-02-02",
+      "symbol": "PCH"
+    },
+    {
+      "last": "2026-10-22",
+      "symbol": "PSKY"
+    },
+    {
+      "last": "2026-10-02",
+      "symbol": "QRVO"
+    },
+    {
+      "last": "2026-11-19",
+      "symbol": "SNDK"
+    },
+    {
+      "last": "2022-03-02",
+      "symbol": "TDM"
+    },
+    {
+      "last": "2026-03-20",
+      "symbol": "TGNA"
+    },
+    {
+      "last": "2026-10-05",
+      "symbol": "WBD"
+    },
+    {
+      "last": "2017-02-03",
+      "symbol": "WMX"
+    }
+  ],
+  "stale_symbols": 21,
+  "symbols_checked": 1196,
+  "truncated": {
+    "warnings": 154
+  },
+  "unadjusted_split": 40,
+  "verdict": "pass_required_symbols",
+  "warning_counts": {
+    "alias_self": 2,
+    "date_gap": 5,
+    "high_below_low": 1,
+    "nonpositive_high": 1,
+    "nonpositive_low": 2,
+    "nonpositive_open": 2,
+    "ohlc_inconsistent": 122,
+    "stale_bar": 21,
+    "unadjusted_split": 40
+  },
+  "warnings": [
+    {
+      "check": "stale_bar",
+      "detail": "last bar 2026-11-11 vs snapshot 2026-11-25",
+      "symbol": "1COV.DE"
+    },
+    {
+      "check": "ohlc_inconsistent",
+      "detail": "high<max(open,close): 1, low>min(open,close): 0",
+      "symbol": "AAL.L"
+    },
+    {
+      "check": "ohlc_inconsistent",
+      "detail": "high<max(open,close): 2, low>min(open,close): 0",
+      "symbol": "ABBN.SW"
+    },
+    {
+      "check": "ohlc_inconsistent",
+      "detail": "high<max(open,close): 2, low>min(open,close): 2",
+      "symbol": "ABDN.L"
+    },
+    {
+      "check": "ohlc_inconsistent",
+      "detail": "high<max(open,close): 1, low>min(open,close): 1",
+      "symbol": "ABF.L"
+    },
+    {
+      "check": "unadjusted_split",
+      "detail": "1 split-like raw jump(s) also move adjusted close",
+      "symbol": "ADCT"
+    },
+    {
+      "check": "ohlc_inconsistent",
+      "detail": "high<max(open,close): 1, low>min(open,close): 0",
+      "symbol": "ADEN.SW"
+    },
+    {
+      "check": "ohlc_inconsistent",
+      "detail": "high<max(open,close): 0, low>min(open,close): 3",
+      "symbol": "ADM.L"
+    },
+    {
+      "check": "ohlc_inconsistent",
+      "detail": "high<max(open,close): 0, low>min(open,close): 1",
+      "symbol": "AENA.MC"
+    },
+    {
+      "check": "ohlc_inconsistent",
+      "detail": "high<max(open,close): 0, low>min(open,close): 2",
+      "symbol": "AMP.MI"
+    },
+    {
+      "check": "nonpositive_low",
+      "detail": "1 rows",
+      "symbol": "ANTH"
+    },
+    {
+      "check": "unadjusted_split",
+      "detail": "16 split-like raw jump(s) also move adjusted close",
+      "symbol": "ANTH"
+    },
+    {
+      "check": "ohlc_inconsistent",
+      "detail": "high<max(open,close): 2, low>min(open,close): 3",
+      "symbol": "ANTO.L"
+    },
+    {
+      "check": "unadjusted_split",
+      "detail": "1 split-like raw jump(s) also move adjusted close",
+      "symbol": "APA"
+    },
+    {
+      "check": "unadjusted_split",
+      "detail": "2 split-like raw jump(s) also move adjusted close",
+      "symbol": "ATO.PA"
+    },
+    {
+      "check": "ohlc_inconsistent",
+      "detail": "high<max(open,close): 2, low>min(open,close): 0",
+      "symbol": "AUTO.L"
+    },
+    {
+      "check": "ohlc_inconsistent",
+      "detail": "high<max(open,close): 2, low>min(open,close): 2",
+      "symbol": "AV.L"
+    },
+    {
+      "check": "stale_bar",
+      "detail": "last bar 2026-08-14 vs snapshot 2026-11-25",
+      "symbol": "AVB"
+    },
+    {
+      "check": "ohlc_inconsistent",
+      "detail": "high<max(open,close): 1, low>min(open,close): 0",
+      "symbol": "AZN.L"
+    },
+    {
+      "check": "ohlc_inconsistent",
+      "detail": "high<max(open,close): 2, low>min(open,close): 0",
+      "symbol": "BA.L"
+    },
+    {
+      "check": "ohlc_inconsistent",
+      "detail": "high<max(open,close): 1, low>min(open,close): 4",
+      "symbol": "BARC.L"
+    },
+    {
+      "check": "ohlc_inconsistent",
+      "detail": "high<max(open,close): 1, low>min(open,close): 0",
+      "symbol": "BCVN.SW"
+    },
+    {
+      "check": "date_gap",
+      "detail": "1 gap(s) > 30d; max 245d",
+      "symbol": "BLY"
+    },
+    {
+      "check": "stale_bar",
+      "detail": "last bar 2016-09-28 vs snapshot 2026-11-25",
+      "symbol": "BLY"
+    },
+    {
+      "check": "unadjusted_split",
+      "detail": "1 split-like raw jump(s) also move adjusted close",
+      "symbol": "BMPS.MI"
+    },
+    {
+      "check": "ohlc_inconsistent",
+      "detail": "high<max(open,close): 3, low>min(open,close): 2",
+      "symbol": "BNZL.L"
+    },
+    {
+      "check": "ohlc_inconsistent",
+      "detail": "high<max(open,close): 1, low>min(open,close): 0",
+      "symbol": "BP.L"
+    },
+    {
+      "check": "ohlc_inconsistent",
+      "detail": "high<max(open,close): 0, low>min(open,close): 2",
+      "symbol": "BRBY.L"
+    },
+    {
+      "check": "ohlc_inconsistent",
+      "detail": "high<max(open,close): 0, low>min(open,close): 4",
+      "symbol": "BRE.MI"
+    },
+    {
+      "check": "ohlc_inconsistent",
+      "detail": "high<max(open,close): 1, low>min(open,close): 0",
+      "symbol": "BT-A.L"
+    },
+    {
+      "check": "ohlc_inconsistent",
+      "detail": "high<max(open,close): 1, low>min(open,close): 0",
+      "symbol": "BUCN.SW"
+    },
+    {
+      "check": "ohlc_inconsistent",
+      "detail": "high<max(open,close): 22, low>min(open,close): 20",
+      "symbol": "C6E.PA"
+    },
+    {
+      "check": "unadjusted_split",
+      "detail": "1 split-like raw jump(s) also move adjusted close",
+      "symbol": "CAR"
+    },
+    {
+      "check": "ohlc_inconsistent",
+      "detail": "high<max(open,close): 0, low>min(open,close): 1",
+      "symbol": "CCH.L"
+    },
+    {
+      "check": "ohlc_inconsistent",
+      "detail": "high<max(open,close): 3, low>min(open,close): 2",
+      "symbol": "CFR.SW"
+    },
+    {
+      "check": "ohlc_inconsistent",
+      "detail": "high<max(open,close): 0, low>min(open,close): 1",
+      "symbol": "CIE.MC"
+    },
+    {
+      "check": "nonpositive_high",
+      "detail": "1 rows",
+      "symbol": "CL2.PA"
+    },
+    {
+      "check": "high_below_low",
+      "detail": "1 rows",
+      "symbol": "CL2.PA"
+    },
+    {
+      "check": "ohlc_inconsistent",
+      "detail": "high<max(open,close): 9, low>min(open,close): 10",
+      "symbol": "CL2.PA"
+    },
+    {
+      "check": "unadjusted_split",
+      "detail": "6 split-like raw jump(s) also move adjusted close",
+      "symbol": "CL2.PA"
+    },
+    {
+      "check": "alias_self",
+      "detail": "identity alias is redundant",
+      "symbol": "GOOG"
+    },
+    {
+      "check": "alias_self",
+      "detail": "identity alias is redundant",
+      "symbol": "GOOGL"
+    }
+  ]
+}

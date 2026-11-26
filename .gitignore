@@ -11,7 +11,11 @@ results/*.log
 !results/paper_ledger_tax.csv
 !results/paper_ledger_us.csv
 !results/paper_audit.csv
+!results/eval_trials.csv
 
 # worktree symlinks
 /.venv
 /cache
+
+# live paper state is local, never committed
+/state/

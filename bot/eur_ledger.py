@@ -22,10 +22,21 @@ import pandas as pd
 from . import france
 
 
+def french_rate(year: int) -> float:
+    """French CTO rate by realization year, matching `backtest.fr_rate`."""
+    if year < 2018:
+        return 0.345  # 19% IR + 15.5% social, pre-PFU
+    if year < 2026:
+        return 0.30  # PFU 12.8% + 17.2%
+    return 0.314  # PFU 12.8% + 18.6% from 2026
+
+
 @dataclass(frozen=True)
 class EurLedgerConfig:
     capital: float = 10_000.0
-    tax_rate: float = 0.314
+    # None = year-dependent French rate (30% through 2025, 31.4% from 2026).
+    # A float forces a flat stressed rate for sensitivity tests.
+    tax_rate: float | None = None
     financing_bps: float = 500.0
     spread_bps: float = 5.0
     fx_bps: float = 2.0
@@ -241,7 +252,12 @@ def replay(
                     if net <= 1e-12:
                         break
                 loss_carry = [x for x in loss_carry if x[1] > 1e-12]
-                tax = max(0.0, net) * cfg.tax_rate
+                rate = (
+                    cfg.tax_rate
+                    if cfg.tax_rate is not None
+                    else french_rate(year)  # year the gain was realized
+                )
+                tax = max(0.0, net) * rate
                 cash -= tax
                 tax_paid += tax
             elif net < 0:
@@ -336,7 +352,10 @@ def replay(
         unrealized += shares * p - cost
     carry_left = sum(x[1] for x in loss_carry)
     net = realized_year + unrealized - carry_left
-    exit_tax = max(0.0, net) * cfg.tax_rate
+    exit_rate = (
+        cfg.tax_rate if cfg.tax_rate is not None else french_rate(int(dates[-1].year))
+    )
+    exit_tax = max(0.0, net) * exit_rate
     final = float(equity.iloc[-1])
     after = final - exit_tax
     years = len(dates) / 252.0

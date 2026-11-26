@@ -48,10 +48,10 @@ open forward gate, and no statistical correction for the number of experiments r
 
 | workstream | issue | branch | PR | state |
 |---|---|---|---|---|
-| A. Live Autopilot | #17 | `v2/live-autopilot` | — | code committed, tests pass |
-| B. Alpha Lab | #18 | `v2/alpha-lab` | — | reports drafted, short study running |
-| C. Risk & Allocation | #19 | `v2/risk-alloc` | — | pre-registered, experiments running |
-| D. Data & Evaluation | #20 | `v2/data-eval` | — | package + reports committed, CI/currency finalizing |
+| A. Live Autopilot | #17 | `v2/live-autopilot` | #27 | **merged** at `25bd661` |
+| B. Alpha Lab | #18 | `v2/alpha-lab` | #29 | **merged** at `c7e9638` |
+| C. Risk & Allocation | #19 | `v2/risk-alloc` | #30 | **merged** at `ea0a83a` |
+| D. Data & Evaluation | #20 | `v2/data-eval` | #28 | **merged** at `f95fb1e` |
 | EUR ledger | #21 | `v3/eur-ledger` | #22 | merged at `b64130c` |
 
 The main session reviews and merges; agents do not merge their own PRs.

@@ -5,16 +5,16 @@ only the terminal after-tax amount at spot EUR/USD. That is not the same as
 paying French tax on EUR gains each year, with a EUR cost basis per lot.
 
 This report replays the engine's USD trades in EUR: EUR cost basis at the
-trade-date FX, HIFO lots, 31.4% PFU on annual net EUR gains, loss carry,
+trade-date FX, HIFO lots, French PFU by realization year (30% through 2025, 31.4% from 2026), loss carry,
 5% financing on negative EUR cash, 5 bps spread, 2 bps FX and IBKR-like
 tickets. Signals and share quantities stay USD-native, so this is the same
 strategy, not a different one.
 
 | market | book | USD-native | headline EUR | EUR ledger | CAGR | maxDD | 2018 | 2022 | worst 12m |
 |---|---|---:|---:|---:|---:|---:|---:|---:|---:|
-| TECH | monthly | 51.82x | 57.01x | **52.89x** | 39.7% | -66.0% | -9.8% | -52.3% | -64.3% |
-| CORE | tax | 46.26x | 50.89x | **49.02x** | 38.8% | -64.2% | -30.1% | -54.2% | -63.1% |
-| US | monthly | 64.41x | 70.86x | **66.02x** | 42.3% | -57.5% | -30.1% | -33.3% | -48.6% |
+| TECH | monthly | 51.82x | 57.01x | **53.45x** | 39.8% | -65.1% | -10.0% | -51.4% | -63.1% |
+| CORE | tax | 46.26x | 50.89x | **49.32x** | 38.9% | -63.9% | -30.1% | -54.1% | -62.6% |
+| US | monthly | 64.41x | 70.86x | **66.72x** | 42.4% | -56.4% | -30.2% | -32.8% | -48.1% |
 
 `USD-native` is the after-tax result in the asset currency. `headline EUR` is
 the current README method: USD-native after tax multiplied by terminal FX.
