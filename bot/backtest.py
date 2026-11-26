@@ -171,6 +171,20 @@ def _select_excluding(mkt: Market, date: pd.Timestamp, banned: set[str]) -> list
     return picks
 
 
+def target_book(
+    mkt: Market,
+    date: pd.Timestamp,
+    held: list[str] | None = None,
+    banned: set[str] | None = None,
+) -> dict[str, float]:
+    """Public adapter for the shipped selector, used by the live planner.
+
+    This is the same function the backtest calls at a rebalance; the wrapper only
+    avoids importing a private name from ``bot/live``. No accounting is duplicated.
+    """
+    return _default_selector(mkt, date, list(held or []), set(banned or ()))
+
+
 def run(
     mkt: Market, selector: Selector | None = None, overlay: Overlay | None = None
 ) -> Result:

@@ -15,3 +15,9 @@ results/*.log
 # worktree symlinks
 /.venv
 /cache
+
+# live paper state is local, never committed
+/state/
+
+# live autopilot runtime (paper state/ledger; keep out of git)
+state/
