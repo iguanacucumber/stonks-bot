@@ -11,13 +11,13 @@ on gross distributions; `EUR ledger` is the annual EUR tax-lot replay.
 
 | book | headline | div-tax adj | EUR ledger | ledger+div | CAGR | maxDD USD | maxDD ledger | 2018 | 2022 | worst 12m | trades |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
-| Static 49, all-always (shipped) | **57.01x** | 51.19x | 52.89x | 52.25x | +42.7% | -67.8% | -66.0% | -17.3% | -56.6% | -67.1% | 1836 |
-| Static 49, PIT membership | **59.05x** | 52.71x | 53.69x | 52.73x | +43.3% | -72.3% | -69.7% | -14.1% | -62.3% | -71.7% | 1857 |
-| Static 49, PIT, cap 1.0 | **45.84x** | 41.12x | 42.86x | 42.29x | +39.9% | -72.1% | -69.5% | -11.6% | -62.3% | -71.5% | 1868 |
-| PIT S&P IT universe, cap 1.0 | **61.07x** | 54.54x | 57.27x | 56.25x | +43.3% | -72.7% | -68.3% | +2.4% | -59.5% | -69.5% | 1843 |
-| PIT S&P IT, core-only | **45.33x** | 41.20x | 42.78x | 42.78x | +41.1% | -65.9% | -64.5% | -36.6% | -56.8% | -65.0% | 838 |
-| US all PIT, cap 0.4 | **70.86x** | 59.59x | 66.02x | 61.05x | +45.3% | -63.2% | -57.5% | -34.5% | -39.0% | -57.3% | 1692 |
-| US all PIT, core-only | **45.33x** | 37.78x | 42.78x | 39.28x | +41.1% | -65.9% | -64.5% | -36.6% | -56.8% | -65.0% | 838 |
+| Static 49, all-always (shipped) | **57.01x** | 51.19x | 53.45x | 52.81x | +42.7% | -67.8% | -65.1% | -17.3% | -56.6% | -67.1% | 1836 |
+| Static 49, PIT membership | **59.05x** | 52.71x | 54.11x | 53.14x | +43.3% | -72.3% | -68.6% | -14.1% | -62.3% | -71.7% | 1857 |
+| Static 49, PIT, cap 1.0 | **45.84x** | 41.12x | 43.28x | 42.70x | +39.9% | -72.1% | -68.4% | -11.6% | -62.3% | -71.5% | 1868 |
+| PIT S&P IT universe, cap 1.0 | **61.07x** | 54.54x | 57.90x | 56.87x | +43.3% | -72.7% | -67.1% | +2.4% | -59.5% | -69.5% | 1843 |
+| PIT S&P IT, core-only | **45.33x** | 41.20x | 43.01x | 43.01x | +41.1% | -65.9% | -64.1% | -36.6% | -56.8% | -65.0% | 838 |
+| US all PIT, cap 0.4 | **70.86x** | 59.59x | 66.72x | 61.71x | +45.3% | -63.2% | -56.4% | -34.5% | -39.0% | -57.3% | 1692 |
+| US all PIT, core-only | **45.33x** | 37.78x | 43.01x | 39.50x | +41.1% | -65.9% | -64.1% | -36.6% | -56.8% | -65.0% | 838 |
 
 Static 49 PIT membership: **59.05x** vs shipped **57.01x** (+3.6%). PIT IT: **61.07x** (+7.1% vs shipped).
 
@@ -38,7 +38,7 @@ than the shipped cap 0.4, so the PIT IT result is not just a cap effect.
 - PIT IT retains >=80% of static headline: **PASS**
 - PIT IT beats core-only in >=60% of 5y windows: **FAIL**
 
-**Verdict: `accept` as a robustness finding; `reject` as a new default book.** The sleeve's return is not a survivorship artifact: the PIT S&P IT version retains 107% of the static headline and beats core-only in 58% of 5-year windows. But the broader US PIT book (70.86x) beats it on return and drawdown. Recommendation: keep US monthly as the primary real-life book; if a dedicated TECH sleeve is retained for forward validation, use PIT S&P membership instead of the static 49-name list. Core-only is a risk choice, not a return improvement: it gives up roughly a third of the after-tax terminal.
+**Verdict: `accept` as a robustness finding; `reject` as a new default book.** The PIT results are **consistent with** a robust sleeve, not proof that survivorship bias is absent: the PIT S&P IT version retains 107% of the static headline and beats core-only in 58% of 5-year windows. The cleaner static-49 PIT row still selects names that survived to today. The broader US PIT book (70.86x) beats it on return and drawdown. Recommendation: keep US monthly as the primary real-life book; if a dedicated TECH sleeve is retained for forward validation, use PIT S&P membership instead of the static 49-name list. Core-only is a risk choice, not a return improvement: it gives up roughly a third of the after-tax terminal.
 
 ## Caveats
 

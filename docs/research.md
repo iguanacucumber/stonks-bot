@@ -11,19 +11,23 @@ the winners.
 
 ## Results at a glance (2026-11-26)
 
-- **H1 cross-asset:** `reject`. 1x OOS 2.23x headline / 1.97x EUR ledger vs
-  QQQ 3.15x / 2.88x. Full fixed-config 1x is 2.81x headline / 2.44x ledger.
+- **H1 cross-asset:** `reject`. 1x OOS 2.23x headline / 2.07x EUR ledger vs
+  QQQ 3.15x / 2.88x; OOS maxDD -40.2% vs QQQ -35.1%. Full fixed-config 1x is
+  2.81x headline / 2.46x ledger.
 - **H2 leverage:** `reject` as a return source. 2x OOS 2.96x headline /
-  2.84x ledger, still below US 2.5x, with a -66.8% drawdown.
+  3.12x ledger, still below US 2.5x, with a -66.8% drawdown.
 - **H3 TECH sleeve:** `accept` as a robustness finding, `reject` as a new
   default. PIT S&P IT retains 107% of the static headline (61.07x vs 57.01x;
-  EUR ledger 57.27x vs 52.89x); US all-PIT is better at 70.86x / 66.02x and a
-  -57.5% ledger drawdown. Keep US monthly primary; TECH is forward validation.
+  EUR ledger 57.90x vs 53.45x). This is consistent with, not proof against,
+  survivorship bias; the static-49 PIT row is cleaner but still a survivor
+  list. US all-PIT is better at 70.86x / 66.72x and a -56.4% ledger drawdown.
+  Keep US monthly primary; TECH is forward validation.
 - **H4 short horizon:** `reject`. Close-to-close OOS 2.64x vs QQQ 5.49x
-  full-window, 1.13x at 2x costs; overnight 1.01x and 0.70x at 2x costs.
-  No satellite.
+  full-window; 2x-cost 1.13x is below BIL 1.20x. Overnight 1.01x at
+  an optimistic 5 bps/side, 0.82x at 7.25 bps/side all-in, 0.60x at
+  14.5 bps/side. No satellite.
 - **Candidate config:** no Alpha Lab allocation; keep US monthly 2.5x
-  (70.86x headline / 66.02x EUR ledger, -57.5% ledger maxDD). If the TECH
+  (70.86x headline / 66.72x EUR ledger, -56.4% ledger maxDD). If the TECH
   sleeve is kept, use PIT S&P membership (`paper`, not default).
 
 ## Baseline (reproduced, not assumed)

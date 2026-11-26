@@ -343,9 +343,15 @@ def main() -> None:
     print(f"overnight walk-forward: {len(ogrid)} variants x {len(folds)} folds")
     on1 = overnight_wf(close, open_, ogrid, folds, cost_bps=5.0)
     on2 = overnight_wf(close, open_, ogrid, folds, cost_bps=10.0)
+    # All-in French CTO frictions: 5 bps spread + 2 bps FX + 0.25 bps IBKR
+    # commission = 7.25 bps/side; the doubled case is 14.5 bps/side.
+    on_allin = overnight_wf(close, open_, ogrid, folds, cost_bps=7.25)
+    on_allin2 = overnight_wf(close, open_, ogrid, folds, cost_bps=14.5)
     print(
         f"  overnight OOS 5bps {on1['after_tax_multiple']:.3f}x, "
-        f"10bps {on2['after_tax_multiple']:.3f}x"
+        f"10bps {on2['after_tax_multiple']:.3f}x, "
+        f"all-in 7.25bps {on_allin['after_tax_multiple']:.3f}x, "
+        f"all-in 2x 14.5bps {on_allin2['after_tax_multiple']:.3f}x"
     )
     # Always-overnight comparator.
     always = {}
@@ -356,26 +362,33 @@ def main() -> None:
         )
 
     # Registry rows for overnight.
-    for row in on1["registry"] + on2["registry"]:
-        registry.add(
-            family=row["family"],
-            hypothesis=spec.hypothesis,
-            universe=",".join(SIGNAL_ETFS),
-            start=START,
-            end=END,
-            params=row["params"],
-            metric=row["metric"],
-            value=row["value"],
-            oos_value=row["oos_value"],
-            cost_model="overnight_5bps"
-            if row in on1["registry"]
-            else "overnight_10bps",
-            notes=f"fold {row['fold']}; train-selected only",
-            n_trials=len(ogrid) * len(folds),
-        )
+    for label, run in (
+        ("overnight_5bps", on1),
+        ("overnight_10bps_module2x", on2),
+        ("overnight_allin_7.25bps", on_allin),
+        ("overnight_allin_14.5bps", on_allin2),
+    ):
+        for row in run["registry"]:
+            registry.add(
+                family=row["family"],
+                hypothesis=spec.hypothesis,
+                universe=",".join(SIGNAL_ETFS),
+                start=START,
+                end=END,
+                params=row["params"],
+                metric=row["metric"],
+                value=row["value"],
+                oos_value=row["oos_value"],
+                cost_model=label,
+                notes=f"fold {row['fold']}; train-selected only",
+                n_trials=len(ogrid) * len(folds) * 4,
+            )
     registry.write(ROOT / "results" / "alpha_trials_short.csv")
 
     qqq = buy_hold("QQQ")
+    oos_start = wf1.oos_equity.index[0].date().isoformat()
+    oos_end = wf1.oos_equity.index[-1].date().isoformat()
+    bil_oos = buy_hold("BIL", start=oos_start, end=oos_end)
     hit1 = float(np.mean([f["test_return"] > 0 for f in wf1.folds]))
     hit_on = float(np.mean([f["test_return"] > 0 for f in on1["folds"]]))
     full_rows = [
@@ -393,8 +406,10 @@ def main() -> None:
         "signal at close, fill next open, rebalance daily. **Overnight family:**",
         "trigger at close t-1, buy at close t (MOC), sell at open t+1 (MOO),",
         "one full day of information lag.",
-        "**Costs:** 5 bps/side base (engine adds 2 bps FX + 0.25 bps IBKR), 2x",
-        "sensitivity at 10 bps/side. French CTO PFU and annual netting.",
+        "**Costs:** engine 5 bps/side (plus 2 bps FX + 0.25 bps IBKR), 2x",
+        "sensitivity at 10 bps/side. Overnight is shown at 5 bps/side (optimistic),",
+        "7.25 bps/side all-in (5 spread + 2 FX + 0.25 commission) and 14.5 bps/side",
+        "for the doubled all-in case. French CTO PFU and annual netting.",
         "",
         f"Engine grid: **{len(grid)} variants x {len(folds)} folds**. "
         f"Overnight grid: **{len(ogrid)} variants x {len(folds)} folds**. "
@@ -408,14 +423,27 @@ def main() -> None:
         f"{format_multiple(wf2.after_tax_multiple)} | {format_pct(wf1.metrics['cagr'])} | "
         f"{format_pct(wf1.metrics['maxdd'])} | {hit1:.0%} | "
         f"{format_multiple(wf1.bootstrap['p5_multiple'])} |",
-        f"| overnight (close-to-open) | **{format_multiple(on1['after_tax_multiple'])}** | "
+        f"| overnight, 5 bps/side (optimistic) | "
+        f"**{format_multiple(on1['after_tax_multiple'])}** | "
         f"{format_multiple(on2['after_tax_multiple'])} | "
         f"{format_pct(on1['metrics']['cagr'])} | "
         f"{format_pct(on1['metrics']['maxdd'])} | {hit_on:.0%} | "
         f"{format_multiple(bootstrap_p5(on1['returns'], n_paths=10000)['p5_multiple'])} |",
+        f"| overnight, 7.25 bps/side all-in | "
+        f"**{format_multiple(on_allin['after_tax_multiple'])}** | "
+        f"{format_multiple(on_allin2['after_tax_multiple'])} | "
+        f"{format_pct(on_allin['metrics']['cagr'])} | "
+        f"{format_pct(on_allin['metrics']['maxdd'])} | "
+        f"{float(np.mean([f['test_return'] > 0 for f in on_allin['folds']])):.0%} | "
+        f"{format_multiple(bootstrap_p5(on_allin['returns'], n_paths=10000)['p5_multiple'])} |",
         "",
-        f"QQQ buy & hold, same wrapper: **{format_multiple(qqq['after_tax_multiple'])}** "
-        f"after tax, maxDD {format_pct(qqq['maxdd'])}.",
+        f"QQQ buy & hold: **{format_multiple(qqq['after_tax_multiple'])}** headline / "
+        f"{format_multiple(qqq['ledger_multiple'])} EUR ledger, maxDD "
+        f"{format_pct(qqq['maxdd'])}.",
+        f"BIL buy & hold over the same OOS window: **"
+        f"{format_multiple(bil_oos['after_tax_multiple'])}** headline / "
+        f"{format_multiple(bil_oos['ledger_multiple'])} EUR ledger. "
+        "Cash is the hurdle; a 2x-cost strategy that cannot beat T-bills is rejected.",
         "",
         "### Selected engine parameters by fold",
         "",
@@ -452,8 +480,9 @@ def main() -> None:
         "",
         "The always-overnight row is the cleanest way to see the cost wall: even",
         "though the overnight gap is a large share of equity total return, a daily",
-        "round trip at 10 bps removes more than the gap earns. Conditional",
-        "overnight signals do not fix it after tax.",
+        "10 bps/side round trip (20 bps) removes more than the gap earns. The",
+        "1.01x conditional result is the optimistic 5 bps/side case; at 7.25/14.5",
+        "bps/side all-in it is worse. Conditional overnight signals do not fix it.",
         "",
         "## Verdict — H4",
         "",
@@ -462,19 +491,28 @@ def main() -> None:
         "close-to-close: positive after-tax OOS": wf1.after_tax_multiple > 1.0,
         "close-to-close: positive at 2x costs": wf2.after_tax_multiple > 1.0,
         "close-to-close: fold hit rate >50%": hit1 > 0.50,
-        "overnight: positive after-tax OOS": on1["after_tax_multiple"] > 1.0,
-        "overnight: positive at 2x costs": on2["after_tax_multiple"] > 1.0,
+        "close-to-close 2x beats BIL headline": (
+            wf2.after_tax_multiple > bil_oos["after_tax_multiple"]
+        ),
+        "overnight: positive after-tax OOS (5 bps/side)": (
+            on1["after_tax_multiple"] > 1.0
+        ),
+        "overnight all-in 2x beats BIL headline": (
+            on_allin2["after_tax_multiple"] > bil_oos["after_tax_multiple"]
+        ),
     }
     for k, v in gates.items():
         lines.append(f"- {k}: **{'PASS' if v else 'FAIL'}**")
     lines += [
         "",
-        "**Verdict: `reject`.** No short-horizon family clears the gates. The "
-        "best close-to-close OOS result is still below QQQ buy & hold after "
-        "tax, and the overnight book loses money at 10 bps round trip. The "
-        "apparent in-sample reversal edge is a cost pump, not a return source. "
-        "Do not allocate a satellite; keep the monthly book as the only "
-        "production strategy.",
+        "**Verdict: `reject`.** The close-to-close family passes the positive-",
+        "return and hit-rate gates at 1x and 2x, but its 2x-cost headline "
+        f"(**{format_multiple(wf2.after_tax_multiple)}**) does not beat BIL "
+        f"(**{format_multiple(bil_oos['after_tax_multiple'])}**). The headline "
+        "is the pre-registered cash hurdle; the EUR-ledger column chains "
+        "per-fold liquidations and is shown for completeness, not used to "
+        "rescue the strategy. It is also below QQQ buy & hold. The overnight "
+        "family loses money at all-in costs. No satellite allocation.",
         "",
         "## Open risks",
         "",

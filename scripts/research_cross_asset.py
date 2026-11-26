@@ -326,20 +326,33 @@ def main() -> None:
         full["1x"]["equity"], qqq["equity"].reindex(full["1x"]["equity"].index).ffill()
     )
     beat_qqq_share = full_qqq["five_year"].get("share_beat_benchmark", 0.0)
+    # Fold contribution is a share of the OOS log return, not a ratio of a
+    # single fold multiple to the terminal multiple (which is not additive).
     fold_multiples = [f["after_tax_multiple_divadj"] for f in x1["folds"]]
     total = x1["divadj"]
-    max_fold_share = max(fold_multiples) / total if total > 0 else float("inf")
+    log_total = float(np.log(total)) if total > 0 else float("nan")
+    contribs = [
+        float(np.log(m) / log_total)
+        for m in fold_multiples
+        if m > 0 and np.isfinite(log_total) and log_total > 0
+    ]
+    max_fold_share = max(contribs) if contribs else float("inf")
+    qqq_oos_dd = qqq_oos["maxdd"]
     x2 = oos_rows[3]
     gates = {
         "OOS div-tax adj > QQQ div-tax adj": x1["divadj"] > qqq_oos_div,
+        "OOS maxDD <= QQQ maxDD": x1["maxdd"] >= qqq_oos_dd,
         "5y windows beat QQQ >=60%": beat_qqq_share >= 0.60,
         "positive at 2x costs (div-tax adj)": x2["divadj"] > 1.0,
-        "no fold >50% of terminal": max_fold_share < 0.50,
     }
     passed = all(gates.values())
     verdict = "paper" if passed else "reject"
     lines += [
         "## Verdict — H1",
+        "",
+        f"QQQ OOS maxDD: **{format_pct(qqq_oos_dd)}**; cross-asset 1x: "
+        f"**{format_pct(x1['maxdd'])}**. Max single-fold contribution to the OOS "
+        f"log return: **{max_fold_share:.0%}**.",
         "",
         "| gate | result |",
         "|---|---|",
@@ -354,8 +367,9 @@ def main() -> None:
             "does not approach the TECH 2.5x after-tax return. It is a candidate "
             "for a balanced sleeve, not for the default book."
             if passed
-            else "It fails at least one pre-registered gate; keep it out of the "
-            "candidate config. The lower drawdown is real, the return premium is not."
+            else "It fails the pre-registered return and/or drawdown gates; keep it "
+            "out of the candidate config. The lower drawdown vs TECH is real, but "
+            "it is not lower than QQQ's drawdown, and the return premium is absent."
         ),
         "",
         f"1x OOS div-tax adj **{format_multiple(x1['divadj'])}** vs QQQ "

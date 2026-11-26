@@ -296,10 +296,12 @@ def main() -> None:
         "",
         (
             "**Verdict: `accept` as a robustness finding; `reject` as a new "
-            "default book.** The sleeve's return is not a survivorship artifact: "
-            "the PIT S&P IT version retains "
+            "default book.** The PIT results are **consistent with** a robust "
+            "sleeve, not proof that survivorship bias is absent: the PIT S&P IT "
+            "version retains "
             f"{ratio:.0%} of the static headline and beats core-only in "
-            f"{beat_core:.0%} of 5-year windows. But the broader US PIT book "
+            f"{beat_core:.0%} of 5-year windows. The cleaner static-49 PIT row "
+            "still selects names that survived to today. The broader US PIT book "
             f"({format_multiple(us['headline'])}) beats it on return and drawdown. "
             "Recommendation: keep US monthly as the primary real-life book; if a "
             "dedicated TECH sleeve is retained for forward validation, use PIT "

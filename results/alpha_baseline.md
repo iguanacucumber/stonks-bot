@@ -9,9 +9,9 @@ MaxDD is the pre-tax daily path, consistent with existing reports.
 
 | book | headline | div-tax adj | EUR ledger | ledger+div | CAGR | maxDD | 2018 | 2022 | worst 12m | trades |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
-| TECH 2.5x (shipped) | 57.01x | 51.19x | **52.89x** | 52.25x | +42.7% | -67.8% | -17.3% | -56.6% | -67.1% | 1836 |
-| TECH 2.5x @ 2x costs | 23.08x | 20.71x | **28.38x** | 28.05x | +32.6% | -69.6% | -22.2% | -58.0% | -68.8% | 1909 |
-| US 2.5x (shipped, now default) | 70.86x | 59.59x | **66.02x** | 61.05x | +45.3% | -63.2% | -34.5% | -39.0% | -57.3% | 1692 |
+| TECH 2.5x (shipped) | 57.01x | 51.19x | **53.45x** | 52.81x | +42.7% | -67.8% | -17.3% | -56.6% | -67.1% | 1836 |
+| TECH 2.5x @ 2x costs | 23.08x | 20.71x | **28.67x** | 28.34x | +32.6% | -69.6% | -22.2% | -58.0% | -68.8% | 1909 |
+| US 2.5x (shipped, now default) | 70.86x | 59.59x | **66.72x** | 61.71x | +45.3% | -63.2% | -34.5% | -39.0% | -57.3% | 1692 |
 | QQQ 1x | 5.49x | 4.80x | **4.65x** | 4.48x | +17.5% | -35.1% | -1.8% | -33.2% | -34.8% | 1 |
 | SPY 1x | 3.62x | 3.04x | **3.11x** | 2.87x | +13.2% | -33.7% | -5.2% | -18.6% | -19.7% | 1 |
 | SMH 1x | 13.89x | 11.99x | **11.60x** | 11.01x | +27.5% | -45.3% | -11.4% | -35.0% | -36.3% | 1 |
@@ -19,7 +19,7 @@ MaxDD is the pre-tax daily path, consistent with existing reports.
 ## 2x-cost sensitivity
 
 - TECH 2.5x headline: 57.01x -> 23.08x at 2x costs (-59.5%).
-- TECH EUR ledger: 52.89x -> 28.38x.
+- TECH EUR ledger: 53.45x -> 28.67x.
 - TECH maxDD: -67.8% -> -69.6%.
 
 ## Five-year windows: TECH 2.5x vs QQQ (headline path)
@@ -125,10 +125,10 @@ MaxDD is the pre-tax daily path, consistent with existing reports.
 
 ## Reading
 
-- TECH reproduces at **57.01x headline / 52.89x EUR ledger**; the
-  7% gap is annual EUR tax and FX cost basis, not a strategy change.
-- US monthly is the primary real-life book: **70.86x headline / 66.02x
-  EUR ledger**, maxDD -57.5% on the ledger. The 72.04x number that
+- TECH reproduces at **57.01x headline / 53.45x EUR ledger**; the gap is annual EUR tax
+  and FX cost basis, not a strategy change.
+- US monthly is the primary real-life book: **70.86x headline / 66.72x
+  EUR ledger**, maxDD -56.4% on the ledger. The 72.04x number that
   appeared in an earlier draft was a broken canonical-symbol state; it is
   fixed here. Do not quote 72.04x.
 - QQQ is **5.49x headline / 4.65x EUR ledger**. Any long-horizon

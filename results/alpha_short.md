@@ -8,19 +8,23 @@ Pre-registration: `docs/research.md` H4. Data snapshot 2026-11-25.
 signal at close, fill next open, rebalance daily. **Overnight family:**
 trigger at close t-1, buy at close t (MOC), sell at open t+1 (MOO),
 one full day of information lag.
-**Costs:** 5 bps/side base (engine adds 2 bps FX + 0.25 bps IBKR), 2x
-sensitivity at 10 bps/side. French CTO PFU and annual netting.
+**Costs:** engine 5 bps/side (plus 2 bps FX + 0.25 bps IBKR), 2x
+sensitivity at 10 bps/side. Overnight is shown at 5 bps/side (optimistic),
+7.25 bps/side all-in (5 spread + 2 FX + 0.25 commission) and 14.5 bps/side
+for the doubled all-in case. French CTO PFU and annual netting.
 
-Engine grid: **32 variants x 8 folds**. Overnight grid: **27 variants x 8 folds**. Registry rows: **544**.
+Engine grid: **32 variants x 8 folds**. Overnight grid: **27 variants x 8 folds**. Registry rows: **560**.
 
 ## Walk-forward out-of-sample (2019-2026)
 
 | family | after-tax 1x | after-tax 2x | CAGR 1x | maxDD 1x | fold hit rate | p5 |
 |---|---:|---:|---:|---:|---:|---:|
 | close-to-close (next open) | **2.64x** | 1.13x | +21.8% | -36.2% | 75% | 1.55x |
-| overnight (close-to-open) | **1.01x** | 0.70x | +1.7% | -26.0% | 50% | 0.63x |
+| overnight, 5 bps/side (optimistic) | **1.01x** | 0.70x | +1.7% | -26.0% | 50% | 0.63x |
+| overnight, 7.25 bps/side all-in | **0.82x** | 0.60x | -1.3% | -34.0% | 50% | 0.49x |
 
-QQQ buy & hold, same wrapper: **5.49x** after tax, maxDD -35.1%.
+QQQ buy & hold: **5.49x** headline / 4.65x EUR ledger, maxDD -35.1%.
+BIL buy & hold over the same OOS window: **1.20x** headline / 1.17x EUR ledger. Cash is the hurdle; a 2x-cost strategy that cannot beat T-bills is rejected.
 
 ### Selected engine parameters by fold
 
@@ -71,18 +75,21 @@ QQQ buy & hold, same wrapper: **5.49x** after tax, maxDD -35.1%.
 
 The always-overnight row is the cleanest way to see the cost wall: even
 though the overnight gap is a large share of equity total return, a daily
-round trip at 10 bps removes more than the gap earns. Conditional
-overnight signals do not fix it after tax.
+10 bps/side round trip (20 bps) removes more than the gap earns. The
+1.01x conditional result is the optimistic 5 bps/side case; at 7.25/14.5
+bps/side all-in it is worse. Conditional overnight signals do not fix it.
 
 ## Verdict — H4
 
 - close-to-close: positive after-tax OOS: **PASS**
 - close-to-close: positive at 2x costs: **PASS**
 - close-to-close: fold hit rate >50%: **PASS**
-- overnight: positive after-tax OOS: **PASS**
-- overnight: positive at 2x costs: **FAIL**
+- close-to-close 2x beats BIL headline: **FAIL**
+- overnight: positive after-tax OOS (5 bps/side): **PASS**
+- overnight all-in 2x beats BIL headline: **FAIL**
 
-**Verdict: `reject`.** No short-horizon family clears the gates. The best close-to-close OOS result is still below QQQ buy & hold after tax, and the overnight book loses money at 10 bps round trip. The apparent in-sample reversal edge is a cost pump, not a return source. Do not allocate a satellite; keep the monthly book as the only production strategy.
+**Verdict: `reject`.** The close-to-close family passes the positive-
+return and hit-rate gates at 1x and 2x, but its 2x-cost headline (**1.13x**) does not beat BIL (**1.20x**). The headline is the pre-registered cash hurdle; the EUR-ledger column chains per-fold liquidations and is shown for completeness, not used to rescue the strategy. It is also below QQQ buy & hold. The overnight family loses money at all-in costs. No satellite allocation.
 
 ## Open risks
 

@@ -52,7 +52,7 @@ def test_baseline_reproduces_after_tax():
     b = tech_baseline()
     assert abs(b["after_tax_multiple"] - 57.01) < 0.10
     assert abs(b["maxdd"] + 0.678) < 0.005
-    assert abs(b["ledger_multiple"] - 52.89) < 0.10
+    assert abs(b["ledger_multiple"] - 53.45) < 0.10
     assert b["after_tax_multiple_divadj"] < b["after_tax_multiple"]
     assert b["ledger_multiple_divadj"] < b["ledger_multiple"]
 

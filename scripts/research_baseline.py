@@ -109,13 +109,16 @@ def main() -> None:
         "",
         "## Reading",
         "",
-        "- TECH reproduces at **57.01x headline / 52.89x EUR ledger**; the",
-        "  7% gap is annual EUR tax and FX cost basis, not a strategy change.",
-        "- US monthly is the primary real-life book: **70.86x headline / 66.02x",
-        "  EUR ledger**, maxDD -57.5% on the ledger. The 72.04x number that",
+        f"- TECH reproduces at **{tech['after_tax_multiple']:.2f}x headline / "
+        f"{tech['ledger_multiple']:.2f}x EUR ledger**; the gap is annual EUR tax",
+        "  and FX cost basis, not a strategy change.",
+        f"- US monthly is the primary real-life book: **"
+        f"{us['after_tax_multiple']:.2f}x headline / {us['ledger_multiple']:.2f}x",
+        f"  EUR ledger**, maxDD {us['ledger_maxdd']:.1%} on the ledger. The 72.04x number that",
         "  appeared in an earlier draft was a broken canonical-symbol state; it is",
         "  fixed here. Do not quote 72.04x.",
-        "- QQQ is **5.49x headline / 4.65x EUR ledger**. Any long-horizon",
+        f"- QQQ is **{qqq['after_tax_multiple']:.2f}x headline / "
+        f"{qqq['ledger_multiple']:.2f}x EUR ledger**. Any long-horizon",
         "  candidate has to clear the EUR-ledger bar, not just headline.",
         "- The dividend-tax column is the missing tax on gross distributions. It",
         "  is small for SMH (~0.1-0.3%/yr in this book) and material for bond/cash",
