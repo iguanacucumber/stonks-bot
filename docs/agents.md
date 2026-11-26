@@ -12,9 +12,9 @@ Goal: improve real-life after-tax returns on both short and long horizons.
 | 3 | `agent/execution` | `../stonks-wt-exec` | subagent | limit-order fill model from daily high/low; cost/fill-rate evidence | 3 |
 | 4 | `agent/risk` | `../stonks-wt-risk` | subagent | drawdown/tail improvement without overfitting; breadth/DD ladder/core mix | 4 |
 
-Merge order is deliberate: scripts first, new market second, execution engine third,
-risk last (it touches `strategy.py`/`backtest.py` and will rebase on the merged
-execution work).
+Merge order is deliberate: scripts first, new market second, execution engine third.
+Risk was expected last because it could touch the engine; in practice it added only
+`scripts/risk_v2.py` + `results/risk_v2.md`, so it merged early without conflicts.
 
 ## Rules for agents
 
@@ -53,5 +53,5 @@ Private repo `iguanacucumber/stonks-bot`, one issue per workstream. Orchestrator
 - [x] forward — PR #6 merged at `0c26f1c`; tax-book automation `aut_217921c67001Ab2ef18eRqknWO` at 23:35 UTC
 - [ ] pea-ucits
 - [ ] execution
-- [ ] risk
+- [x] risk — PR #7 merged at `9ff23b7`; docs/scripts only, merged early because it does not touch the engine; verdict: keep defaults
 - [ ] merged and re-tested
