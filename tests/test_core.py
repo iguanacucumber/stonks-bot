@@ -17,7 +17,13 @@ sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(ROOT / "scripts"))
 
 from bot import backtest, france, markets, strategy, universe  # noqa: E402
-from paper_daily import book_config, book_paths, is_close_valid, replay_file  # noqa: E402
+from paper_daily import (  # noqa: E402
+    book_config,
+    book_paths,
+    is_close_valid,
+    ledger_file,
+    replay_file,
+)
 from paper_report import target_diff  # noqa: E402
 
 
@@ -500,6 +506,8 @@ def main():
     assert book_paths("tax")[1].name == "paper_ledger_tax.csv"
     assert replay_file("monthly", "TECH") == book_paths("monthly")[2]
     assert replay_file("monthly", "US").name == "paper_replay_us.csv"
+    assert ledger_file("monthly", "TECH") == book_paths("monthly")[1]
+    assert ledger_file("monthly", "US").name == "paper_ledger_us.csv"
 
     # a holiday row must not inherit yesterday's close as a new track-record day
     last = pd.Timestamp("2026-11-25")

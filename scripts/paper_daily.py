@@ -76,6 +76,14 @@ def replay_file(book: str, market: str) -> Path:
     return path.with_name(f"{path.stem}_{market.lower()}{path.suffix}")
 
 
+def ledger_file(book: str, market: str) -> Path:
+    """Keep per-market ledgers so target rows cannot be mixed up."""
+    path = book_paths(book)[1]
+    if market == "TECH":
+        return path
+    return path.with_name(f"{path.stem}_{market.lower()}{path.suffix}")
+
+
 def is_close_valid(
     quote_date: pd.Timestamp, session_date: pd.Timestamp, et: datetime
 ) -> bool:
@@ -337,7 +345,8 @@ def main():
         help="recompute the last close-valid row from final bars (keeps live prices)",
     )
     args = ap.parse_args()
-    daily_path, ledger_path, _ = book_paths(args.book)
+    daily_path = book_paths(args.book)[0]
+    ledger_path = ledger_file(args.book, args.market)
     replay_path = replay_file(args.book, args.market)
 
     panel, mkt, res, cfg = load(
