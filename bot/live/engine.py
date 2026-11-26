@@ -554,11 +554,23 @@ class LiveEngine:
         state: LiveState | None,
         data_summary: dict[str, Any] | None = None,
     ) -> LiveResult:
+        equity = state.portfolio.equity({}) if state else self.cfg.capital
+        gross_value = state.portfolio.gross({}) if state else 0.0
         return LiveResult(
             session=str(pd.Timestamp(session).date()),
             plan=None,
-            equity=(state.portfolio.equity({}) if state else self.cfg.capital),
+            equity=equity,
             cash=(state.portfolio.cash if state else self.cfg.capital),
+            gross=(gross_value / equity if equity > 0 else 0.0),
+            fx=(
+                {
+                    "rate": state.last_fx_rate,
+                    "date": state.last_fx_date,
+                    "native": state.currency,
+                }
+                if state is not None and state.last_fx_rate is not None
+                else {}
+            ),
             data=data_summary or {"session": str(pd.Timestamp(session).date())},
             blocked_reason=reason,
         )

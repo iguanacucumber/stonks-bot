@@ -1,12 +1,12 @@
 # Live autopilot demo transcript
 
-Generated from the committed cache with a throwaway state dir `/tmp/opencode/live-demo-_skwlx9a`.
+Generated from the committed cache with a throwaway state dir `/tmp/opencode/live-demo-_ieumwus`.
 
 No network, no real broker, no secrets. The state dir is outside git.
 
 ## Plan (TECH monthly, committed cache, no write)
 
-Command: `uv run python scripts/live.py plan --book monthly --market TECH --state-dir /tmp/opencode/live-demo-_skwlx9a --as-of 2026-11-25 --now 2026-11-26T02:00:00+00:00`
+Command: `uv run python scripts/live.py plan --book monthly --market TECH --state-dir /tmp/opencode/live-demo-_ieumwus --as-of 2026-11-25 --now 2026-11-26T02:00:00+00:00`
 
 ```text
 LIVE PLAN (dry-run)  book=monthly (monthly momentum)  market=TECH (NASDAQ tech)  native=USD  reporting=EUR  broker=paper
@@ -45,9 +45,9 @@ replay mode: --as-of 2026-11-25 (no state written)
 
 Exit code: `0`
 
-## Plan (US monthly, best-evidence label)
+## Plan (US monthly, default best-evidence book)
 
-Command: `uv run python scripts/live.py plan --book monthly --market US --state-dir /tmp/opencode/live-demo-_skwlx9a --as-of 2026-11-25 --now 2026-11-26T02:00:00+00:00`
+Command: `uv run python scripts/live.py plan --book monthly --market US --state-dir /tmp/opencode/live-demo-_ieumwus --as-of 2026-11-25 --now 2026-11-26T02:00:00+00:00`
 
 ```text
 LIVE PLAN (dry-run)  book=monthly (monthly momentum)  market=US (S&P 500)  native=USD  reporting=EUR  broker=paper
@@ -88,7 +88,7 @@ Exit code: `0`
 
 ## Paper run 1: plan from 2026-11-24, fill next open
 
-Command: `uv run python scripts/live.py run --book monthly --market TECH --state-dir /tmp/opencode/live-demo-_skwlx9a --paper --as-of 2026-11-24 --now 2026-11-25T02:00:00+00:00`
+Command: `uv run python scripts/live.py run --book monthly --market TECH --state-dir /tmp/opencode/live-demo-_ieumwus --paper --as-of 2026-11-24 --now 2026-11-25T02:00:00+00:00`
 
 ```text
 LIVE PAPER RUN  book=monthly (monthly momentum)  market=TECH (NASDAQ tech)  native=USD  reporting=EUR  broker=paper
@@ -120,16 +120,16 @@ rails: gross 1.250 <= 3.00  turnover 1.250 <= 3.00  orders 6 <= 50
 execution model: next open + 5.0 bps slippage, 5.0 bps commission (min 1.00), max 2.0% of open volume
 coverage: all required symbols fresh
 
-NO ORDERS SENT — paper/dry-run only
+PAPER ONLY — fills and orders are recorded in the paper ledger; no real broker
 forward gate: WAIT 1/5 verified dates (monthly/TECH, paper_audit.csv)
 replay mode: --as-of 2026-11-24
 ```
 
 Exit code: `0`
 
-## Paper run 2: fill 2026-11-24 plan at 2026-11-25 open, plan next
+## Paper run 2: fill at 2026-11-25 open, plan next
 
-Command: `uv run python scripts/live.py run --book monthly --market TECH --state-dir /tmp/opencode/live-demo-_skwlx9a --paper --as-of 2026-11-25 --now 2026-11-26T02:00:00+00:00`
+Command: `uv run python scripts/live.py run --book monthly --market TECH --state-dir /tmp/opencode/live-demo-_ieumwus --paper --as-of 2026-11-25 --now 2026-11-26T02:00:00+00:00`
 
 ```text
 LIVE PAPER RUN  book=monthly (monthly momentum)  market=TECH (NASDAQ tech)  native=USD  reporting=EUR  broker=paper
@@ -166,7 +166,7 @@ rails: gross 1.250 <= 3.00  turnover 0.000 <= 3.00  orders 0 <= 50
 execution model: next open + 5.0 bps slippage, 5.0 bps commission (min 1.00), max 2.0% of open volume
 coverage: all required symbols fresh
 
-NO ORDERS SENT — paper/dry-run only
+PAPER ONLY — fills and orders are recorded in the paper ledger; no real broker
 forward gate: WAIT 1/5 verified dates (monthly/TECH, paper_audit.csv)
 replay mode: --as-of 2026-11-25
 ```
@@ -175,7 +175,7 @@ Exit code: `0`
 
 ## Paper run 3: exact rerun of the same session (idempotent no-op)
 
-Command: `uv run python scripts/live.py run --book monthly --market TECH --state-dir /tmp/opencode/live-demo-_skwlx9a --paper --as-of 2026-11-25 --now 2026-11-26T03:00:00+00:00`
+Command: `uv run python scripts/live.py run --book monthly --market TECH --state-dir /tmp/opencode/live-demo-_ieumwus --paper --as-of 2026-11-25 --now 2026-11-26T03:00:00+00:00`
 
 ```text
 LIVE PAPER RUN  book=monthly (monthly momentum)  market=TECH (NASDAQ tech)  native=USD  reporting=EUR  broker=paper
@@ -212,7 +212,7 @@ rails: gross 1.250 <= 3.00  turnover 0.000 <= 3.00  orders 0 <= 50
 execution model: next open + 5.0 bps slippage, 5.0 bps commission (min 1.00), max 2.0% of open volume
 coverage: all required symbols fresh
 
-NO ORDERS SENT — paper/dry-run only
+PAPER ONLY — fills and orders are recorded in the paper ledger; no real broker
 forward gate: WAIT 1/5 verified dates (monthly/TECH, paper_audit.csv)
 idempotent no-op: this session is already recorded
 replay mode: --as-of 2026-11-25
@@ -222,10 +222,10 @@ Exit code: `0`
 
 ## Reconcile fills / orders / positions / cash / EUR / ledger
 
-Command: `uv run python scripts/live.py reconcile --book monthly --market TECH --state-dir /tmp/opencode/live-demo-_skwlx9a --now 2026-11-26T03:00:00+00:00`
+Command: `uv run python scripts/live.py reconcile --book monthly --market TECH --state-dir /tmp/opencode/live-demo-_ieumwus --now 2026-11-26T03:00:00+00:00`
 
 ```text
-RECONCILE OK  state=/tmp/opencode/live-demo-_skwlx9a/monthly_tech.json  ledger_rows=2
+RECONCILE OK  state=/tmp/opencode/live-demo-_ieumwus/monthly_tech.json  ledger_rows=2
   plans: 2
   orders: 6
   fills: 6
@@ -246,7 +246,7 @@ Exit code: `0`
 
 ## Status (book, pending plan, health, forward gate)
 
-Command: `uv run python scripts/live.py status --book monthly --market TECH --state-dir /tmp/opencode/live-demo-_skwlx9a --as-of 2026-11-25 --now 2026-11-26T03:00:00+00:00`
+Command: `uv run python scripts/live.py status --book monthly --market TECH --state-dir /tmp/opencode/live-demo-_ieumwus --as-of 2026-11-25 --now 2026-11-26T03:00:00+00:00`
 
 ```text
 LIVE STATUS  book=monthly (monthly momentum)  market=TECH (NASDAQ tech)  native=USD  reporting=EUR  broker=paper
@@ -257,10 +257,10 @@ risk: drawdown=-0.00%  breaker_off=True  reason=trend  trend_breach=True  scale=
 
 read-only status; no state written
 forward gate: WAIT 1/5 verified dates (monthly/TECH, paper_audit.csv)
-state: /tmp/opencode/live-demo-_skwlx9a/monthly_tech.json
-updated=2026-11-26T15:05:53+00:00  created=2026-11-26T15:05:52+00:00  last_session=2026-11-25  last_mark=2026-11-25
+state: /tmp/opencode/live-demo-_ieumwus/monthly_tech.json
+updated=2026-11-26T15:11:11+00:00  created=2026-11-26T15:11:11+00:00  last_session=2026-11-25  last_mark=2026-11-25
 cash=-2,288.32  equity_hint=10,237.63  fees=6.14  financing=0.00  realized=0.00
-fx: USD->EUR 0.910000 (2026-11-24)  equity_eur=9,316.24  cash_eur=-2,082.37  gross_eur=1.11
+fx: USD->EUR 0.910000 (2026-11-24)  equity_eur=9,316.24  cash_eur=-2,082.37  gross_eur=11,398.61
 EUR ledger: fees_eur=5.59  financing_eur=0.00  realized_eur=0.00
 risk_off=True  reason=trend  target_gross=1.250
 
@@ -288,7 +288,7 @@ health
   [OK  ] benchmark_fresh: SPY last=2026-11-25 session=2026-11-25
   [OK  ] fx_eur: USD->EUR 0.910000 (2026-11-24)
   [OK  ] symbols_fresh: all fresh
-  [OK  ] state: updated 2026-11-26T15:05:53+00:00
+  [OK  ] state: updated 2026-11-26T15:11:11+00:00
   [OK  ] pending_plan: none
   [OK  ] duplicate_orders: 6 unique ids / 6 orders
   [OK  ] duplicate_fills: 6 unique ids / 6 fills
@@ -299,12 +299,12 @@ Exit code: `0`
 
 ## Holiday gate: 2026-11-26 is Thanksgiving (no orders, exit 2)
 
-Command: `uv run python scripts/live.py plan --book monthly --market TECH --state-dir /tmp/opencode/live-demo-_skwlx9a --as-of 2026-11-26 --now 2026-11-27T03:00:00+00:00`
+Command: `uv run python scripts/live.py plan --book monthly --market TECH --state-dir /tmp/opencode/live-demo-_ieumwus --as-of 2026-11-26 --now 2026-11-27T03:00:00+00:00`
 
 ```text
 LIVE PLAN (dry-run)  book=monthly (monthly momentum)  market=TECH (NASDAQ tech)  native=USD  reporting=EUR  broker=paper
 recommendation: US monthly is the best-evidence live book; this TECH monthly run is for validation/research
-session=2026-11-26  equity=10,000.00 USD  cash=10,000.00  gross=0.00%
+session=2026-11-26  equity=10,237.63 USD  cash=-2,288.32  gross=122.35%  equity_eur=€9,316.24 @ 0.910000 EUR/USD (2026-11-24)
 data: bench last=None  fresh=None  panel=None
 BLOCKED: market closed: 2026-11-26 is not a US trading session
 no orders will be sent
@@ -316,9 +316,8 @@ Exit code: `2`
 
 ## Artifacts
 
-- state bytes: 17905
+- state bytes: 17990
 - ledger data rows: 2
-- ledger columns: see `monthly_tech.csv` in the throwaway dir
 
 ## Tests run for this demo
 
@@ -328,4 +327,5 @@ uv run python tests/test_core.py
 uv run python tests/test_data.py
 uv run python tests/test_brokers.py
 uv run python tests/test_pea.py
+uv run python tests/test_eur_ledger.py
 ```
