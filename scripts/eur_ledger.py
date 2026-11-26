@@ -40,7 +40,6 @@ def run(market: str, book: str) -> dict:
         market,
         eur_ledger.EurLedgerConfig(
             capital=CAP,
-            tax_rate=0.314,
             financing_bps=500.0,
             spread_bps=5.0,
             fx_bps=2.0,
@@ -102,7 +101,7 @@ def main() -> None:
         "paying French tax on EUR gains each year, with a EUR cost basis per lot.",
         "",
         "This report replays the engine's USD trades in EUR: EUR cost basis at the",
-        "trade-date FX, HIFO lots, 31.4% PFU on annual net EUR gains, loss carry,",
+        "trade-date FX, HIFO lots, French PFU by realization year (30% through 2025, 31.4% from 2026), loss carry,",
         "5% financing on negative EUR cash, 5 bps spread, 2 bps FX and IBKR-like",
         "tickets. Signals and share quantities stay USD-native, so this is the same",
         "strategy, not a different one.",

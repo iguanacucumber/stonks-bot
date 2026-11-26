@@ -2,8 +2,8 @@
 
 ## Shipped to master
 
-- Baseline consolidated and re-tested: TECH 57.01x terminal-FX / 52.89x EUR ledger;
-  US 70.86x terminal-FX / 66.02x EUR ledger; core-only 50.89x / 49.02x.
+- Baseline consolidated and re-tested: TECH 57.01x terminal-FX / 53.45x EUR ledger;
+  US 70.86x terminal-FX / 66.72x EUR ledger; core-only 50.89x / 49.32x.
 - `bot/eur_ledger.py` + `scripts/eur_ledger.py` + `results/eur_ledger.md` (PR #22).
 - Default real-life book switched to US monthly; TECH stays the forward-validation
   book (`bot/france.py`, `tests/test_core.py`, READMEs).
@@ -28,8 +28,8 @@ metrics before merge.
 ## Key real-life findings so far
 
 - The terminal-FX headline overstates the EUR result by ~7%; use the EUR ledger.
-- US monthly dominates TECH on return, drawdown and 2022: 66.0x vs 52.9x, -57.5%
-  vs -66.0%, 2022 -33.3% vs -52.3%.
+- US monthly dominates TECH on return, drawdown and 2022: 66.7x vs 53.5x, -56.4%
+  vs -65.1%, 2022 -32.8% vs -51.4%.
 - Cross-asset ETF dual momentum failed its pre-registered OOS gate (1x OOS 2.23x
   vs QQQ 3.15x); reject, despite lower drawdown.
 - PIT S&P IT sleeve retains ~107% of the static-49 headline, so the TECH sleeve is
