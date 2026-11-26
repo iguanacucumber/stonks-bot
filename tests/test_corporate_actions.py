@@ -113,7 +113,15 @@ def test_dividend_adds_net_cash_and_eur_fields() -> None:
         assert state.portfolio.cash == cfg.capital - 1000.0 + 8.5
         assert state.dividend_income == 10.0
         assert state.dividend_withholding == 1.5
-        assert abs(state.dividend_income_eur - 8.5 * 0.90) < 1e-9
+        assert abs(state.dividend_income_eur - 10.0 * 0.90) < 1e-9
+        assert abs(state.dividend_withholding_eur - 1.5 * 0.90) < 1e-9
+        assert (
+            abs(
+                (state.dividend_income_eur - state.dividend_withholding_eur)
+                - 8.5 * 0.90
+            )
+            < 1e-9
+        )
         assert state.last_cash_eur == state.portfolio.cash * 0.90
         rep = reconcile.reconcile(cfg, state, store)
         assert rep.ok, rep.issues
@@ -213,10 +221,126 @@ def test_cli_corporate_applies_and_is_idempotent() -> None:
         assert rc2 == 1
 
 
+def test_malformed_or_duplicate_events_fail_closed() -> None:
+    with TemporaryDirectory() as tmp:
+        cfg, state, store = _state(tmp)
+        state.corporate_actions.append(
+            {
+                "event_id": "bad-div",
+                "kind": "dividend",
+                "ticker": "SMH",
+                "session": "2026-01-02",
+                # no net_cash/gross fields
+            }
+        )
+        store.save(state)
+        try:
+            rep = reconcile.reconcile(cfg, state, store)
+        except Exception as exc:  # noqa: BLE001
+            raise AssertionError(f"reconcile crashed on malformed event: {exc}")
+        assert not rep.ok
+        assert any("bad-div" in x for x in rep.issues)
+
+    with TemporaryDirectory() as tmp:
+        cfg, state, store = _state(tmp)
+        action = CorporateAction(
+            event_id="dup",
+            kind="dividend",
+            ticker="SMH",
+            session="2026-01-02",
+            amount_per_share=1.0,
+            fx_rate=0.9,
+        )
+        event = apply_to_state(state, action)
+        state.corporate_actions.append(dict(event))  # duplicate id
+        store.save(state)
+        rep = reconcile.reconcile(cfg, state, store)
+        assert not rep.ok
+        assert any("duplicate corporate-action" in x for x in rep.issues)
+
+
+def test_crash_between_state_and_ca_csv_is_repairable() -> None:
+    with TemporaryDirectory() as tmp:
+        cfg, state, store = _state(tmp)
+        event = apply_to_state(
+            state,
+            CorporateAction(
+                event_id="crash-div",
+                kind="dividend",
+                ticker="SMH",
+                session="2026-01-02",
+                amount_per_share=1.0,
+                withholding_rate=0.15,
+                fx_rate=0.90,
+            ),
+        )
+        store.save(state)  # simulate crash before the CSV row
+        assert store.corporate_action_rows() == []
+        rep = reconcile.reconcile(cfg, state, store, repair_ledger=True)
+        assert rep.ok, rep.issues
+        assert rep.repaired_corporate_rows == 1
+        assert [r["event_id"] for r in store.corporate_action_rows()] == ["crash-div"]
+        assert event["net_cash"] == 8.5
+
+
+def test_corporate_action_before_same_session_fill() -> None:
+    with TemporaryDirectory() as tmp:
+        cfg, state, store = _state(tmp)
+        # Split first (open-of-session), then a same-session buy fill.
+        split_event = apply_to_state(
+            state,
+            CorporateAction(
+                event_id="split-before-fill",
+                kind="split",
+                ticker="SMH",
+                session="2026-01-02",
+                ratio=2.0,
+            ),
+        )
+        order = OrderIntent("o2", "SMH", "BUY", 5.0, 100.0, "test", "2026-01-02")
+        order.status = FILLED
+        order.filled_qty = 5.0
+        plan = Plan(
+            plan_id="p2",
+            book="monthly",
+            market="US",
+            signal_session="2025-12-31",
+            fill_session="2026-01-02",
+            created_at="2026-01-01T00:00:00+00:00",
+            target_weights={"SMH": 1.0},
+            current_weights={},
+            orders=[order],
+        )
+        plan.fills = [
+            Fill(
+                fill_id="f2",
+                order_id="o2",
+                ticker="SMH",
+                side="BUY",
+                qty=5.0,
+                price=100.0,
+                commission=0.0,
+                session="2026-01-02",
+                created_at="2026-01-02T14:30:00+00:00",
+            )
+        ]
+        state.plans["p2"] = plan
+        state.portfolio.positions["SMH"].qty = 25.0
+        state.portfolio.positions["SMH"].avg_cost = 60.0
+        state.portfolio.cash -= 500.0
+        store.save(state)
+        store.upsert_corporate_action(split_event)
+        rep = reconcile.reconcile(cfg, state, store)
+        assert rep.ok, rep.issues
+
+
 def main() -> None:
     test_split_adjusts_position_and_cost()
     test_dividend_adds_net_cash_and_eur_fields()
     test_missing_position_and_missing_ledger_fail()
+    test_malformed_or_duplicate_events_fail_closed()
+    test_crash_between_state_and_ca_csv_is_repairable()
+    test_corporate_action_before_same_session_fill()
     test_cli_corporate_applies_and_is_idempotent()
     print("ok: corporate splits, dividends, state ledger and reconcile")
 

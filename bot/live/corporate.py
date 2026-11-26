@@ -149,7 +149,7 @@ def apply_to_state(state: Any, action: CorporateAction) -> dict[str, Any]:
         state.dividend_income += float(event["gross_cash"])
         state.dividend_withholding += float(event["withholding"])
         if action.fx_rate is not None:
-            state.dividend_income_eur += float(event["net_cash"]) * action.fx_rate
+            state.dividend_income_eur += float(event["gross_cash"]) * action.fx_rate
             state.dividend_withholding_eur += (
                 float(event["withholding"]) * action.fx_rate
             )

@@ -26,6 +26,7 @@ class ReconcileReport:
     warnings: list[str] = field(default_factory=list)
     metrics: dict[str, Any] = field(default_factory=dict)
     repaired_rows: int = 0
+    repaired_corporate_rows: int = 0
 
     def fail(self, msg: str) -> None:
         self.ok = False
@@ -77,6 +78,7 @@ def reconcile(
 
     if repair_ledger:
         report.repaired_rows = store.sync_ledger(state)
+        report.repaired_corporate_rows = store.sync_corporate_actions(state)
         rows = store.ledger_rows()
         report.metrics["ledger_rows"] = len(rows)
 
@@ -120,6 +122,9 @@ def reconcile(
 
     # Rebuild in session order. A corporate action is an open-of-session event,
     # so it applies before that session's fills (priority 0 vs 1).
+    ca_ids = [str(e.get("event_id", "")) for e in state.corporate_actions]
+    if len(ca_ids) != len(set(ca_ids)):
+        report.fail("duplicate corporate-action event_id in state")
     timeline = [
         (str(e.get("session", "")), 0, "action", e) for e in state.corporate_actions
     ]
@@ -128,8 +133,8 @@ def reconcile(
         if kind == "action":
             try:
                 apply_event(rebuilt, item)
-            except ValueError as exc:
-                report.fail(str(exc))
+            except (ValueError, KeyError, TypeError) as exc:
+                report.fail(f"corporate action {item.get('event_id')}: {exc}")
         else:
             try:
                 realized += rebuilt.apply_fill(item)
@@ -166,6 +171,56 @@ def reconcile(
     if abs(realized - state.realized_pnl) > 1e-4:
         report.fail(
             f"realized pnl: fills {realized:,.6f} != state {state.realized_pnl:,.6f}"
+        )
+
+    # Corporate-action journals: gross/withholding/net must agree with state and
+    # each persisted row. This catches a state event whose cash amount was edited
+    # or whose fields were truncated.
+    gross_div = 0.0
+    withholding_div = 0.0
+    net_div = 0.0
+    gross_eur = 0.0
+    withholding_eur = 0.0
+    for e in state.corporate_actions:
+        if e.get("kind") != "dividend":
+            continue
+        try:
+            gross = float(e.get("gross_cash", 0.0) or 0.0)
+            withheld = float(e.get("withholding", 0.0) or 0.0)
+            net = float(e.get("net_cash", 0.0) or 0.0)
+            fx = e.get("fx_rate")
+            if abs((gross - withheld) - net) > TOL:
+                report.fail(
+                    f"corporate action {e.get('event_id')}: net_cash {net} != "
+                    f"gross {gross} - withholding {withheld}"
+                )
+            gross_div += gross
+            withholding_div += withheld
+            net_div += net
+            if fx is not None:
+                gross_eur += gross * float(fx)
+                withholding_eur += withheld * float(fx)
+        except (TypeError, ValueError, KeyError) as exc:
+            report.fail(f"corporate action {e.get('event_id')}: bad dividend fields: {exc}")
+    if abs(gross_div - state.dividend_income) > TOL:
+        report.fail(
+            f"dividend income: events {gross_div:,.6f} != state "
+            f"{state.dividend_income:,.6f}"
+        )
+    if abs(withholding_div - state.dividend_withholding) > TOL:
+        report.fail(
+            f"dividend withholding: events {withholding_div:,.6f} != state "
+            f"{state.dividend_withholding:,.6f}"
+        )
+    if abs(gross_eur - state.dividend_income_eur) > 1e-4:
+        report.fail(
+            f"EUR dividend income: events {gross_eur:,.6f} != state "
+            f"{state.dividend_income_eur:,.6f}"
+        )
+    if abs(withholding_eur - state.dividend_withholding_eur) > 1e-4:
+        report.fail(
+            f"EUR dividend withholding: events {withholding_eur:,.6f} != state "
+            f"{state.dividend_withholding_eur:,.6f}"
         )
 
     # EUR overlay: every fill carries the trade-date FX snapshot. Rebuild the EUR
@@ -273,6 +328,12 @@ def reconcile(
     report.metrics["orders"] = len(orders)
     report.metrics["fills"] = len(fills)
     report.metrics["corporate_actions"] = len(state.corporate_actions)
+    report.metrics["dividend_income"] = round(state.dividend_income, 6)
+    report.metrics["dividend_withholding"] = round(state.dividend_withholding, 6)
+    report.metrics["dividend_income_eur"] = round(state.dividend_income_eur, 6)
+    report.metrics["dividend_withholding_eur"] = round(
+        state.dividend_withholding_eur, 6
+    )
     report.metrics["positions"] = sum(
         1 for p in state.portfolio.positions.values() if p.active
     )

@@ -29,9 +29,11 @@ uv run python scripts/live.py corporate \
 - Gross = quantity × amount per share.
 - Withholding = gross × rate (0 by default; 0.15 for the US treaty example).
 - Net cash = gross − withholding, added to the paper portfolio.
-- State fields: `dividend_income`, `dividend_withholding`,
-  `dividend_income_eur`, `dividend_withholding_eur`.
-- EUR fields use the supplied event `fx_rate`; no later FX translation.
+- State fields: `dividend_income` and `dividend_withholding` are **gross**
+  native amounts; `dividend_income_eur` and `dividend_withholding_eur` are the
+  same gross/withholding amounts at the supplied event `fx_rate`. Net EUR cash is
+  `dividend_income_eur - dividend_withholding_eur`; do not store net in the income
+  field. No later FX translation.
 
 ## Persistence and reconciliation
 
@@ -40,9 +42,17 @@ uv run python scripts/live.py corporate \
 - `--read-only` refuses `corporate`; this command writes paper state.
 - `reconcile` rebuilds the portfolio from fills in session order, applies
   corporate actions at the start of their session (before that session's fills),
-  and compares positions/cash. It fails if a state event has no CSV ledger row.
+  and compares positions/cash, gross/withholding EUR fields and event ids. It fails
+  if a state event has no CSV ledger row, if a state event is malformed, or if an
+  `event_id` appears twice.
+- If a crash happens between the atomic state write and the corporate-action CSV
+  append, `scripts/live.py corporate` repairs the CSV from state before deciding
+  whether an event is a duplicate; `reconcile --repair-ledger` also syncs the
+  corporate-action view. This is state-first crash recovery, never a fabricated
+  event.
 - Corporate actions do not change `realized_pnl`; dividends are income, splits are
-  unit changes.
+  unit changes. A split is applied before same-session fills (open-of-session
+  policy); it does not adjust already-open broker orders or a pending plan.
 
 ## Tests
 
