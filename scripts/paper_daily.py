@@ -154,11 +154,13 @@ def replay(mkt, res, cfg, n: int, panel, path: Path = REPLAY):
     now_et = datetime.now(timezone.utc).astimezone(ZoneInfo("America/New_York"))
     if len(dates) > n + 2 and dates[-1].date() == now_et.date() and now_et.hour < 16:
         dates = dates[:-1]  # today's bar is still forming
-    raw_close = panel.pivot(index="date", columns="ticker", values="close")
-    raw_open = (
+    # Returns use adjusted closes, like res.equity and its weights. Raw closes
+    # would book dividends/splits as fake return; panel open is already adjusted.
+    adj_close = panel.pivot(index="date", columns="ticker", values="adjclose")
+    open_px = (
         panel.pivot(index="date", columns="ticker", values="open")
         if "open" in panel.columns
-        else raw_close
+        else adj_close
     )
     wopen = res.weights_open if res.weights_open is not None else res.weights
     rows = []
@@ -168,30 +170,30 @@ def replay(mkt, res, cfg, n: int, panel, path: Path = REPLAY):
         new = current_weights(wopen, dm)
         overnight = 0.0
         for t, x in old.items():
-            if t not in raw_close.columns:
+            if t not in adj_close.columns:
                 continue
-            cp = raw_close[t].loc[dprev]
-            op = raw_open[t].loc[dm] if t in raw_open.columns else float("nan")
+            cp = adj_close[t].loc[dprev]
+            op = open_px[t].loc[dm] if t in open_px.columns else float("nan")
             if pd.isna(op) or op <= 0:
                 op = cp
             if pd.notna(cp) and cp > 0:
                 overnight += x * (op / cp - 1.0)
         intraday = 0.0
         for t, x in new.items():
-            if t not in raw_open.columns:
+            if t not in open_px.columns:
                 continue
-            op = raw_open[t].loc[dm]
-            cp = raw_close[t].loc[dm] if t in raw_close.columns else float("nan")
+            op = open_px[t].loc[dm]
+            cp = adj_close[t].loc[dm] if t in adj_close.columns else float("nan")
             if pd.isna(op) or op <= 0:
                 op = cp
             if pd.notna(op) and op > 0 and pd.notna(cp):
                 intraday += x * (cp / op - 1.0)
         simple = 0.0
         for t, x in old.items():
-            if t not in raw_close.columns:
+            if t not in adj_close.columns:
                 continue
-            cp0 = raw_close[t].loc[dprev]
-            cp1 = raw_close[t].loc[dm]
+            cp0 = adj_close[t].loc[dprev]
+            cp1 = adj_close[t].loc[dm]
             if pd.notna(cp0) and pd.notna(cp1) and cp0 > 0:
                 simple += x * (cp1 / cp0 - 1.0)
         total_new = sum(new.values())
@@ -280,21 +282,22 @@ def reconcile(
     old = current_weights(res, dprev)
     wopen = res.weights_open if res.weights_open is not None else res.weights
     new = current_weights(wopen, dm)
-    raw_close = panel.pivot(index="date", columns="ticker", values="close")
-    raw_open = panel.pivot(index="date", columns="ticker", values="open")
+    # Same adjusted marks as replay; live prices stay raw in the saved row.
+    adj_close = panel.pivot(index="date", columns="ticker", values="adjclose")
+    open_px = panel.pivot(index="date", columns="ticker", values="open")
     rec = json.loads(df.loc[idx, "prices"])
     overnight = 0.0
     for t, x in old.items():
-        cp = raw_close[t].loc[dprev] if t in raw_close.columns else float("nan")
-        op = raw_open[t].loc[dm] if t in raw_open.columns else float("nan")
+        cp = adj_close[t].loc[dprev] if t in adj_close.columns else float("nan")
+        op = open_px[t].loc[dm] if t in open_px.columns else float("nan")
         if pd.isna(op) or op <= 0:
             op = cp
         if pd.notna(cp) and cp > 0 and pd.notna(op):
             overnight += x * (op / cp - 1.0)
     intraday = 0.0
     for t, x in new.items():
-        op = raw_open[t].loc[dm] if t in raw_open.columns else float("nan")
-        cp = raw_close[t].loc[dm] if t in raw_close.columns else float("nan")
+        op = open_px[t].loc[dm] if t in open_px.columns else float("nan")
+        cp = adj_close[t].loc[dm] if t in adj_close.columns else float("nan")
         if pd.isna(op) or op <= 0:
             op = cp
         p1 = float(rec.get(t, cp))
@@ -388,11 +391,13 @@ def main():
     et = now.astimezone(ZoneInfo("America/New_York"))
     quote_date = pd.Timestamp(et.date())
     # day P&L: prior book overnight, post-open book intraday (next-open fills)
-    raw_close = panel.pivot(index="date", columns="ticker", values="close")
-    raw_open = (
+    # Adjusted closes keep today's move comparable to the backtest; the live
+    # quotes remain raw and are only used for the intraday leg.
+    adj_close = panel.pivot(index="date", columns="ticker", values="adjclose")
+    open_px = (
         panel.pivot(index="date", columns="ticker", values="open")
         if "open" in panel.columns
-        else raw_close
+        else adj_close
     )
     last = mkt.dates[-1]
     # A row is close-valid only when today's own bar is in the panel. On a
@@ -412,10 +417,10 @@ def main():
     prices = data.latest_prices(sorted(set(w) | set(old)) + ["SPY"])
     overnight = 0.0
     for t, x in old.items():
-        if t not in raw_close.columns:
+        if t not in adj_close.columns:
             continue
-        cp = raw_close[t].loc[dprev]
-        op = raw_open[t].loc[dm] if t in raw_open.columns else float("nan")
+        cp = adj_close[t].loc[dprev]
+        op = open_px[t].loc[dm] if t in open_px.columns else float("nan")
         if pd.isna(op) or op <= 0:
             op = cp
         if pd.notna(cp) and cp > 0:
@@ -423,14 +428,14 @@ def main():
     intraday = 0.0
     px, prev = {}, {}
     for t, x in w.items():
-        op = raw_open[t].loc[dm] if t in raw_open.columns else float("nan")
-        cp = raw_close[t].loc[dm] if t in raw_close.columns else float("nan")
+        op = open_px[t].loc[dm] if t in open_px.columns else float("nan")
+        cp = adj_close[t].loc[dm] if t in adj_close.columns else float("nan")
         if pd.isna(op) or op <= 0:
             op = cp
         live = prices.get(t)
         p1 = float(live) if live else float(cp)
         px[t] = p1
-        cp_prev = raw_close[t].loc[dprev] if t in raw_close.columns else float("nan")
+        cp_prev = adj_close[t].loc[dprev] if t in adj_close.columns else float("nan")
         prev[t] = float(cp_prev) if pd.notna(cp_prev) else float("nan")
         if pd.notna(op) and op > 0 and pd.notna(p1):
             intraday += x * (p1 / op - 1.0)
@@ -440,21 +445,21 @@ def main():
         move = sum(
             x
             * (
-                float(prices.get(t) or raw_close[t].loc[dprev])
-                / raw_close[t].loc[dprev]
+                float(prices.get(t) or adj_close[t].loc[dprev])
+                / adj_close[t].loc[dprev]
                 - 1.0
             )
             for t, x in old.items()
-            if t in raw_close.columns
-            and pd.notna(raw_close[t].loc[dprev])
-            and raw_close[t].loc[dprev] > 0
+            if t in adj_close.columns
+            and pd.notna(adj_close[t].loc[dprev])
+            and adj_close[t].loc[dprev] > 0
         )
         px = {
-            t: float(prices.get(t) or raw_close[t].loc[dprev])
+            t: float(prices.get(t) or adj_close[t].loc[dprev])
             for t in w
-            if t in raw_close.columns
+            if t in adj_close.columns
         }
-        prev = {t: float(raw_close[t].loc[dprev]) for t in w if t in raw_close.columns}
+        prev = {t: float(adj_close[t].loc[dprev]) for t in w if t in adj_close.columns}
     else:
         move = (1.0 + overnight) * (1.0 + intraday) - 1.0
     ref = dprev
@@ -473,7 +478,7 @@ def main():
     }
     held = set(old) | set(w)
     missing_close = [
-        t for t in held if t not in raw_close.columns or pd.isna(raw_close[t].loc[dm])
+        t for t in held if t not in adj_close.columns or pd.isna(adj_close[t].loc[dm])
     ]
     rebalanced = set(w) != set(old) or abs(sum(w.values()) - sum(old.values())) > (
         0.05 * max(1.0, sum(old.values()))
@@ -483,9 +488,9 @@ def main():
         for t in held
         if rebalanced
         and (
-            t not in raw_open.columns
-            or pd.isna(raw_open[t].loc[dm])
-            or raw_open[t].loc[dm] <= 0
+            t not in open_px.columns
+            or pd.isna(open_px[t].loc[dm])
+            or open_px[t].loc[dm] <= 0
         )
     ]
     data_complete = not missing_close and not missing_open

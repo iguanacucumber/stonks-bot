@@ -22,6 +22,7 @@ from paper_daily import (  # noqa: E402
     book_paths,
     is_close_valid,
     ledger_file,
+    replay,
     replay_file,
 )
 from paper_report import audit_frame, target_diff  # noqa: E402
@@ -440,6 +441,35 @@ def main():
             steps = n - 1 if live != 1.0 else n
             want = 1.01**steps * live - 1
             assert abs(h[label] - want) < 1e-12, f"{label}: {h[label]} != {want}"
+
+    # replay must use adjusted closes: raw closes would turn a split/dividend
+    # adjustment into a fake return and break the forward comparison.
+    rdates = pd.bdate_range("2020-01-01", periods=2)
+    rpanel = pd.DataFrame(
+        {
+            "date": [rdates[0], rdates[1]],
+            "ticker": ["A", "A"],
+            "open": [100.0, 100.0],
+            "close": [100.0, 100.0],
+            "adjclose": [50.0, 100.0],
+        }
+    )
+    rres = backtest.Result(
+        equity=pd.Series([1.0, 2.0], index=rdates),
+        cash=pd.Series([0.0, 0.0], index=rdates),
+        trades=pd.DataFrame(),
+        weights=pd.DataFrame({"A": [1.0, 1.0]}, index=rdates),
+        nav=pd.DataFrame({"equity": [1.0, 2.0]}, index=rdates),
+        weights_open=pd.DataFrame({"A": [1.0, 1.0]}, index=rdates),
+        eq_open_pre=pd.Series([1.0, 1.0], index=rdates),
+        eq_open=pd.Series([1.0, 1.0], index=rdates),
+    )
+    rcfg = strategy.Config(start=str(rdates[0].date()), core=None, trend_ma=0)
+    with TemporaryDirectory() as tmp:
+        rdf = replay(None, rres, rcfg, 1, rpanel, Path(tmp) / "replay.csv")
+    assert abs(rdf.iloc[0]["diff_bps"]) < 1e-9, (
+        f"replay used raw closes: {rdf.iloc[0]['diff_bps']:.1f} bps"
+    )
 
     # open-trade costs cannot increase equity; the forward tracker relies on this
     assert (res.eq_open <= res.eq_open_pre + 1e-9).all(), "open equity grew"
