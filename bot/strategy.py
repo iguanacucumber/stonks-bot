@@ -64,6 +64,10 @@ class Config:
     min_dollar_vol: float = 5e6
     max_extreme: int = 2  # reject names with >N 50% days in 252 (data collisions)
     exec_price: str = "close"  # "close" or "open" (signal at close, fill next open)
+    # Opt-in limit-at-open execution: buy at open*(1-k), sell at open*(1+k).
+    # Fill if the same day's low/high touches the limit, otherwise market-on-close.
+    # 0 keeps the shipped next-open path and needs no high/low columns.
+    limit_bps: float = 0.0
     tax_rate: float = 0.0  # federal rate (fold NIIT in if desired) on realized gains
     state_tax_rate: float = 0.0  # state rate, deductible against federal up to salt_cap
     salt_cap: float = 10000.0  # annual SALT deduction cap
@@ -167,13 +171,33 @@ class Market:
         # numpy view for the inner accounting loop; date -> row
         self._px_arr = px.to_numpy(dtype=float, copy=False)
         if "open" in panel.columns:
-            op = (
-                panel.pivot(index="date", columns="ticker", values="open")
-                .reindex(index=px.index, columns=px.columns)
+            op = panel.pivot(index="date", columns="ticker", values="open").reindex(
+                index=px.index, columns=px.columns
             )
             self._px_open = op.to_numpy(dtype=float)
         else:
             self._px_open = self._px_arr
+        if cfg.limit_bps < 0:
+            raise ValueError("limit_bps must be >= 0")
+        if cfg.limit_bps > 0:
+            if cfg.exec_price != "open":
+                raise ValueError("limit_bps requires exec_price='open'")
+            missing = {"high", "low"} - set(panel.columns)
+            if missing:
+                raise ValueError(
+                    f"limit_bps requires high/low columns (missing {sorted(missing)})"
+                )
+            hi = panel.pivot(index="date", columns="ticker", values="high").reindex(
+                index=px.index, columns=px.columns
+            )
+            lo = panel.pivot(index="date", columns="ticker", values="low").reindex(
+                index=px.index, columns=px.columns
+            )
+            self._px_high = hi.to_numpy(dtype=float)
+            self._px_low = lo.to_numpy(dtype=float)
+        else:
+            self._px_high = self._px_arr
+            self._px_low = self._px_arr
         self._px_row = {d: i for i, d in enumerate(px.index)}
         self._px_col = {t: i for i, t in enumerate(px.columns)}
 
