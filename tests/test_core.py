@@ -9,9 +9,12 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+ROOT = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(ROOT))
+sys.path.insert(0, str(ROOT / "scripts"))
 
 from bot import backtest, france, strategy, universe  # noqa: E402
+from paper_daily import book_config, book_paths  # noqa: E402
 
 
 def synthetic(days: int = 420, n: int = 30, seed: int = 3):
@@ -56,9 +59,7 @@ def main():
         strategy.Market(panel, mem, replace(cfg, tax_rate=0.30, state_tax_rate=0.0))
     )
     fr_tax = backtest.run(
-        strategy.Market(
-            panel, mem, replace(cfg, tax_country="fr", tax_rate=0.30)
-        )
+        strategy.Market(panel, mem, replace(cfg, tax_country="fr", tax_rate=0.30))
     )
     assert fr_tax.tax_paid <= us_tax.tax_paid + 1e-9, "French annual tax > US per-trade"
     # a full run from the first date crosses a year end, so the 2020 tax is paid
@@ -89,9 +90,9 @@ def main():
             ),
         )
     )
-    assert abs(
-        fee_res.fees_paid - len(fee_res.trades) * 1.0 / 10000.0
-    ) < 1e-12, "fixed ticket fee not charged once per trade"
+    assert abs(fee_res.fees_paid - len(fee_res.trades) * 1.0 / 10000.0) < 1e-12, (
+        "fixed ticket fee not charged once per trade"
+    )
 
     # French FTT: 0.30% on buys only, for the listed French shares
     ftt_res = backtest.run(
@@ -142,9 +143,9 @@ def main():
     o1 = backtest.run(strategy.Market(p1, mem, ocfg))
     o2 = backtest.run(strategy.Market(p2, mem, ocfg))
     assert o1.weights.loc[cut_open, held] > 0.01, "test name not held on the cut"
-    assert abs(
-        o1.eq_open.loc[cut_open] - o2.eq_open.loc[cut_open]
-    ) < 1e-9, "missing open leaked today's close into open equity"
+    assert abs(o1.eq_open.loc[cut_open] - o2.eq_open.loc[cut_open]) < 1e-9, (
+        "missing open leaked today's close into open equity"
+    )
 
     # a missing bar (US holiday vs a local calendar) must carry the last price, not
     # the entry price: entry 50 -> last 100 would otherwise invent a -50% day
@@ -228,8 +229,11 @@ def main():
     try:
         backtest.run(
             strategy.Market(
-                panel, mem,
-                strategy.Config(start=str(dates[250].date()), dd_stop=0.2, dd_scale=0.0),
+                panel,
+                mem,
+                strategy.Config(
+                    start=str(dates[250].date()), dd_stop=0.2, dd_scale=0.0
+                ),
             )
         )
         raise AssertionError("dd_scale=0 should be rejected")
@@ -238,7 +242,10 @@ def main():
 
     # wash sales can only add tax, never remove it
     wash_cfg = strategy.Config(
-        start=str(dates[250].date()), top_n=5, rebalance_days=5, tax_rate=0.5,
+        start=str(dates[250].date()),
+        top_n=5,
+        rebalance_days=5,
+        tax_rate=0.5,
         wash_sale_days=30,
     )
     w_wash = backtest.run(strategy.Market(panel, mem, wash_cfg)).equity.iloc[-1]
@@ -255,16 +262,23 @@ def main():
             rows2.append((d, t, px, px, 5_000_000))
     for d in dts2:
         rows2.append((d, "SPY", 100.0, 100.0, 9_000_000))
-    op = pd.DataFrame(
-        rows2, columns=["date", "ticker", "adjclose", "open", "volume"]
-    )
+    op = pd.DataFrame(rows2, columns=["date", "ticker", "adjclose", "open", "volume"])
     op.loc[(op.ticker == "O0") & (op.date == dts2[26]), "open"] = 150.0
     omem = pd.DataFrame({"date": [dts2[0]] * 2, "ticker": ["O0", "O1"]})
     for mode, want in (("open", 150.0), ("close", 100.0)):
         ocfg = strategy.Config(
-            start=str(dts2[25].date()), top_n=1, rebalance_days=50, lookback=20,
-            skip=2, core=None, core_weight=0.0, min_dollar_vol=0.0,
-            max_weight=1.0, sector_cap=1.0, stop=1.0, cost_bps=0.0,
+            start=str(dts2[25].date()),
+            top_n=1,
+            rebalance_days=50,
+            lookback=20,
+            skip=2,
+            core=None,
+            core_weight=0.0,
+            min_dollar_vol=0.0,
+            max_weight=1.0,
+            sector_cap=1.0,
+            stop=1.0,
+            cost_bps=0.0,
             exec_price=mode,
         )
         ores = backtest.run(strategy.Market(op, omem, ocfg))
@@ -277,7 +291,7 @@ def main():
         h = backtest.horizon_returns(eq, live)
         for label, n in (("1 day", 1), ("1 week", 5), ("1 month", 21), ("1 year", 252)):
             steps = n - 1 if live != 1.0 else n
-            want = 1.01 ** steps * live - 1
+            want = 1.01**steps * live - 1
             assert abs(h[label] - want) < 1e-12, f"{label}: {h[label]} != {want}"
 
     # open-trade costs cannot increase equity; the forward tracker relies on this
@@ -296,12 +310,8 @@ def main():
     assert france.ticket_fee("Trade Republic", 1_000_000, True) == 1.0
     fr = france.after_tax(
         backtest.Result(
-            equity=pd.Series(
-                [1.0, 2.0], index=pd.bdate_range("2026-01-02", periods=2)
-            ),
-            cash=pd.Series(
-                [1.0, 1.0], index=pd.bdate_range("2026-01-02", periods=2)
-            ),
+            equity=pd.Series([1.0, 2.0], index=pd.bdate_range("2026-01-02", periods=2)),
+            cash=pd.Series([1.0, 1.0], index=pd.bdate_range("2026-01-02", periods=2)),
             trades=pd.DataFrame(),
             weights=pd.DataFrame(),
             nav=pd.DataFrame(),
@@ -316,6 +326,26 @@ def main():
     assert fr["currency"] == "EUR"
     assert abs(fr["after_tax_native"] - 18000.0) < 1e-6
     assert abs(fr["after_tax_eur"] - 18000.0) < 1e-6
+
+    # forward books: monthly stays the shipped default, tax is the core-only shape
+    assert book_config("monthly") == {}
+    tax_book = book_config("tax")
+    assert tax_book == {
+        "core": "SMH",
+        "core_mode": "always",
+        "leverage_band": 0.30,
+        "tax_lots": "hifo",
+    }
+    tax_cfg = strategy.Config(leverage=2.5, **tax_book)
+    assert tax_cfg.core == "SMH"
+    assert tax_cfg.core_mode == "always"
+    assert tax_cfg.leverage_band == 0.30
+    assert tax_cfg.tax_lots == "hifo"
+    assert tax_cfg.tax_country == "us", "paper tax marks must stay pre-tax"
+    assert book_paths("monthly")[0].name == "paper_daily.csv"
+    assert book_paths("monthly")[1].name == "paper_ledger.csv"
+    assert book_paths("tax")[0].name == "paper_daily_tax.csv"
+    assert book_paths("tax")[1].name == "paper_ledger_tax.csv"
 
     print(
         f"ok: {len(res.equity)} days, final {res.equity.iloc[-1]:.3f}, "
