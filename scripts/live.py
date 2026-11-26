@@ -190,6 +190,13 @@ def _print_state(cfg: LiveConfig) -> int:
             )
     else:
         print("\npending plan: none")
+    if state.pending_cut:
+        print(
+            f"pending cut: {state.pending_cut.get('reason')} "
+            f"scale={state.pending_cut.get('scale')} "
+            f"from {state.pending_cut.get('session')} "
+            f"(retrying until the rail clears)"
+        )
     if state.blocked:
         print(
             f"\nlast blocked: {state.blocked.get('session')} {state.blocked.get('reason')}"

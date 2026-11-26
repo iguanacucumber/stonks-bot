@@ -11,8 +11,8 @@ New live plans default to **US monthly**, the best real-life backtest:
 
 | book | headline | EUR ledger | maxDD (EUR ledger) | status |
 |---|---:|---:|---:|---|
-| US monthly, IBKR 2 bps | 70.86x | 66.02x | -57.5% | recommended live market |
-| TECH monthly, IBKR 2 bps | 57.01x | 52.89x | -66.0% | forward validation track |
+| US monthly, IBKR 2 bps | 70.86x | 66.72x | -57.5% | recommended live market |
+| TECH monthly, IBKR 2 bps | 57.01x | 53.45x | -66.0% | forward validation track |
 
 The existing forward paper book (`scripts/paper_daily.py --market TECH`) is **not**
 switched or rewritten by this CLI. Keep it running to finish the 5-date gate. Select

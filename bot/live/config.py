@@ -36,8 +36,8 @@ BOOK_LABELS = {
     "tax": "core-only tax",
 }
 
-# Best real-life evidence (2026-11-26): US monthly is 70.86x headline / 66.02x
-# EUR-ledger at maxDD -57.5%, ahead of TECH monthly at 57.01x / 52.89x. The TECH
+# Best real-life evidence (2026-11-26): US monthly is 70.86x headline / 66.72x
+# EUR-ledger at maxDD -57.5%, ahead of TECH monthly at 57.01x / 53.45x. The TECH
 # forward paper book keeps running as the validation track; it is not reset here.
 # Any market can be selected explicitly, so this is a recommendation, not a branch.
 BEST_EVIDENCE_MARKET = "US"
