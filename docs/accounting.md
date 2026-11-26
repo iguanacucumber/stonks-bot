@@ -16,18 +16,18 @@ taxable base, and each lot's cost basis is set at the trade-date FX. Translating
 the final amount at spot ignores the annual tax timing and the path of the EUR basis.
 
 The EUR ledger (`bot/eur_ledger.py`, `scripts/eur_ledger.py`) keeps the USD signals and
-share quantities unchanged, then re-settles the trades in EUR with HIFO lots, 31.4% PFU,
+share quantities unchanged, then re-settles the trades in EUR with HIFO lots, French PFU by year (30% through 2025, 31.4% from 2026),
 10-year loss carry, 5% financing on negative EUR cash, and IBKR-like fees.
 
 ## Baseline (€10k, 2015-01-02..2026-11-25, IBKR CTO)
 
 | book | native USD | terminal-FX | EUR ledger | CAGR | maxDD |
 |---|---:|---:|---:|---:|---:|
-| TECH monthly | 51.82x | 57.01x | **52.89x** | 39.7% | -66.0% |
-| TECH core-only tax | 46.26x | 50.89x | **49.02x** | 38.8% | -64.2% |
-| US monthly | 64.41x | 70.86x | **66.02x** | 42.3% | -57.5% |
+| TECH monthly | 51.82x | 57.01x | **53.45x** | 39.8% | -65.1% |
+| TECH core-only tax | 46.26x | 50.89x | **49.32x** | 38.9% | -63.9% |
+| US monthly | 64.41x | 70.86x | **66.72x** | 42.4% | -56.4% |
 
-The terminal-FX headline overstates the EUR-ledger result by about 7% on the monthly
+The terminal-FX headline overstates the EUR-ledger result by about 6.6% on the monthly
 books. Ranking is unchanged: US monthly is ahead of TECH on return and drawdown; the
 core-only tax book is behind on terminal wealth but cheaper to run.
 
@@ -46,3 +46,19 @@ core-only tax book is behind on terminal wealth but cheaper to run.
 - The overlay does not change `bot/backtest.py`, the CLI defaults, or the forward book.
 
 See `results/eur_ledger.md` for the full table and reproduction command.
+
+## Deferred exit tax (do not compare pre-exit wealth to a liquidated benchmark)
+
+The EUR-ledger multiple is a **liquidation** value: it subtracts the tax due if the
+whole book were sold at the end. A long-term holder does not pay that tax today.
+
+| book | EUR ledger (liquidated) | pre-exit equity | latent exit tax |
+|---|---:|---:|---:|
+| US monthly | 66.72x (€667,207) | 87.77x (€877,700) | €210,493 |
+| TECH monthly | 53.45x (€534,503) | 69.55x (€695,483) | €160,980 |
+| CORE tax | 49.32x (€493,200) | 70.41x (€704,107) | €210,907 |
+
+`pre-exit equity` already includes all tax paid in prior years; it is not "tax-free".
+The latent exit tax is a real liability when you sell. Deferral is valuable, but
+concentrating a portfolio to avoid tax is not free: it keeps the same market risk.
+Do not quote pre-exit wealth as an after-tax result.

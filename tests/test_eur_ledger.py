@@ -166,7 +166,24 @@ def main() -> None:
         )
     assert abs(out.after_tax - 7.5) < 1e-9, out.after_tax
 
-    print("ok: EUR ledger HIFO, FX, PFU, loss carry, fees, flat cash")
+    # 9. year-dependent rate: 2024 gain is taxed at 30%, not the 2026 31.4%
+    d = ["2024-01-02", "2024-06-03", "2024-12-31", "2025-01-06"]
+    r = Res(
+        {x: 1.0 for x in d},
+        [
+            trade(d[0], "BUY", 0.1, 1.0),
+            trade(d[1], "SELL", 0.1, 2.0),
+        ],
+    )
+    out = eur_ledger.replay(
+        r,
+        panel(d, [1.0, 2.0, 2.0, 2.0]),
+        "FR",
+        free(capital=100.0, tax_rate=None),
+    )
+    assert abs(out.tax_paid - 3.0) < 1e-9, out.tax_paid
+
+    print("ok: EUR ledger HIFO, FX, PFU by year, loss carry, fees, flat cash")
 
 
 if __name__ == "__main__":
