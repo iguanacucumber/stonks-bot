@@ -113,15 +113,19 @@ pre-fee, USD. On €10k after tax and real tariffs (`results/france.md`):
 | TECH monthly sleeve | 8.3x | 27.2x | 5.4x QQQ |
 | French CTO (CAC + SMH core) | 6.4x | 12.5x | 2.1x CAC |
 | French PEA (sleeve only) | 1.47x | 1.61x | 2.3x CAC |
+| PEA Nasdaq-100 proxy (PUST.PA) | 4.96x | 5.08x | 5.4x QQQ |
 
 The core-only book is the only French product that survives a €10k account at
 Bourse Direct; its €8.50 US ticket plus 0.25% FX leaves the monthly sleeve 18.9x of
-terminal wealth behind Trade Republic. The PEA cannot hold SMH or borrow, and its
-French-only sleeve loses to the CAC even at the 18.6% social rate. Translating the
-price series to EUR **before** the 200-day rule hurts (24.6x vs 38.8x): measure the
-P&L in EUR, but keep the signal in the asset's own currency. `results/france.md`,
-`scripts/france.py`. CLI: `backtest --country fr` prints the after-tax block;
-`pnl` adds the same line; `report` appends the France section.
+terminal wealth behind Trade Republic. No pure semiconductor UCITS is PEA-eligible
+(the fund must hold >75% EU/EEA companies), so the best 1x PEA tech proxy
+(PUST.PA) makes 5.08x after tax, and even the 2x Nasdaq PEA ETF (LQQ) is 14.4x,
+versus 38.8x for the CTO. The PEA is not a substitute for the US core. Translating
+the price series to EUR **before** the 200-day rule hurts (24.6x vs 38.8x): measure
+the P&L in EUR, but keep the signal in the asset's own currency.
+`results/france.md`, `results/pea_ucits.md`, `scripts/france.py`, `scripts/pea_ucits.py`.
+CLI: `backtest --country fr` prints the after-tax block; `pnl` adds the same line;
+`report` appends the France section.
 
 **Cross-market:** the same config on **39 markets** (9 stock-level including a 49-name
 NASDAQ tech book, 30 country/tech ETFs) is profitable in **39/39** and beats the local
