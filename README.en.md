@@ -63,7 +63,7 @@ all-in, and 0.60x at 2x costs. The always-overnight comparator loses 88% on SPY
 before tax at a 10 bps per side (20 bps round trip) daily cost. Verdict: **reject**. No short-horizon satellite; the
 monthly book remains the only production strategy. A market maker with sub-bp
 spreads might find a gross overnight edge, but that is not a French retail CTO.
-See `results/alpha_short.md` after merge.
+Actual intraday data (Yahoo 1h 2y and 5m 60d) was tested in v8: best SPY gap fade 1.04x vs QQQ 1.26x, 0.92x at 2x costs. No short satellite. See `results/short_horizon_conclusion.md`.
 
 ## US estate tax and the PEA
 
