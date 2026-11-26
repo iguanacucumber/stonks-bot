@@ -16,9 +16,9 @@
 | Ops status/doctor | `uv run python scripts/ops.py status` / `doctor` | ready | paper state |
 | Backup/restore | `uv run python scripts/ops.py backup --out DIR` | ready | local archive |
 | Daily forward loop | `uv run python scripts/forward_daily.py --paper --tax` | ready | weekday automation 21:45 UTC |
-| PIT NASDAQ tech universe | `uv run python scripts/research_pit_tech.py` | wave 4 | pending merge |
-| Tax-loss harvesting | `uv run python scripts/tax_harvest.py` | wave 4 | pending merge |
-| EUR/USD hedge study | `uv run python scripts/fx_hedge.py` | wave 4 | pending merge |
+| PIT NASDAQ tech universe | `uv run python scripts/research_pit_tech.py` | ready | retains 95% of static; US still primary |
+| Tax-loss harvesting | `uv run python scripts/tax_harvest.py` | rejected | deferral + fees; keep off |
+| EUR/USD hedge study | `uv run python scripts/fx_hedge.py` | rejected | unhedged EUR path is better |
 | Full tests | `for t in tests/test_*.py; do uv run python "$t"; done` | ready | no network |
 
 ## Read first
