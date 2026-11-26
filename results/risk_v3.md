@@ -4,7 +4,27 @@ Branch `v2/risk-alloc`, base `93b39c4`. This file is written **before** the v3
 sweep runs. The pre-registration is not edited retrospectively; results are
 appended below the line.
 
-## Baseline (reproduced first)
+## Primary/secondary pivot (orchestrator instruction, before the main sweep)
+
+The main decision book is now the **US monthly** book, not TECH. The US book has a
+higher after-tax return and a materially lower drawdown. TECH is the secondary
+check. Numbers are reported in **EUR-ledger** terms (`bot/eur_ledger.py`, PR #22)
+where feasible, because a terminal-FX headline can flatter a rule.
+
+| book | headline after tax | EUR-ledger after tax | EUR maxDD | EUR 2018 | EUR 2022 | EUR CAGR |
+|---|---:|---:|---:|---:|---:|---:|
+| **US monthly (primary)** | 70.856x | **66.022x** | **-57.54%** | -30.09% | -33.31% | 42.30% |
+| TECH monthly (secondary) | 57.013x | 52.894x | -66.02% | -9.75% | -52.31% | 39.67% |
+
+US baseline also: pre-tax 84.275x, EUR bootstrap p5/median 3.40x/84.96x
+(proportional-tax p5 2.58x/64.4x), EUR worst rolling 12m -48.56% (ending
+2019-01-29), EUR 2015-2019 2.98x / 24.4% CAGR / -56.0% DD, EUR 2020-2026 28.31x /
+62.5% CAGR / -57.5% DD, 1,692 trades, 15.5x annual turnover.
+
+The original TECH baseline below is retained as the secondary reproduction and as
+the continuation of the pre-registered TECH table.
+
+## Baseline (reproduced first, TECH secondary)
 
 TECH monthly book, SMH core, 2.5x gross, 500 bps financing, daily 200-day SMH cut
 to 50%, monthly calendar decision at the close, next-open fill, IBKR, French CTO
@@ -55,10 +75,10 @@ only changes average gross is a leverage dial regardless of its Sharpe.
 - Signals use only adjusted closes, membership and equity through the decision
   close `t`; fills are at the next open `t+1` (the shipped convention). No rule
   sees a future price, future membership, or the full-sample result.
-- Primary book: TECH monthly at IBKR, French CTO, after-tax (PFU + exit tax).
-  Secondary check: the same rule on the US tax-profile book (37% federal, 10 bps)
-  where the tax treatment is different. A rule that only works in one tax regime
-  is rejected.
+- Primary book: **US monthly** at IBKR, French CTO, after-tax (PFU + exit tax),
+  EUR-ledger accounting. Secondary: TECH monthly, same tax wrapper. A rule that
+  only works in one book or one tax regime is rejected. A US tax-profile check
+  (37% federal, 10 bps, no exit tax) is a third view, not the decision metric.
 - Metrics: after-tax multiple, after-tax CAGR, pre-tax maxDD, 2018, 2022, worst
   rolling 12m, 2015-2019 and 2020-2026 halves, 10-day block bootstrap p5 and
   median (2,000 paths, seed 7), average gross, turnover, fees, PFU, exit tax.
@@ -137,17 +157,22 @@ committed cache; this is stated as a limitation.
   `target_gross / 2.5`.
 - The standalone ETF trend sleeve (E0) is reported as a benchmark and is a
   diagnostic, not a candidate profile.
-- Balanced gates (opt-in profile, not default):
-  1. maxDD <= -50% (at least 17.8 pp better than baseline);
-  2. after-tax multiple >= 25x;
-  3. bootstrap after-tax p5 >= 1.93x (no worse than baseline);
-  4. 2018 and 2022 both better than baseline;
-  5. each half (2015-2019, 2020-2026) after-tax CAGR >= 20% and half maxDD
-     no worse than -50%;
-  6. 2x-cost after-tax multiple >= 20x.
-- The balanced profile is the passing candidate with the highest after-tax
-  multiple; ties go to the lower maxDD. A1 is the pre-registered fallback if no
-  combined candidate passes.
+- Balanced gates (opt-in profile, not default, **US primary**):
+  1. EUR maxDD no worse than -45% (at least 12.5 pp better than the -57.54%
+     US baseline);
+  2. EUR after-tax multiple >= 30x (at least 45% of the 66.02x baseline);
+  3. bootstrap after-tax p5 >= 2.58x (no worse than the US baseline);
+  4. EUR 2018 and 2022 both better than the US baseline (-30.09%, -33.31%);
+  5. each half (2015-2019, 2020-2026) after-tax CAGR >= 20% and half maxDD no
+     worse than -50%;
+  6. 2x-cost EUR after-tax multiple >= 25x.
+- The balanced profile is the passing candidate with the highest EUR after-tax
+  multiple; ties go to the lower maxDD. The pre-registered fallbacks are A1
+  (60% US book / 40% SPY) and a lower-gross US book; a vol-target variant may
+  compete only if it clears all six gates.
+- TECH secondary balanced gate (for comparison only): EUR maxDD no worse than
+  -55%, EUR after-tax >= 25x, p5 >= 2.58x, 2018/2022 better than the TECH
+  baseline.
 
 ### H. Tail hedge cost study
 
@@ -171,21 +196,25 @@ engine accounting, and is labelled as such:
   bootstrap p5 at least 20% better. If the premium drag is not paid back in
   compounding, reject.
 
-## Max-growth acceptance (pre-registered)
+## Max-growth acceptance (pre-registered, US primary)
 
 A variant replaces the max-growth default only if all hold:
 
-1. After-tax multiple >= 57.01x, or >= 54.16x (95%) with p5 at least 20% higher
-   and maxDD at least 10 pp better.
-2. maxDD no worse than -67.8%.
-3. 2018 no worse than -19.3% and 2022 no worse than -58.6%; at least one of the
-   two improves by >= 3 pp.
-4. Bootstrap after-tax p5 >= 1.93x.
-5. It beats its leverage-matched control on after-tax multiple or p5.
+1. EUR after-tax multiple >= 66.02x, or >= 62.72x (95%) with p5 at least 20%
+   higher and EUR maxDD at least 10 pp better.
+2. EUR maxDD no worse than -57.54%.
+3. EUR 2018 no worse than -32.1% and 2022 no worse than -35.3%; at least one of
+   the two improves by >= 3 pp.
+4. Bootstrap EUR after-tax p5 >= 2.58x.
+5. It beats its leverage-matched control on EUR after-tax multiple or p5.
 6. Neither half (2015-2019, 2020-2026) loses more than 2 pp of CAGR versus the
-   baseline half.
+   US baseline halves (24.4%, 62.5%).
 7. Neighbouring pre-registered parameter values point the same way; no
    knife-edge. If the primary fails but a neighbour wins, the family is rejected.
+
+TECH secondary max-growth gates remain: EUR after-tax >= 52.89x, maxDD no worse
+than -66.02%, 2018 no worse than -11.8%, 2022 no worse than -54.3%, p5 >= 2.39x,
+beats the matched control, and neither half loses more than 2 pp of CAGR.
 
 If a family fails, all its variants stay in the report and the default does not
 change.
