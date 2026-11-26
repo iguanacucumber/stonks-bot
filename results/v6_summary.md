@@ -18,10 +18,10 @@ Same gross path, 12-year tax age, after terminal AV tax:
 
 | book | CTO | AV 0.50% | AV 0.80% | break-even fee |
 |---|---:|---:|---:|---:|
-| US monthly 2.5x | 66.17x | **126.72x** | 122.33x | 6.18% |
+| US monthly 2.5x | 66.69x | **126.72x** | 122.33x | 6.18% |
 | balanced A6 | 36.56x | **66.48x** | 64.18x | 5.73% |
 
-AV maxDD is worse (-61.1% vs -56.9% US; -50.4% vs -46.9% balanced) and
+AV maxDD is worse (-61.1% vs -56.4% US; -50.4% vs -46.9% balanced) and
 2018/2022 are worse, but the 5-year median/worst improve. Estate 990 I at
 €660k: €101,500 vs €110,962 CTO French inheritance (one beneficiary); two
 beneficiaries €71,000 vs €88,389. AV removes US-situs in the model.
@@ -51,7 +51,7 @@ ETF+margin. `results/futures.md`.
 ## Covered calls: model-only income opt-in
 
 At 40% IV / 10% OTM the US book model is 75.96x vs the 66.72x gross-dividend
-baseline (66.17x exact), maxDD -48.5% vs -56.9%; at 25/30% IV most variants have
+baseline (66.69x exact), maxDD -48.5% vs -56.4%; at 25/30% IV most variants have
 negative option P&L. European cash settlement, fractional contracts and a flat
 smile are optimistic. Not default; paper income experiment only.
 `results/covered_calls.md`.
@@ -59,7 +59,7 @@ smile are optimistic. Not default; paper income experiment only.
 ## Acceptance and dashboard
 
 - `uv run python scripts/acceptance.py` -> **12/12 PASS in ~14s**: cache,
-  backtest/EUR ledger (66.17/52.98), live plan US/TECH, paper replay/idempotency,
+  backtest/EUR ledger (66.69/53.42), live plan US/TECH, paper replay/idempotency,
   reconcile, ops doctor, backup/restore, advisor orders, strict reproduce.
 - `uv run python scripts/dashboard.py` -> static HTML/Markdown cockpit:
   equity/risk/data/gate/orders, warnings, no server. `--check` for CI.

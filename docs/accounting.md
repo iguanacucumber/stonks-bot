@@ -23,9 +23,9 @@ dividend withholding/PFU where cached events exist, 10-year loss carry, 5% finan
 
 | book | native USD | terminal-FX | EUR ledger | CAGR | maxDD |
 |---|---:|---:|---:|---:|---:|
-| TECH monthly | 51.82x | 57.01x | **52.98x** | 39.7% | -65.6% |
-| TECH core-only tax | 46.26x | 50.89x | **48.80x** | 38.7% | -64.5% |
-| US monthly | 64.41x | 70.86x | **66.17x** | 42.3% | -56.9% |
+| TECH monthly | 51.82x | 57.01x | **53.42x** | 39.7% | -65.2% |
+| TECH core-only tax | 46.26x | 50.89x | **49.27x** | 38.7% | -64.1% |
+| US monthly | 64.41x | 70.86x | **66.69x** | 42.4% | -56.4% |
 
 The terminal-FX headline overstates the EUR-ledger result by about 6.6% on the monthly
 books before dividend tax; with cached dividend events the gap is similar. Ranking is unchanged: US monthly is ahead of TECH on return and drawdown; the
@@ -57,9 +57,9 @@ whole book were sold at the end. A long-term holder does not pay that tax today.
 
 | book | EUR ledger (liquidated) | pre-exit equity | latent exit tax |
 |---|---:|---:|---:|
-| US monthly | 66.17x (€661,655) | 87.21x (€872,148) | €210,493 |
-| TECH monthly | 52.98x (€529,755) | 69.07x (€690,735) | €160,980 |
-| CORE tax | 48.80x (€487,993) | 69.89x (€698,900) | €210,907 |
+| US monthly | 66.69x (€666,936) | 87.62x (€876,172) | €209,236 |
+| TECH monthly | 53.42x (€534,229) | 69.37x (€693,738) | €159,509 |
+| CORE tax | 49.27x (€492,716) | 70.17x (€701,734) | €209,018 |
 
 `pre-exit equity` already includes all tax paid in prior years; it is not "tax-free".
 The latent exit tax is a real liability when you sell. Deferral is valuable, but

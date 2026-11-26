@@ -893,21 +893,21 @@ def demo_dashboard(now: str | datetime | None = None) -> DashboardData:
                 "book": "monthly",
                 "native": 51.82,
                 "terminal_fx": 57.01,
-                "eur_ledger": 52.98,
+                "eur_ledger": 53.42,
             },
             {
                 "market": "US",
                 "book": "monthly",
                 "native": 64.41,
                 "terminal_fx": 70.86,
-                "eur_ledger": 66.17,
+                "eur_ledger": 66.69,
             },
             {
                 "market": "TECH",
                 "book": "tax",
                 "native": 46.26,
                 "terminal_fx": 50.89,
-                "eur_ledger": 48.80,
+                "eur_ledger": 49.27,
             },
         ],
         data_quality={
@@ -924,7 +924,7 @@ def demo_dashboard(now: str | datetime | None = None) -> DashboardData:
             },
         },
         headline={
-            "accounting_modes": [{"accounting_mode": "eur_ledger", "multiple": 52.98}]
+            "accounting_modes": [{"accounting_mode": "eur_ledger", "multiple": 53.42}]
         },
         trials=14,
         files={"demo": "synthetic"},

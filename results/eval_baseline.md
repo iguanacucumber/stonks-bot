@@ -2,8 +2,8 @@
 
 - Command: `uv run python scripts/reproduce.py baseline`
 - Data snapshot: **2026-11-25**
-- Runtime: **4.1s**
-- Generated: 2026-11-26T15:57:08+00:00
+- Runtime: **12.0s**
+- Generated: 2026-11-26T18:00:44+00:00
 
 > **Real-life result: the EUR-ledger column.** `terminal_fx` is the old
 > headline convention (native after-tax × spot EUR/USD); it ignores annual
@@ -15,10 +15,10 @@ year-dependent PFU (30% through 2025, 31.4% from 2026), 5 bps spread, EUR ledger
 
 | market | book | native (USD) | terminal-FX (EUR) | EUR ledger | ledger vs terminal | CAGR (ledger) | maxDD (ledger) | fees | tax paid | exit tax |
 |---|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|
-| TECH | monthly | 51.82x | 57.01x | **52.98x** | -7.1% | 39.7% | -65.6% | €22,090 | €114,591 | €160,980 |
-| TECH | tax | 46.26x | 50.89x | **48.80x** | -4.1% | 38.7% | -64.5% | €8,206 | €56,117 | €210,907 |
-| US | monthly | 64.41x | 70.86x | **66.17x** | -6.6% | 42.3% | -56.9% | €23,971 | €131,989 | €210,493 |
-| US | tax | 46.26x | 50.89x | **48.80x** | -4.1% | 38.7% | -64.5% | €8,206 | €56,117 | €210,907 |
+| TECH | monthly | 51.82x | 57.01x | **53.42x** | -6.3% | 39.8% | -65.2% | €22,090 | €112,232 | €159,509 |
+| TECH | tax | 46.26x | 50.89x | **49.27x** | -3.2% | 38.9% | -64.1% | €8,206 | €53,826 | €209,018 |
+| US | monthly | 64.41x | 70.86x | **66.69x** | -5.9% | 42.4% | -56.4% | €23,971 | €128,699 | €209,236 |
+| US | tax | 46.26x | 50.89x | **49.27x** | -3.2% | 38.9% | -64.1% | €8,206 | €53,826 | €209,018 |
 
 `ledger vs terminal` is the correction from the old headline to the
 EUR-taxed path. The ranking is unchanged: US monthly is ahead of TECH on

@@ -1,26 +1,26 @@
 {
   "snapshot": "2026-11-25",
-  "runtime_seconds": 4.107170065999526,
+  "runtime_seconds": 12.049077875999501,
   "expected": {
     "TECH-monthly": {
       "native": 51.82,
       "terminal_fx": 57.01,
-      "eur_ledger": 52.98
+      "eur_ledger": 53.42
     },
     "TECH-tax": {
       "native": 46.26,
       "terminal_fx": 50.89,
-      "eur_ledger": 48.8
+      "eur_ledger": 49.27
     },
     "US-monthly": {
       "native": 64.41,
       "terminal_fx": 70.86,
-      "eur_ledger": 66.17
+      "eur_ledger": 66.69
     },
     "US-tax": {
       "native": 46.26,
       "terminal_fx": 50.89,
-      "eur_ledger": 48.8
+      "eur_ledger": 49.27
     }
   },
   "rows": [
@@ -29,68 +29,68 @@
       "book": "monthly",
       "native": 51.82313369471318,
       "terminal_fx": 57.01253052888282,
-      "eur_ledger": 52.97548829641186,
-      "ledger_cagr": 0.39704219305379196,
-      "ledger_maxdd": -0.6556843082284467,
+      "eur_ledger": 53.422924982086336,
+      "ledger_cagr": 0.39803218417707664,
+      "ledger_maxdd": -0.6515431553865338,
       "ledger_fees": 22090.322948920628,
-      "ledger_tax": 114590.55902556313,
-      "ledger_exit": 160980.07520599203,
-      "ledger_vs_terminal": -0.07080973594788564,
+      "ledger_tax": 112231.67071632939,
+      "ledger_exit": 159509.47182966836,
+      "ledger_vs_terminal": -0.06296169479756686,
       "start": "2015-01-02",
       "end": "2026-11-25",
       "trades": 1836,
-      "runtime_seconds": 0.6137230899985298
+      "runtime_seconds": 1.92934792899905
     },
     {
       "market": "TECH",
       "book": "tax",
       "native": 46.256265824027224,
       "terminal_fx": 50.88821496168048,
-      "eur_ledger": 48.79932921048525,
-      "ledger_cagr": 0.38741370292973687,
-      "ledger_maxdd": -0.6449231157683128,
+      "eur_ledger": 49.271631443862375,
+      "ledger_cagr": 0.3885396916128512,
+      "ledger_maxdd": -0.6412792414536346,
       "ledger_fees": 8206.031778338447,
-      "ledger_tax": 56117.22345982357,
-      "ledger_exit": 210907.21628876572,
-      "ledger_vs_terminal": -0.0410485168868312,
+      "ledger_tax": 53826.29414587695,
+      "ledger_exit": 209018.08894374565,
+      "ledger_vs_terminal": -0.031767345721114726,
       "start": "2015-01-02",
       "end": "2026-11-25",
       "trades": 178,
-      "runtime_seconds": 0.13931778899859637
+      "runtime_seconds": 0.4164976729953196
     },
     {
       "market": "US",
       "book": "monthly",
       "native": 64.40690275070385,
       "terminal_fx": 70.8563965077221,
-      "eur_ledger": 66.16548074305116,
-      "ledger_cagr": 0.4234491438945829,
-      "ledger_maxdd": -0.5690908190763639,
+      "eur_ledger": 66.69360922637384,
+      "ledger_cagr": 0.42440261364432885,
+      "ledger_maxdd": -0.5643309872998882,
       "ledger_fees": 23970.816893851366,
-      "ledger_tax": 131988.64288371743,
-      "ledger_exit": 210493.18317647016,
-      "ledger_vs_terminal": -0.0662031375552623,
+      "ledger_tax": 128699.23049147826,
+      "ledger_exit": 209235.85638432403,
+      "ledger_vs_terminal": -0.05874963287040136,
       "start": "2015-01-02",
       "end": "2026-11-25",
       "trades": 1692,
-      "runtime_seconds": 1.5275872970014461
+      "runtime_seconds": 3.796467275999021
     },
     {
       "market": "US",
       "book": "tax",
       "native": 46.25626582402738,
       "terminal_fx": 50.88821496168066,
-      "eur_ledger": 48.79932921048538,
-      "ledger_cagr": 0.3874137029297371,
-      "ledger_maxdd": -0.6449231157683125,
+      "eur_ledger": 49.27163144386251,
+      "ledger_cagr": 0.3885396916128516,
+      "ledger_maxdd": -0.6412792414536344,
       "ledger_fees": 8206.03177833847,
-      "ledger_tax": 56117.22345982369,
-      "ledger_exit": 210907.21628876653,
-      "ledger_vs_terminal": -0.041048516886831865,
+      "ledger_tax": 53826.29414587708,
+      "ledger_exit": 209018.0889437465,
+      "ledger_vs_terminal": -0.0317673457211155,
       "start": "2015-01-02",
       "end": "2026-11-25",
       "trades": 178,
-      "runtime_seconds": 0.2961486940002942
+      "runtime_seconds": 0.6070218999957433
     }
   ],
   "failures": []

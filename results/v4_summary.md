@@ -16,10 +16,10 @@ research only; no real orders.
 
 | book | terminal-FX | EUR ledger + div | CAGR | maxDD |
 |---|---:|---:|---:|---:|
-| Static 49 shipped | 57.01x | **52.98x** | 39.7% | -65.6% |
+| Static 49 shipped | 57.01x | **53.42x** | 39.7% | -65.2% |
 | PIT Nasdaq-100 | 55.14x | **50.29x** | 39.1% | -64.0% |
 | PIT core-only | 45.33x | 42.57x | 37.1% | -64.8% |
-| US all-PIT | 70.86x | **66.17x** | 42.3% | -56.9% |
+| US all-PIT | 70.86x | **66.69x** | 42.4% | -56.4% |
 
 PIT retains 95% of the static EUR-ledger terminal; the sleeve is not mainly a
 static-list survivorship artifact. But the Nasdaq-100 proxy is broad (not
@@ -38,7 +38,7 @@ exit tax; each round trip also pays fees. Verdict: **reject**, keep off.
 
 | US hedge | after-tax | maxDD | 2022 | p5 |
 |---|---:|---:|---:|---:|
-| 0% | **66.17x** | **-56.9%** | -33.7% | **2.53x** |
+| 0% | **66.69x** | **-56.4%** | -33.3% | **2.53x** |
 | 25% | 60.97x | -58.7% | -37.0% | 2.18x |
 | 50% | 55.77x | -60.5% | -40.4% | 1.86x |
 | 75% | 50.58x | -63.5% | -44.1% | 1.50x |

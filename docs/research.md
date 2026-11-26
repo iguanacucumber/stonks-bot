@@ -18,22 +18,22 @@ the winners.
   3.12x ledger, still below US 2.5x, with a -66.8% drawdown.
 - **H3 TECH sleeve:** `accept` as a robustness finding, `reject` as a new
   default. The later PIT Nasdaq-100 check retains **95%** of the static TECH
-  EUR ledger (50.29x vs 52.98x); see H5. This is consistent with, not proof
+  EUR ledger (50.29x vs 53.42x); see H5. This is consistent with, not proof
   against, survivorship bias; the PIT row is cleaner but still a survivor list.
-  US all-PIT is better at 70.86x / 66.17x and a -56.9% ledger drawdown. Keep US
+  US all-PIT is better at 70.86x / 66.69x and a -56.4% ledger drawdown. Keep US
   monthly primary; TECH is forward validation.
 - **H4 short horizon:** `reject`. Close-to-close OOS 2.64x vs QQQ 5.49x
   full-window; 2x-cost 1.13x is below BIL 1.20x. Overnight 1.01x at
   an optimistic 5 bps/side, 0.82x at 7.25 bps/side all-in, 0.60x at
   14.5 bps/side. No satellite.
 - **H5 PIT Nasdaq-100:** `paper` (terminal robustness, weak rolling premium).
-  PIT retains **95%** of the static TECH EUR ledger (50.29x vs 52.98x;
+  PIT retains **95%** of the static TECH EUR ledger (50.29x vs 53.42x;
   terminal-FX 55.14x vs 57.01x), survives 2x costs (20.78x), but beats the
   static core-only book in only 18% of 5-year windows. US all-PIT remains
-  primary at 66.17x EUR ledger / -56.9% maxDD. 110/266 PIT tickers lack cached
+  primary at 66.69x EUR ledger / -56.4% maxDD. 110/266 PIT tickers lack cached
   bars: residual delisting bias makes the PIT number an upper bound.
 - **Candidate config:** no Alpha Lab allocation; keep US monthly 2.5x
-  (70.86x headline / 66.17x EUR ledger, -56.9% ledger maxDD). If the TECH
+  (70.86x headline / 66.69x EUR ledger, -56.4% ledger maxDD). If the TECH
   sleeve is kept, use PIT Nasdaq-100 membership (`paper`, not default).
 
 ## Baseline (reproduced, not assumed)

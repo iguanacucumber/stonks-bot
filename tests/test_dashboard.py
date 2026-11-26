@@ -123,7 +123,7 @@ def test_collect_reads_forward_fallback_and_eval() -> None:
                             "book": "monthly",
                             "native": 51.82,
                             "terminal_fx": 57.01,
-                            "eur_ledger": 52.98,
+                            "eur_ledger": 53.42,
                         }
                     ]
                 }

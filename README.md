@@ -2,7 +2,7 @@
 
 # stonks-bot
 
-**10 000 € deviennent 661 655 € après impôt en 11,9 ans.**
+**10 000 € deviennent 666 936 € après impôt en 11,9 ans.**
 <br>
 <sub>Livre US mensuel · 2,5x · Interactive Brokers · PFU 31,4 % · grand livre EUR</sub>
 
@@ -18,11 +18,11 @@
 > C'est un backtest, pas une promesse de rendement. Le livre US a perdu 56,9 % au pire creux (grand livre EUR) et 33,7 % en 2022. À 2,5x, la baisse peut aller plus vite que ta capacité à couper. N'investis pas de l'argent dont tu as besoin.
 
 > [!NOTE]
-> Le grand livre EUR compte l'impôt français sur les gains en EUR chaque année, avec une base de coût en EUR au taux de change du jour. Il donne 66,17x pour le livre US et 53,0x pour le livre TECH, contre 70,9x/57,0x pour l'ancienne méthode qui ne convertit qu'à la fin. Voir `docs/accounting.md`. Le livre TECH reste le suivi forward ; le livre US devient le défaut pour un nouvel investisseur.
+> Le grand livre EUR compte l'impôt français sur les gains en EUR chaque année, avec une base de coût en EUR au taux de change du jour. Il donne 66,69x pour le livre US et 53,4x pour le livre TECH, contre 70,9x/57,0x pour l'ancienne méthode qui ne convertit qu'à la fin. Voir `docs/accounting.md`. Le livre TECH reste le suivi forward ; le livre US devient le défaut pour un nouvel investisseur.
 
 ## Combien ça rapporte
 
-10 000 € au départ, compte-titres ordinaire chez Interactive Brokers, livre US mensuel. Du 2 janvier 2015 au 25 novembre 2026, le capital finit à 66,17x après impôt dans le grand livre EUR, soit 42,3 % par an. Les montants ci-dessous prolongent ce rythme.
+10 000 € au départ, compte-titres ordinaire chez Interactive Brokers, livre US mensuel. Du 2 janvier 2015 au 25 novembre 2026, le capital finit à 66,69x après impôt dans le grand livre EUR, soit 42,4 % par an. Les montants ci-dessous prolongent ce rythme.
 
 | Horizon | Capital final | Gain | QQQ après impôt |
 |---|---:|---:|---:|
@@ -34,7 +34,7 @@
 
 ![Rendements annuels avant impôt](docs/readme_fr.svg)
 
-<sub>Le graphique montre les années avant PFU du livre TECH historique. Le multiple de 66,17x et le rendement annualisé de 42,3 % sont le livre US, après impôt dans le grand livre EUR.</sub>
+<sub>Le graphique montre les années avant PFU du livre TECH historique. Le multiple de 66,69x et le rendement annualisé de 42,4 % sont le livre US, après impôt dans le grand livre EUR.</sub>
 
 ## Le principe
 
@@ -52,13 +52,13 @@ Testé et rejeté. Le rebalancement hebdomadaire/quotidien du même livre, le re
 
 **Verdict : Interactive Brokers, compte-titres ordinaire, livre US mensuel.**
 
-À 10 000 €, le livre US mensuel chez Interactive Brokers finit à 66,17x après impôt dans le grand livre EUR (661 655 €). Le livre TECH, suivi en forward, fait 53,0x (529 755 €). Le classement des brokers dépend surtout du coût de conversion EUR/USD, pas de la commission par ordre.
+À 10 000 €, le livre US mensuel chez Interactive Brokers finit à 66,69x après impôt dans le grand livre EUR (666 936 €). Le livre TECH, suivi en forward, fait 53,4x (534 229 €). Le classement des brokers dépend surtout du coût de conversion EUR/USD, pas de la commission par ordre.
 
 | Livre | Multiple EUR ledger | Pire creux | 2022 |
 |---|---:|---:|---:|
-| **US mensuel (défaut)** | **66,17x** | **-56,9 %** | **-33,7 %** |
-| TECH mensuel (forward) | 53,0x | -65,6 % | -52,4 % |
-| CORE SMH seul | 49,0x | -64,5 % | -55,0 % |
+| **US mensuel (défaut)** | **66,69x** | **-56,4 %** | **-33,3 %** |
+| TECH mensuel (forward) | 53,4x | -65,2 % | -51,9 % |
+| CORE SMH seul | 49,0x | -64,1 % | -54,6 % |
 
 <sub>Grand livre EUR : impôt annuel sur les gains en EUR, base de coût au taux du jour. Les tableaux brokers ci-dessous restent en mesure terminale, pour comparer les frais.</sub>
 
@@ -78,7 +78,7 @@ Interactive Brokers gagne parce que la stratégie convertit souvent USD/EUR. À 
 
 DEGIRO reste à 46,3x avec l'hypothèse de 10 bps, mais tombe à 39,2x avec son AutoFX publié de 25 bps. Saxo (36,4x), Bourse Direct (34,7x), Fortuneo (24,9x) et BoursoBank (22,7x) restent derrière sur la variante core-only. À 10 000 €, les commissions fixes et la conversion pèsent plus que le taux de courtage affiché.
 
-La stratégie US mensuelle chez IBKR est le meilleur backtest et le défaut pour un nouvel investisseur : **66,17x après impôt dans le grand livre EUR** (70,9x en mesure terminale), maxDD -56,9 %, 7 fenêtres de 5 ans sur 7 battent SPY. Le livre TECH reste le suivi forward (1/5 dates validées ; US 0/5, tax 0/5) ; `--market TECH` le restaure.
+La stratégie US mensuelle chez IBKR est le meilleur backtest et le défaut pour un nouvel investisseur : **66,69x après impôt dans le grand livre EUR** (70,9x en mesure terminale), maxDD -56,4 %, 7 fenêtres de 5 ans sur 7 battent SPY. Le livre TECH reste le suivi forward (1/5 dates validées ; US 0/5, tax 0/5) ; `--market TECH` le restaure.
 
 ## Les impôts
 
@@ -89,13 +89,13 @@ La stratégie US mensuelle chez IBKR est le meilleur backtest et le défaut pour
 | CTO | **31,4 %** | PFU (prélèvement forfaitaire unique) : 12,8 % d'impôt sur le revenu et 18,6 % de prélèvements sociaux sur le gain net annuel. Les moins-values se reportent 10 ans. |
 | PEA | **18,6 %** | Plan d'épargne en actions. Prélèvements sociaux seulement après 5 ans. Pas d'actions US en direct, pas de SMH, pas de levier au niveau du compte. Plafond de 150 000 €. |
 
-Dans ce modèle, le CTO est la seule enveloppe qui peut porter SMH à 2,5x. Le PEA sauve 12,8 points de PFU, mais il ne peut pas acheter le cœur de la stratégie. Le meilleur PEA tech 1x, PUST.PA, fait 5,8x après social, contre 66,17x pour le CTO (livre US, grand livre EUR).
+Dans ce modèle, le CTO est la seule enveloppe qui peut porter SMH à 2,5x. Le PEA sauve 12,8 points de PFU, mais il ne peut pas acheter le cœur de la stratégie. Le meilleur PEA tech 1x, PUST.PA, fait 5,8x après social, contre 66,69x pour le CTO (livre US, grand livre EUR).
 
 La FTT (taxe sur les transactions financières) de 0,4 % s'applique aux achats d'actions françaises depuis avril 2025. Les stratégies US et TECH n'en paient pas. La stratégie française paie 5 757 € de FTT pour 10 000 € de départ chez IBKR. Le PFU 2026 est modélisé à 31,4 %, pas 30 %.
 
 ### Le risque fiscal américain et le PEA
 
-Un investisseur français non-résident américain qui détient SMH/SPY/QQQ directement a des actifs **US-situs**. Sans traité, l'abattement successoral américain n'est que de 60 000 $ et le taux monte à 40 %. Le traité France-US de 2004 accorde un crédit prorata qui annule l'impôt américain dans nos exemples, mais il faut le documenter (Form 706-NA/8833) et il ne supprime pas les droits de succession français. Un cœur UCITS irlandais supprime l'exposition US-situs, mais SMH.L ne retient que 64 % du rendement de SMH sur la fenêtre commune (3,61x vs 5,63x) : le coût en rendement est plus grand que l'économie d'impôt. Le PEA ne peut pas porter un ETF semi-conducteurs pur : PUST.PA (Nasdaq-100) fait 5,77x après social contre 66,17x pour le CTO. Détails : `results/estate_tax.md`, `results/ucits_core.md`, `results/pea_semis.md`. Ce n'est pas un conseil fiscal ou juridique.
+Un investisseur français non-résident américain qui détient SMH/SPY/QQQ directement a des actifs **US-situs**. Sans traité, l'abattement successoral américain n'est que de 60 000 $ et le taux monte à 40 %. Le traité France-US de 2004 accorde un crédit prorata qui annule l'impôt américain dans nos exemples, mais il faut le documenter (Form 706-NA/8833) et il ne supprime pas les droits de succession français. Un cœur UCITS irlandais supprime l'exposition US-situs, mais SMH.L ne retient que 64 % du rendement de SMH sur la fenêtre commune (3,61x vs 5,63x) : le coût en rendement est plus grand que l'économie d'impôt. Le PEA ne peut pas porter un ETF semi-conducteurs pur : PUST.PA (Nasdaq-100) fait 5,77x après social contre 66,69x pour le CTO. Détails : `results/estate_tax.md`, `results/ucits_core.md`, `results/pea_semis.md`. Ce n'est pas un conseil fiscal ou juridique.
 
 ## Les indices et ETF
 
@@ -113,7 +113,7 @@ La stratégie française combine le CAC 40 et le cœur SMH. Elle finit à 6,4x c
 
 | Profil | Allocation | EUR ledger | Pire creux | 2022 |
 |---|---|---:|---:|---:|
-| **max_growth** (défaut) | US mensuel 2,5x | **66,17x** | -56,9 % | -33,7 % |
+| **max_growth** (défaut) | US mensuel 2,5x | **66,69x** | -56,4 % | -33,3 % |
 | balanced (opt-in papier) | 70 % livre US + 30 % SPY | 36,6x | -46,9 % | -27,4 % |
 | conservative (opt-in papier) | US mensuel 1,5x | 19,3x | -40,4 % | -20,3 % |
 
@@ -121,10 +121,10 @@ La stratégie française combine le CAC 40 et le cœur SMH. Elle finit à 6,4x c
 
 ## Le risque, sans filtre
 
-- Pire creux : **-56,9 %** sur le livre US (grand livre EUR). En 2022 : -33,7 %. En 2018 : -31,1 %. Le livre TECH fait -65,6 % au pire, -52,4 % en 2022 et -10,5 % en 2018.
+- Pire creux : **-56,4 %** sur le livre US (grand livre EUR). En 2022 : -33,3 %. En 2018 : -31,0 %. Le livre TECH fait -65,2 % au pire, -51,9 % en 2022 et -10,4 % en 2018.
 - Queue de risque : dans le bootstrap US (blocs de 10 jours), 5 % des trajectoires finissent sous **2,53x** après impôt proportionnel (`results/v4_summary.md`). Le livre TECH reste plus fragile : p5 1,93x, creux p5 -90,9 %.
 - Régularité : le livre US bat SPY après impôt sur **7 fenêtres de 5 ans sur 7**, médiane 6,83x contre 1,74x. Le livre TECH bat QQQ sur 84 fenêtres sur 84, médiane 5,67x contre 1,97x.
-- Biais de survie : TECH utilise une liste statique de 49 valeurs NASDAQ choisies aujourd'hui. Le contrôle PIT Nasdaq-100 retient **95 %** du grand livre EUR statique (50,3x vs 53,0x) ; le sleeve n'est donc pas principalement un artefact de survie, mais il reste derrière le livre US all-PIT. US utilise la composition historique du S&P, mais 16,2 % des membres 2014+ n'ont pas d'historique Yahoo et sont exclus (`results/eval_survivorship.md`). Le backtest est un contrôle de cohérence, pas une preuve.
+- Biais de survie : TECH utilise une liste statique de 49 valeurs NASDAQ choisies aujourd'hui. Le contrôle PIT Nasdaq-100 retient **95 %** du grand livre EUR statique (50,3x vs 53,4x) ; le sleeve n'est donc pas principalement un artefact de survie, mais il reste derrière le livre US all-PIT. US utilise la composition historique du S&P, mais 16,2 % des membres 2014+ n'ont pas d'historique Yahoo et sont exclus (`results/eval_survivorship.md`). Le backtest est un contrôle de cohérence, pas une preuve.
 - Hedge EUR/USD : **rejeté**. À 100 %, le livre US tombe à 45,4x et le pire creux se creuse à -67 % ; le dollar a servi d'amortisseur en 2022. Rester non couvert. `results/fx_hedge.md`.
 - Tax-loss harvesting : **rejeté** après frais. C'est surtout du report d'impôt ; le basis plus bas revient en taxe de sortie. `results/tax_harvest.md`.
 - Validation : le suivi forward papier est à **US 0/5, TECH 1/5, tax 0/5** dates valides ; aucune preuve forward. Prochaine date requise : 2026-11-27 (`results/forward_gate.md`).
@@ -140,7 +140,7 @@ uv run python -m bot.cli backtest --country fr --capital 10000 --random-seeds 0
 uv run python -m bot.cli pnl --country fr --capital 10000
 ```
 
-`--country fr` utilise le livre US mensuel, Interactive Brokers et un CTO par défaut. La commande affiche le multiple terminal et le **grand livre EUR** (66,17x pour US). `--market TECH` restaure le livre TECH du suivi forward, `--profile tax` la variante core-only, `--fx-bps` ton vrai coût de conversion. Aucun ordre n'est envoyé, aucune clé n'est nécessaire.
+`--country fr` utilise le livre US mensuel, Interactive Brokers et un CTO par défaut. La commande affiche le multiple terminal et le **grand livre EUR** (66,69x pour US). `--market TECH` restaure le livre TECH du suivi forward, `--profile tax` la variante core-only, `--fx-bps` ton vrai coût de conversion. Aucun ordre n'est envoyé, aucune clé n'est nécessaire.
 
 ## Le pilote papier
 
@@ -170,7 +170,7 @@ Les détails techniques sont dans le [README anglais](README.en.md), les [résul
 
 ## Statut courant (post-audits v10)
 
-Backtest EUR ledger : **66,17x US / 52,98x TECH / 48,80x CORE**. Le gate forward reste **WAIT US 0/5, TECH 1/5, tax 0/5** ; prochaine séance réelle **2026-11-27**, ETA 5/5 **2026-12-02/03** si aucune séance n'est manquée. Aucune preuve forward.
+Backtest EUR ledger : **66,69x US / 53,42x TECH / 49,27x CORE**. Le gate forward reste **WAIT US 0/5, TECH 1/5, tax 0/5** ; prochaine séance réelle **2026-11-27**, ETA 5/5 **2026-12-02/03** si aucune séance n'est manquée. Aucune preuve forward.
 
 Court terme : toutes les familles testées sont rejetées, y compris l'intraday réel (1h 2 ans, 5m 60 jours), les paires/lead-lag, le drift 8-K, la saisonnalité et le breakout. Meilleur 1h SPY gap-fade **1,04x** vs QQQ **1,26x** ; meilleure paire intraday **1,053x** vs QQQ **1,247x** (0,912x à 2x coûts) ; secteur OOS **1,29x** vs QQQ **2,80x**. Pas de satellite. Voir `results/short_horizon_conclusion.md`, `results/v9_summary.md` et `results/review_short.md`.
 

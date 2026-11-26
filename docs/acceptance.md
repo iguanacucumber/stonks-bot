@@ -16,7 +16,7 @@ never uses secrets.
 | check | proof |
 |---|---|
 | `cache_freshness` | required bars/panel/membership exist and the snapshot is 2026-11-25 |
-| `backtest_eur_ledger` | US monthly EUR ledger **66.17x** and TECH **52.98x** within 0.05x |
+| `backtest_eur_ledger` | US monthly EUR ledger **66.69x** and TECH **53.42x** within 0.05x |
 | `live_plan_us` / `live_plan_tech` | live planner returns orders, no state written |
 | `paper_replay_us` / `paper_replay_tech` | `live.py run --paper` writes state+ledger |
 | `paper_idempotent_rerun` | second identical run adds no ledger row and no state run |
@@ -47,7 +47,7 @@ cache-bearing checkout the same command runs the full ~15-second acceptance.
 ## Scope
 
 This is a plumbing/acceptance test, not a new strategy result. It asserts the
-committed baseline (US 66.17x / TECH 52.98x EUR ledger) and the operational loop
+committed baseline (US 66.69x / TECH 53.42x EUR ledger) and the operational loop
 (plan → paper → reconcile → backup/restore → advisor → reproduce). It does not
 prove forward edge; the forward gate remains in `results/forward_status.md`.
 

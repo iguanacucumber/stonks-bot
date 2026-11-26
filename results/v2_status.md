@@ -1,7 +1,7 @@
 # v2 status — 2026-11-26
 
 > Historical v2 snapshot before the dividend overlay and later PIT work. Current
-> real-life numbers: US 66.17x, TECH 52.98x, CORE 48.80x EUR ledger
+> real-life numbers: US 66.69x, TECH 53.42x, CORE 49.27x EUR ledger
 > (`results/eur_ledger.md`). Do not quote the pre-overlay 66.72/53.45/49.32 here.
 
 ## Shipped to master

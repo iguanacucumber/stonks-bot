@@ -14,12 +14,12 @@ and the **EUR ledger** (annual EUR tax, trade-date cost basis, exit tax):
 
 | book | native | terminal-FX (legacy) | **EUR ledger** | CAGR | maxDD | 2022 |
 |---|---:|---:|---:|---:|---:|---:|
-| **US monthly 2.5x (default)** | 64.41x | 70.86x | **66.17x** | 42.3% | **-56.9%** | **-33.7%** |
-| TECH monthly 2.5x (forward track) | 51.82x | 57.01x | **52.98x** | 39.7% | -65.6% | -52.4% |
-| CORE SMH only | 46.26x | 50.89x | **48.80x** | 38.7% | -64.5% | -55.0% |
+| **US monthly 2.5x (default)** | 64.41x | 70.86x | **66.69x** | 42.4% | **-56.4%** | **-33.3%** |
+| TECH monthly 2.5x (forward track) | 51.82x | 57.01x | **53.42x** | 39.7% | -65.2% | -51.9% |
+| CORE SMH only | 46.26x | 50.89x | **49.27x** | 38.7% | -64.1% | -54.6% |
 
 The terminal-FX column is the older headline method. It is an upper bound: it ignores
-annual tax on FX moves and each lot's EUR basis. **Quote 66.17x only as the EUR-ledger
+annual tax on FX moves and each lot's EUR basis. **Quote 66.69x only as the EUR-ledger
 backtest number.** It is not a forward result and not a promise. Sources:
 `results/v3_summary.md`, `results/eval_baseline.md`, `results/eur_ledger.md`.
 
@@ -27,7 +27,7 @@ backtest number.** It is not a forward result and not a promise. Sources:
 
 | profile | allocation | EUR ledger | maxDD | 2022 | command |
 |---|---|---:|---:|---:|---|
-| **max_growth** (default) | US monthly 2.5x | **66.17x** | -56.9% | -33.7% | `uv run python -m bot.cli backtest --country fr` |
+| **max_growth** (default) | US monthly 2.5x | **66.69x** | -56.4% | -33.3% | `uv run python -m bot.cli backtest --country fr` |
 | balanced (paper opt-in) | 70% US book + 30% SPY | 36.56x | -46.9% | -27.4% | `uv run python -m bot.cli backtest --country fr --profile balanced` |
 | conservative (paper opt-in) | US monthly 1.5x | 19.27x | -40.4% | -20.3% | `uv run python -m bot.cli backtest --country fr --profile monthly --leverage 1.5` |
 
@@ -39,7 +39,7 @@ conservative are **post-hoc `paper` opt-ins**, not forward-validated. Details:
 
 | layer | what it is | current status |
 |---|---|---|
-| EUR-ledger backtest | historical simulation with French tax/FX/fees | 66.17x US, 52.98x TECH |
+| EUR-ledger backtest | historical simulation with French tax/FX/fees | 66.69x US, 53.42x TECH |
 | live paper loop | `scripts/live.py` / `scripts/forward_daily.py`, atomic state, no real broker | running; pre-tax average-cost ledger |
 | forward gate | verified live/shadow dates in `results/paper_audit.csv` | **WAIT: US 0/5, TECH 1/5, tax 0/5; next required 2026-11-27 — no forward edge proven** |
 | IBKR adapter | Client Portal **paper** (DU) adapter plus read-only reconciliation | opt-in; no live-money write path |
@@ -72,7 +72,7 @@ gate report; WAIT is the honest state, BLOCKED would be a release failure.
   sample is only ~60 days and is execution-quality, not evidence; daily gap-fade and
   cross-sectional reversal are below QQQ after tax. No satellite. The report is
   `results/short3.md`.
-- **PIT Nasdaq-100: paper robustness, not a replacement.** EUR ledger 50.29x vs 52.98x
+- **PIT Nasdaq-100: paper robustness, not a replacement.** EUR ledger 50.29x vs 53.42x
   static; retains ~95% of the static TECH terminal. US all-PIT remains the default.
   `results/pit_tech.md`.
 - **Tax-loss harvesting: reject.** Mainly tax deferral plus round-trip costs; all
@@ -83,7 +83,7 @@ gate report; WAIT is the honest state, BLOCKED would be a release failure.
   SMH return in the common window; the return gap exceeds the tax/estate benefit.
   `results/ucits_core.md`.
 - **PEA: no pure semiconductor fund.** SMH.PA/SEMI.PA/CHIP.PA are not PEA-eligible;
-  PUST.PA is broad Nasdaq-100, 5.77x after social vs 66.17x CTO. `results/pea_semis.md`.
+  PUST.PA is broad Nasdaq-100, 5.77x after social vs 66.69x CTO. `results/pea_semis.md`.
 - **US estate tax: treaty/planning, not a return sacrifice.** At €660k/2.5x the
   France-US treaty credit removes US estate tax in the worked examples, but 706-NA/8833
   filings and French inheritance tax remain; keep US-situs at/below $60k only as
@@ -91,10 +91,10 @@ gate report; WAIT is the honest state, BLOCKED would be a release failure.
 - **Futures leverage: reject.** ES/NQ 2.5x lose to ETF+margin after financing/roll/tail;
   futures won 0/88 five-year windows. `results/futures.md`.
 - **Covered calls: paper income opt-in only.** The 40% IV / 10% OTM model is 75.96x vs
-  66.17x and maxDD -48.5% vs -56.9%, but option quotes, assignment and the volatility
+  66.69x and maxDD -48.5% vs -56.4%, but option quotes, assignment and the volatility
   smile are not observed. Not default. `results/covered_calls.md`.
 - **Assurance-vie: conditional opt-in only.** Tax-age modelling can show 126.72x at 0.50%
-  fees vs 66.17x CTO, but a standard contract cannot borrow; only use if the contract
+  fees vs 66.69x CTO, but a standard contract cannot borrow; only use if the contract
   can hold the same exposure below the ~6.18% break-even fee. `results/assurance_vie.md`.
 
 ## New-user quick start
@@ -156,7 +156,7 @@ uv run python scripts/forward_daily.py --paper --tax
 - [ ] Paper-only boundary re-checked: no real broker credentials, no `.env`, no orders.
 - [x] README/RELEASE headline numbers and source links reviewed
   (`results/review_release.md`).
-- [x] Known risks communicated: survivorship, -56.9% drawdown, pre-tax paper ledger,
+- [x] Known risks communicated: survivorship, -56.4% drawdown, pre-tax paper ledger,
   IBKR paper only, no assurance-vie/futures/UCITS switch.
 
 ## Known risks

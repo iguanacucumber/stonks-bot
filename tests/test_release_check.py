@@ -13,10 +13,10 @@ sys.path.insert(0, str(ROOT / "scripts"))
 import release_check as rc  # noqa: E402
 
 SAMPLE = """\
-TECH monthly native  51.82x  terminal-FX  57.01x  EUR-ledger  52.98x
-TECH tax     native  46.26x  terminal-FX  50.89x  EUR-ledger  48.80x
-US   monthly native  64.41x  terminal-FX  70.86x  EUR-ledger  66.17x
-US   tax     native  46.26x  terminal-FX  50.89x  EUR-ledger  48.80x
+TECH monthly native  51.82x  terminal-FX  57.01x  EUR-ledger  53.42x
+TECH tax     native  46.26x  terminal-FX  50.89x  EUR-ledger  49.27x
+US   monthly native  64.41x  terminal-FX  70.86x  EUR-ledger  66.69x
+US   tax     native  46.26x  terminal-FX  50.89x  EUR-ledger  49.27x
 """
 
 FORWARD = """\
@@ -62,7 +62,7 @@ def test_parse_baseline_numbers() -> None:
         ("US", "monthly"),
         ("US", "tax"),
     }
-    assert rows[("US", "monthly")]["eur_ledger"] == 66.17
+    assert rows[("US", "monthly")]["eur_ledger"] == 66.69
     assert rows[("TECH", "monthly")]["terminal_fx"] == 57.01
     assert rc.parse_baseline_numbers("nothing here") == {}
 

@@ -1,9 +1,9 @@
 # Data-quality audit
 
 - Snapshot: **2026-11-25**
-- Symbols checked: **1196** (3,515,514 bar rows)
-- Fresh symbols: **1175**; stale: **21**
-- Hard failures: **0**; warnings: **196** (42 example rows stored in JSON)
+- Symbols checked: **1206** (3,538,410 bar rows)
+- Fresh symbols: **1185**; stale: **21**
+- Hard failures: **0**; warnings: **202** (42 example rows stored in JSON)
 - Verdict: **PASS (required symbols)**
 
 ## Warnings by check
@@ -12,11 +12,11 @@
 |---|---:|
 | alias_self | 2 |
 | date_gap | 5 |
-| high_below_low | 1 |
-| nonpositive_high | 1 |
+| high_below_low | 2 |
+| nonpositive_high | 2 |
 | nonpositive_low | 2 |
 | nonpositive_open | 2 |
-| ohlc_inconsistent | 122 |
+| ohlc_inconsistent | 126 |
 | stale_bar | 21 |
 | unadjusted_split | 40 |
 

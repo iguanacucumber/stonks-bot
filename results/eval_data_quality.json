@@ -29,9 +29,9 @@
     ]
   },
   "bars_dir": "/home/user/projects/stonks-bot/cache/bars",
-  "fresh_symbols": 1175,
+  "fresh_symbols": 1185,
   "gap_symbols": 5,
-  "generated_at": "2026-11-26T15:57:10+00:00",
+  "generated_at": "2026-11-26T18:00:49+00:00",
   "hard_failure_counts": {},
   "hard_failures": [],
   "info": [
@@ -124,7 +124,7 @@
     "tickers": 784,
     "warnings": []
   },
-  "rows_checked": 3515514,
+  "rows_checked": 3538410,
   "snapshot_date": "2026-11-25",
   "split_adjusted": 5,
   "stale": [
@@ -214,20 +214,20 @@
     }
   ],
   "stale_symbols": 21,
-  "symbols_checked": 1196,
+  "symbols_checked": 1206,
   "truncated": {
-    "warnings": 154
+    "warnings": 160
   },
   "unadjusted_split": 40,
   "verdict": "pass_required_symbols",
   "warning_counts": {
     "alias_self": 2,
     "date_gap": 5,
-    "high_below_low": 1,
-    "nonpositive_high": 1,
+    "high_below_low": 2,
+    "nonpositive_high": 2,
     "nonpositive_low": 2,
     "nonpositive_open": 2,
-    "ohlc_inconsistent": 122,
+    "ohlc_inconsistent": 126,
     "stale_bar": 21,
     "unadjusted_split": 40
   },

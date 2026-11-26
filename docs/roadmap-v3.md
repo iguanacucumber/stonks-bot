@@ -16,7 +16,7 @@ fees, and annual PFU settlement. Acceptance: reproduce the current USD-native nu
 a cross-check, then publish the EUR-ledger number and the difference.
 
 Status: `bot/eur_ledger.py`, `scripts/eur_ledger.py`, `results/eur_ledger.md` merged.
-TECH 57.01x terminal-FX -> 52.98x EUR ledger; US 70.86x -> 66.17x. Remaining work:
+TECH 57.01x terminal-FX -> 53.42x EUR ledger; US 70.86x -> 66.69x. Remaining work:
 dividend/withholding tax and CLI integration.
 
 ### 2. Dividend and withholding-tax drag (done — v3/dividends)
@@ -88,7 +88,7 @@ a deterministic withdrawal simulator with tax and a report, no return promises.
 ## Completed wave 3 (2026-11-26)
 
 - #22 EUR-native ledger: merged.
-- #23 dividends/withholding: merged #34; exact ledger US 66.17x / TECH 52.98x / CORE 48.80x.
+- #23 dividends/withholding: merged #34; exact ledger US 66.69x / TECH 53.42x / CORE 49.27x.
 - #24 IBKR paper adapter: merged #33; DU paper only, fake-transport evidence.
 - #25 investor profiles + withdrawal: merged #32; `scripts/advise.py`.
 - #26 ops/backups/alerts/runbook: merged #31; `scripts/ops.py`.

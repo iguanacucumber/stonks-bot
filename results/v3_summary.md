@@ -17,19 +17,19 @@ the full `tests/test_*.py` suite passes.
 
 | book | native | terminal-FX | EUR ledger | CAGR | maxDD | 2018 | 2022 |
 |---|---:|---:|---:|---:|---:|---:|---:|
-| **US monthly 2.5x (default)** | 64.41x | 70.86x | **66.17x** | 42.3% | -56.9% | -31.1% | -33.7% |
-| TECH monthly 2.5x (forward) | 51.82x | 57.01x | **52.98x** | 39.7% | -65.6% | -10.5% | -52.4% |
-| CORE SMH only | 46.26x | 50.89x | **48.80x** | 38.7% | -64.5% | -31.4% | -55.0% |
+| **US monthly 2.5x (default)** | 64.41x | 70.86x | **66.69x** | 42.4% | -56.4% | -31.0% | -33.3% |
+| TECH monthly 2.5x (forward) | 51.82x | 57.01x | **53.42x** | 39.7% | -65.2% | -10.4% | -51.9% |
+| CORE SMH only | 46.26x | 50.89x | **49.27x** | 38.7% | -64.1% | -31.4% | -54.6% |
 
 Dividend withholding/PFU is included where cached events exist. The exact
-dividend drag is small for the equity books: US 66.72x -> 66.17x, TECH 53.45x ->
-52.98x, CORE 49.32x -> 48.80x. A bond/cash sleeve loses ~1%/yr in 2023-2026.
+dividend drag is small for the equity books: US 66.72x -> 66.69x, TECH 53.45x ->
+53.42x, CORE 49.32x -> 49.27x. A bond/cash sleeve loses ~1%/yr in 2023-2026.
 
 ## Profiles (post-hoc `paper` opt-ins)
 
 | profile | command | EUR ledger | maxDD | 2022 |
 |---|---|---:|---:|---:|
-| max_growth (default) | `--country fr` | 66.17x | -56.9% | -33.7% |
+| max_growth (default) | `--country fr` | 66.69x | -56.4% | -33.3% |
 | balanced | `--profile balanced` | 36.56x | -46.9% | -27.4%* |
 | conservative | `--profile monthly --leverage 1.5` | 19.27x | -40.4% | -20.3%* |
 
@@ -59,7 +59,7 @@ All 15 suites pass on master:
 for t in tests/test_*.py; do uv run python "$t"; done
 ```
 
-Plus `scripts/reproduce.py baseline --no-write` -> 52.98/48.80/66.17.
+Plus `scripts/reproduce.py baseline --no-write` -> 53.42/49.27/66.69.
 
 ## Remaining risks
 

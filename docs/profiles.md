@@ -6,7 +6,7 @@ is the annual tax-lot replay. These are liquidation values, not promises.
 
 | profile | allocation | EUR ledger (gross div.) | net | maxDD (gross) | maxDD (net) | 2022 gross | 2022 net |
 |---|---|---:|---:|---:|---:|---:|---:|
-| **max_growth** (default) | 100% US monthly 2.5x | **66.17x** | 61.64x* | -56.9% | -56.7% | -33.7% | -33.2% |
+| **max_growth** (default) | 100% US monthly 2.5x | **66.69x** | 61.64x* | -56.4% | -56.7% | -33.3% | -33.2% |
 | **balanced** (paper opt-in) | 70% US monthly book + 30% SPY, total gross 2.05 before the trend cut | **36.56x** | 34.36x* | -46.9% | -46.0% | -27.6% | -27.4% |
 | **conservative** (paper opt-in) | 100% US monthly at 1.5x | **19.27x** | 18.51x* | -40.4% | -40.2% | -20.5% | -20.3% |
 
@@ -31,7 +31,7 @@ audit and `results/risk_v3.md` for the decision table.
   transparent, but it is not diversifying; it still holds the same SMH core.
 - The equity-only cross-asset trend alternative was rejected (1x OOS 1.97x EUR
   ledger vs QQQ 2.88x). It is not a balanced substitute.
-- TECH monthly remains the forward-validation book (EUR ledger 52.98x, -65.6%
+- TECH monthly remains the forward-validation book (EUR ledger 53.42x, -65.2%
   maxDD). It is not the default.
 
 ## Implementation

@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-11-26T15:57:19+00:00",
+  "generated_at": "2026-11-26T18:01:15+00:00",
   "facts": {
     "n_static": 49,
     "start": "2015-01-01",
@@ -188,7 +188,7 @@
     "years": 11.873015873015873,
     "fx": 1.100136685379546,
     "multiple": 57.01253052888282,
-    "eur_ledger_multiple": 52.97548829641186
+    "eur_ledger_multiple": 53.422924982086336
   },
   "sp500_dated": {
     "after_tax": 232227.3728935957,
@@ -203,7 +203,7 @@
     "years": 11.873015873015873,
     "fx": 1.100136685379546,
     "multiple": 23.222737289359568,
-    "eur_ledger_multiple": 21.434544043656597
+    "eur_ledger_multiple": 21.64028116953189
   },
   "public_at_start": {
     "after_tax": 506379.3958735075,
@@ -218,7 +218,7 @@
     "years": 11.873015873015873,
     "fx": 1.100136685379546,
     "multiple": 50.63793958735075,
-    "eur_ledger_multiple": 46.45398649605187
+    "eur_ledger_multiple": 46.97812005239463
   },
   "membership_coverage": [
     {
