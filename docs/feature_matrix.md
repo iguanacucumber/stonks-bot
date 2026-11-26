@@ -12,6 +12,7 @@
 | Paper ledger | `uv run python scripts/live.py run --book monthly --paper` | ready | pre-tax/average-cost |
 | IBKR paper adapter | add `--broker ibkr-paper` | ready | DU paper account, gateway required |
 | IBKR read-only inspection | add `--broker ibkr-paper --read-only` to `status`/`reconcile` | ready | GET-only; no submit/cancel/replace |
+| Real-money approval preflight | `uv run python scripts/real_money_preflight.py --book monthly --market US` | blocked (paper-only) | read-only; exits 2, no adapter/credentials; see `results/real_money_approval.md` |
 | Investor questionnaire | `uv run python scripts/advise.py --interactive` | ready | not investment advice |
 | Withdrawal projection | `uv run python scripts/advise.py --profile balanced ...` | ready | deterministic scenarios |
 | Ops status/doctor | `uv run python scripts/ops.py status` / `doctor` | ready | paper state |
