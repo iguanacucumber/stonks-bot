@@ -154,12 +154,21 @@ def main() -> None:
                 bars("2026-11-24").to_csv(
                     bars_dir / f"{sym.replace('/', '_')}.csv", index=False
                 )
+            bars("2020-01-02", start="2019-12-20").to_csv(
+                bars_dir / "OLD.csv", index=False
+            )
             panel = pd.concat(
-                [data._panel_rows(s, bars("2026-11-24")) for s in ("AAPL", "SPY")],
+                [data._panel_rows(s, bars("2026-11-24")) for s in ("AAPL", "SPY")]
+                + [data._panel_rows("OLD", bars("2020-01-02", start="2019-12-20"))],
                 ignore_index=True,
             )
             panel.to_parquet(cache / "panel.parquet", index=False)
-            mem = pd.DataFrame({"date": [target], "ticker": ["AAPL"]})
+            mem = pd.DataFrame(
+                {
+                    "date": [target, *([pd.Timestamp("2020-01-02")] * 2)],
+                    "ticker": ["AAPL", "OLD", "GONE"],
+                }
+            )
             held_mtime = (cache / "panel.parquet").stat().st_mtime_ns
             calls.clear()
             data.fetch_one = fetch_at("2026-11-24")
@@ -177,6 +186,8 @@ def main() -> None:
             fresh = data.update_panel(mem)
             assert fresh["date"].max() == target, "panel did not advance"
             assert {c[0] for c in calls} == {"AAPL", "SPY", "QQQ", "SOXX", "SMH"}
+            assert "OLD" not in {c[0] for c in calls}, "delisted member was fetched"
+            assert "GONE" not in {c[0] for c in calls}, "dead delisted symbol retried"
             fresh_mtime = (cache / "panel.parquet").stat().st_mtime_ns
             calls.clear()
             again = data.update_panel(mem)

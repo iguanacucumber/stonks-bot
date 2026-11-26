@@ -342,6 +342,18 @@ def update_panel(membership: pd.DataFrame, workers: int = 12) -> pd.DataFrame:
     tickers = sorted(membership["ticker"].unique())
     canonical = {t: universe.canonical(t) for t in tickers}
     symbols = sorted(set(canonical.values()) | {"SPY", "QQQ", "SOXX", "SMH"})
+    # A removed member only needs bars through its last membership date. Without
+    # this, every delisted ticker is retried every day forever.
+    snapshot = membership["date"].max()
+    current = set(membership.loc[membership["date"] == snapshot, "ticker"])
+    end = membership.groupby("ticker")["date"].max()
+    need: dict[str, pd.Timestamp] = {}
+    for ticker, last_member in end.items():
+        sym = canonical[ticker]
+        wanted = target if ticker in current else min(target, pd.Timestamp(last_member))
+        if sym not in need or wanted > need[sym]:
+            need[sym] = wanted
+    known = set(existing["ticker"].unique())
     frames: dict[str, pd.DataFrame] = {}
     attempted = 0
     # One benchmark check decides whether the session exists at all. Holidays
@@ -369,18 +381,23 @@ def update_panel(membership: pd.DataFrame, workers: int = 12) -> pd.DataFrame:
     for sym in symbols:
         if sym == "SPY":
             continue
+        wanted = need.get(sym, target)
         p = BARS / f"{sym.replace('/', '_')}.csv"
         last = _last_date(p) if p.exists() else None
-        if last is not None and last >= target:
-            if panel_last is not None and last > panel_last:
+        if last is not None and last >= wanted:
+            if sym not in known or (panel_last is not None and last > panel_last):
                 frames[sym] = fetch_one(sym)  # cached bar, no network
             continue
+        if last is None and wanted < target and (target - wanted).days > 30:
+            continue  # delisted long ago and Yahoo has no history: not retryable
         if last is None and _recent_missing(sym):
             continue
         attempted += 1
         df = fetch_one(sym, since=last)
         if not df.empty:
             frames[sym] = df
+            if wanted < target and _last_date(p) < wanted:
+                _empty_missing(sym)  # delisted and no bar through removal
         else:
             _empty_missing(sym)
     _save_missing()

@@ -221,10 +221,11 @@ signals are cached, and panel pivots are shared across configs.
 
 **Incremental data.** `update_data.py`, `paper_daily.py --refresh` and the scheduled jobs
 share one cache path: only symbols whose last bar is behind the last completed US session
-are requested, dead tickers back off for 7 days, and a closed/holiday session costs one
-benchmark request instead of a universe sweep. The US panel parquet is rewritten only when
-a new bar arrives; a current cache does zero network fetches. Splits and dividends are
-detected from the overlap and trigger one full-history refetch for that symbol only.
+are requested, dead tickers back off for 7 days, delisted members are never retried once
+their membership window is covered, and a closed/holiday session costs one benchmark
+request instead of a universe sweep. The US panel parquet is rewritten only when a new bar
+arrives; a current cache does zero network fetches. Splits and dividends are detected from
+the overlap and trigger one full-history refetch for that symbol only.
 
 Tests:
 
