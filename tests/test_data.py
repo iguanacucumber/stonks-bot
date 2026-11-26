@@ -44,6 +44,17 @@ def main() -> None:
     assert data.target_session(
         datetime(2026, 11, 28, 15, 0, tzinfo=utc)
     ) == pd.Timestamp("2026-11-27")
+    # A weekend after 16:30 ET is still not a session: Friday stays the target.
+    assert data.target_session(
+        datetime(2026, 11, 28, 21, 31, tzinfo=utc)
+    ) == pd.Timestamp("2026-11-27")
+    assert data.target_session(
+        datetime(2026, 11, 29, 21, 31, tzinfo=utc)
+    ) == pd.Timestamp("2026-11-27")
+    # Monday before the close is still the prior Friday.
+    assert data.target_session(
+        datetime(2026, 11, 30, 14, 0, tzinfo=utc)
+    ) == pd.Timestamp("2026-11-27")
 
     with TemporaryDirectory() as tmp:
         tmp = Path(tmp)
