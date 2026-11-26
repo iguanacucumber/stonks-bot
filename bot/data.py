@@ -214,9 +214,12 @@ def fetch_one(
     if incremental and _overlap_changed(cached, df):
         full = _get(symbol, start=START)
         full_df = _parse(full) if full else pd.DataFrame()
-        if not full_df.empty:
-            df = full_df
-            restated = True
+        if full_df.empty:
+            # Never splice restated recent bars onto old history: keep the
+            # consistent cache and retry the full refetch on the next run.
+            return cached
+        df = full_df
+        restated = True
     _missing().pop(symbol, None)
     df = df[df["date"] <= target]
     if incremental and not restated:

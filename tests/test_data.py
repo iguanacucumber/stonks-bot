@@ -149,6 +149,25 @@ def main() -> None:
             )
             assert len(again) == len(df)
 
+            # a failed full refetch must keep the old consistent cache, not
+            # splice restated recent bars onto unadjusted history
+            old_bars.to_csv(bars_dir / "MSFT2.csv", index=False)
+            starts.clear()
+
+            def fake_get2(symbol, start=data.START):
+                starts.append(start)
+                return {"call": len(starts)}
+
+            def fake_parse2(res):
+                return restated if res["call"] == 1 else pd.DataFrame()
+
+            data._get, data._parse = fake_get2, fake_parse2
+            kept = real_fetch("MSFT2", since=target)
+            assert starts[:2] == [data._since_start(target), data.START]
+            assert abs(kept["adjclose"].iloc[0] - old_bars["adjclose"].iloc[0]) < 1e-9
+            saved = pd.read_csv(bars_dir / "MSFT2.csv")
+            assert abs(saved["adjclose"].iloc[0] - old_bars["adjclose"].iloc[0]) < 1e-9
+
             # panel: hold on a closed market, write once on a new bar, then no fetch
             for sym in ("AAPL", "SPY", "QQQ", "SOXX", "SMH"):
                 bars("2026-11-24").to_csv(
