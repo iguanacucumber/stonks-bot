@@ -1,9 +1,11 @@
 # Live autopilot (paper only)
 
-`scripts/live.py` turns the monthly research book into an idempotent daily loop. It
-writes no orders: the only execution adapter is the deterministic paper broker. Real
-trading would require a new adapter behind `bot.live.broker.Broker` and an explicit
-opt-in flag; neither exists here.
+`scripts/live.py` turns the monthly research book into an idempotent daily loop. The
+default execution adapter is the deterministic local paper broker. An opt-in
+`--broker ibkr-paper` adapter can submit the same plan to an Interactive Brokers
+**paper** account through the Client Portal Web API; see `docs/ibkr.md`. There is no
+real-money mode: a non-`DU` account is refused, and `plan`/`status`/dry-run never
+contact the broker.
 
 ## Market choice
 
@@ -39,6 +41,10 @@ uv run python scripts/live.py run --book monthly
 uv run python scripts/live.py run --book monthly --paper
 uv run python scripts/live.py status --book monthly
 uv run python scripts/live.py reconcile --book monthly
+
+# Opt-in IBKR paper adapter (gateway + env; still no real money).
+uv run python scripts/live.py run --book monthly --broker ibkr-paper --paper
+uv run python scripts/live.py reconcile --book monthly --broker ibkr-paper
 
 # Replay a completed session; never use --as-of in the live cron.
 uv run python scripts/live.py plan --book monthly --as-of 2026-11-25
@@ -98,6 +104,8 @@ idempotent reruns, holiday/stale-data gates, report labels and partial fills.
 | `bot/live/models.py` | `Position`, `OrderIntent`, `Fill`, `Plan`, `Portfolio` |
 | `bot/live/state.py` | atomic JSON state, flock, ledger upsert |
 | `bot/live/broker.py` | `Broker` protocol and `PaperBroker` next-open fills |
+| `bot/live/brokers/ibkr.py` | opt-in IBKR paper adapter (Client Portal Web API) |
+| `docs/ibkr.md` | IBKR gateway setup, lifecycle, safety boundary and runbook |
 | `bot/live/rails.py` | gross/turnover/duplicate checks and risk overlay |
 | `bot/live/engine.py` | `plan`, `run`, `status`; settlement and idempotency |
 | `bot/live/reconcile.py` | fill/order/position/cash/EUR/ledger audit |
@@ -188,7 +196,7 @@ book silently.
 
 ## Settlement price and paper fills
 
-`PaperBroker` fills a day order at the next session's **open**:
+`PaperBroker` (default) fills a day order at the next session's **open**:
 
 - buy price = open x (1 + slippage), sell price = open x (1 - slippage);
 - commission = max(min_commission, notional x commission_bps / 10,000);
@@ -204,6 +212,12 @@ book silently.
 A pending plan can settle only on its exact `fill_session`. If the process misses
 that session, the next run blocks with `overdue pending plan` and leaves the state
 untouched for `reconcile`; it never fabricates a historical open.
+
+With `--broker ibkr-paper`, the same plan is sent to IBKR paper as market day orders.
+The gateway supplies the fill price; partial fills are recorded as separate `Fill`
+rows, and a remainder that does not terminalise within `IBKR_PAPER_MAX_POLL` is
+cancelled. See `docs/ibkr.md` for setup, idempotent `cOID` handling, cancel/replace
+and the broker reconciliation runbook. Dry-run never contacts the gateway.
 
 The paper ledger is **pre-tax and average-cost**, not HIFO/PFU, and is not the
 after-tax EUR ledger. It tracks native and EUR amounts for later reconciliation but

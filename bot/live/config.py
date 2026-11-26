@@ -55,6 +55,7 @@ class LiveConfig:
 
     book: str = "monthly"
     market: str = BEST_EVIDENCE_MARKET
+    broker: str = "paper"
     capital: float = 10_000.0
     currency: str | None = None  # native quote currency; inferred from market
     start: str = "2015-01-01"
@@ -100,6 +101,10 @@ class LiveConfig:
     def __post_init__(self) -> None:
         if self.book not in BOOK_OVERRIDES:
             raise ValueError(f"unknown book {self.book!r}")
+        if self.broker not in ("paper", "ibkr-paper"):
+            raise ValueError(
+                f"unknown broker {self.broker!r}; choose paper or ibkr-paper"
+            )
         if self.market not in markets.MARKETS:
             raise ValueError(
                 f"unknown market {self.market!r}; choose from {sorted(markets.MARKETS)}"

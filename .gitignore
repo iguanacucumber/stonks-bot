@@ -19,3 +19,5 @@ results/*.log
 
 # live paper state is local, never committed
 /state/
+
+.env

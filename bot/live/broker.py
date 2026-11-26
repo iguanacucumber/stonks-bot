@@ -38,6 +38,10 @@ class Bar:
         )
 
 
+class BrokerError(RuntimeError):
+    """Base class for adapter failures that must fail the live run closed."""
+
+
 class Broker(Protocol):
     """Minimal execution surface. Read-only except for ``execute``."""
 
