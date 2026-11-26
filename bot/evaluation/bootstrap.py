@@ -40,7 +40,7 @@ class BootstrapResult:
     seed: int
     terminal: np.ndarray = field(repr=False)
     max_dd: np.ndarray = field(repr=False)
-    after_tax_terminal: np.ndarray | None = field(default=None, repr=False)
+    exit_tax_terminal: np.ndarray | None = field(default=None, repr=False)
 
     def summary(self) -> dict[str, float]:
         out = {
@@ -56,14 +56,14 @@ class BootstrapResult:
             "max_dd_p95": float(np.quantile(self.max_dd, 0.95)),
             "prob_loss": float((self.terminal < 1.0).mean()),
         }
-        if self.after_tax_terminal is not None:
+        if self.exit_tax_terminal is not None:
             out.update(
                 {
-                    "after_tax_p5": float(np.quantile(self.after_tax_terminal, 0.05)),
-                    "after_tax_p50": float(np.quantile(self.after_tax_terminal, 0.50)),
-                    "after_tax_p95": float(np.quantile(self.after_tax_terminal, 0.95)),
-                    "after_tax_prob_loss": float(
-                        (self.after_tax_terminal < 1.0).mean()
+                    "exit_tax_overlay_p5": float(np.quantile(self.exit_tax_terminal, 0.05)),
+                    "exit_tax_overlay_p50": float(np.quantile(self.exit_tax_terminal, 0.50)),
+                    "exit_tax_overlay_p95": float(np.quantile(self.exit_tax_terminal, 0.95)),
+                    "exit_tax_overlay_prob_loss": float(
+                        (self.exit_tax_terminal < 1.0).mean()
                     ),
                 }
             )
@@ -134,15 +134,15 @@ def bootstrap(
     block: int = 21,
     expected_block: float | None = None,
     seed: int = 7,
-    tax_rate: float | None = None,
+    exit_tax_rate: float | None = None,
     chunk: int = 512,
 ) -> BootstrapResult:
     """Bootstrap daily returns and return the full path distribution.
 
-    ``tax_rate`` adds an approximate after-tax terminal path: only gains above
-    1.0 are taxed and losses are not refunded (French loss carry-forward, not a
-    negative tax).  It is a terminal-gain approximation, not a rerun of the
-    annual tax engine.
+    ``exit_tax_rate`` adds an **exit-tax overlay**, not a full after-tax path:
+    the returns already include taxes paid along the way, so this only estimates
+    a final tax on the terminal gain.  Losses are not refunded (French
+    carry-forward, not a negative tax).  It is not comparable to the EUR ledger.
     """
     x = _clean_returns(returns)
     m = len(x)
@@ -180,13 +180,13 @@ def bootstrap(
         done += k
 
     after = None
-    if tax_rate is not None:
-        if not 0.0 <= tax_rate <= 1.0:
-            raise ValueError("tax_rate must be in [0, 1]")
+    if exit_tax_rate is not None:
+        if not 0.0 <= exit_tax_rate <= 1.0:
+            raise ValueError("exit_tax_rate must be in [0, 1]")
         after = np.where(
             terminal <= 1.0,
             terminal,
-            1.0 + (terminal - 1.0) * (1.0 - tax_rate),
+            1.0 + (terminal - 1.0) * (1.0 - exit_tax_rate),
         )
     return BootstrapResult(
         method=method,
@@ -196,7 +196,7 @@ def bootstrap(
         seed=seed,
         terminal=terminal,
         max_dd=max_dd,
-        after_tax_terminal=after,
+        exit_tax_terminal=after,
     )
 
 

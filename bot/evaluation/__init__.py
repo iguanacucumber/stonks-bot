@@ -5,7 +5,7 @@ Import submodules directly for new work::
     from bot.evaluation import metrics, bootstrap, cscv, walkforward, trials
 
 Nothing here writes to the cache or calls Yahoo.  The CLI entry point is
-``scripts/reproduce.py`` (headline, audit, survivorship).
+``scripts/reproduce.py`` (baseline, headline, audit, survivorship).
 """
 
 from .currency import (  # noqa: F401

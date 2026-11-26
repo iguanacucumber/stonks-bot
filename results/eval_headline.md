@@ -1,44 +1,49 @@
 # Reproduced headline — TECH monthly 2.5x, French CTO
 
-- Command: `uv run python scripts/reproduce.py`
+- Command: `uv run python scripts/reproduce.py headline`
 - Data snapshot: **2026-11-25**
-- Runtime: **0.8s** for the baseline, 0.0s for two 200-path bootstraps
-- Generated: 2026-11-26T14:58:43+00:00
+- Runtime: **0.7s** for the baseline, 1.8s for two 10,000-path bootstraps
+- Generated: 2026-11-26T15:17:33+00:00
+
+> **Real-life result: EUR ledger 52.89x (€528,939 on €10k).** The terminal-FX headline (57.01x) is kept only for continuity with older reports. It is an upper bound, not what a French investor keeps.
 
 ## Baseline
 
 | metric | value |
 |---|---:|
-| Terminal-FX after-tax multiple | **57.01x** |
-| After-tax value on €10k | €570,125 |
-| CAGR (EUR) | 40.56% |
-| Max drawdown | -67.83% |
+| Terminal-FX after-tax multiple (legacy; NOT real-life) | **57.01x** |
+| **EUR-ledger after-tax multiple (real-life)** | **52.89x** |
+| **EUR-ledger after-tax value on €10k** | **€528,939** |
+| Terminal-FX value on €10k (legacy) | €570,125 |
+| CAGR (terminal FX / legacy) | 40.57% |
+| Max drawdown (native path) | -67.83% |
 | Trades | 1,836 |
-| Fees (incl. FTT) | €26,423 |
-| Tax paid | €135,224 |
-| Exit tax | €179,830 |
+| Fees (incl. FTT, terminal FX) | €26,423 |
+| Tax paid (terminal FX) | €135,224 |
+| Exit tax (terminal FX) | €179,830 |
 | Native after-tax multiple | 51.82x |
 | QQQ after tax (same CTO, terminal FX) | 5.41x |
 | Pre-tax Sharpe / Sortino / Calmar | 0.88 / 1.16 / 0.63 |
 | Pre-tax vol / hit rate | 63.7% / 54.6% |
 
+The committed baseline table quotes QQQ at 5.38x; this cache reproduces 5.41x (0.03x difference, likely the later bar set). It does not change the TECH-vs-QQQ conclusion, which is an order of magnitude.
+
 ## Currency dimension
 
-| accounting | multiple | CAGR | maxDD | label |
-|---|---:|---:|---:|---|
-| native | **51.82x** | 39.4% | -67.8% | native currency, after tax |
-| terminal_fx | **57.01x** | 40.6% | -67.8% | terminal-FX headline (legacy upper bound) |
-
-`eur_ledger` is not computed on this branch: `bot/eur_ledger.py` lands with PR #22. Its committed result is **52.89x** (`results/eur_ledger.md`); do not use the terminal-FX headline as the real-life EUR number.
+| accounting_mode | multiple | CAGR | maxDD | real-life | label |
+|---|---:|---:|---:|---|---|
+| native | **51.82x** | 39.4% | -67.8% | no | native currency, after tax (research) |
+| terminal_fx | **57.01x** | 40.6% | -67.8% | no | terminal-FX headline (legacy upper bound, NOT real-life) |
+| eur_ledger | **52.89x** | 39.7% | -66.0% | yes | EUR ledger (annual EUR tax, trade-date FX; real-life) |
 
 ## Bootstrap
 
-200 paths, 21-day mean block, seed 7. After-tax paths tax only gains above 1.0 at 31.4% (losses are not refunded).
+10,000 paths, 21-day mean block, seed 7. The exit-tax overlay applies the path's effective final rate (32.1%) to gains above 1.0; realised taxes are already inside the returns. This is **not** the EUR-ledger after-tax path and is not comparable to 52.89x.
 
-| method | terminal p5 | terminal p50 | terminal p95 | maxDD p5 | after-tax p5 |
+| method | terminal p5 | terminal p50 | terminal p95 | maxDD p5 | exit-tax overlay p5 |
 |---|---:|---:|---:|---:|---:|
-| stationary | 2.75x | 73.91x | 1287.28x | -87.9% | 2.20x |
-| block | 2.66x | 78.14x | 1814.76x | -90.3% | 2.14x |
+| stationary | 2.67x | 71.82x | 1972.84x | -90.7% | 2.13x |
+| block | 2.39x | 70.52x | 1839.53x | -91.6% | 1.94x |
 
 ## Five-year rolling windows
 
@@ -140,22 +145,22 @@ Average exposure: gross 2.04x, core 1.50x, sleeve 0.54x, cash -1.04x; 2.6 names/
 
 ## Cost and tax decomposition
 
-Additive terminal view; costs compound, so read the shares not the individual points as independent haircuts.
+Additive **terminal-FX** view; costs compound, so read the shares not the individual points as independent haircuts. The EUR-ledger row above is the real-life result; this table is for attribution, not a wealth promise.
 
 | item | multiple points | amount | share of gross |
 |---|---:|---:|---:|
-| Fees ex-FTT | 2.40 | €26,423 | 2.2% |
+| Fees ex-FTT | 2.64 | €26,423 | 2.2% |
 | FTT | 0.00 | €0 | — |
-| Realised tax | 12.29 | €135,224 | 26.0% |
-| Financing | 10.88 | €119,650 | — |
-| Exit tax | 16.35 | €179,830 | — |
-| **After tax** | **51.82** | **€570,125** | **47.1%** |
+| Realised tax | 13.52 | €135,224 | 26.0% |
+| Financing | 11.97 | €119,650 | — |
+| Exit tax | 17.98 | €179,830 | — |
+| **After tax (terminal FX)** | **57.01** | **€570,125** | **47.1%** |
 
-Gross (add-back) multiple 110.08x; total cost drag 52.9% of gross.
+Gross (add-back) multiple 121.11x; total cost drag 52.9% of gross.
 
 ## Multiple-testing check
 
-Deflated Sharpe with N=1 historical trials: daily SR 0.055, expected max under the null 0.000, **DSR 0.999** (one-sided p 0.001). CSCV PBO needs the per-trial return matrix; use `bot.evaluation.cscv.cscv_pbo` when that exists.
+Deflated Sharpe with N=46 historical trials: daily SR 0.055, expected max under the null 0.041, **DSR 0.775** (one-sided p 0.225). **Limitation:** N counts historical variants as if independent; they are not (same price path, overlapping variants, different families), and the dispersion is estimated from the selected path. The p-value is indicative, not definitive. CSCV PBO needs the per-trial return matrix; use `bot.evaluation.cscv.cscv_pbo` when that exists.
 
 ## Reproduction verdict
 
@@ -167,4 +172,4 @@ Deflated Sharpe with N=1 historical trials: daily SR 0.055, expected max under t
 - Turnover ~17x NAV/yr; costs and French tax are inside the path but not the pre-tax Sharpe.
 - The EUR ledger is the real-life number; the terminal-FX headline is an upper bound. Do not quote 57x as forward wealth.
 
-Generated by `uv run python scripts/reproduce.py`.
+Generated by `uv run python scripts/reproduce.py headline`.

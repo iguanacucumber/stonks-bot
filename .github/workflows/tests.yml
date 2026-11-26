@@ -2,30 +2,52 @@ name: tests
 
 on:
   push:
-    branches: ["master", "agent/**"]
+    branches: ["master", "v2/**", "agent/**", "fix/**", "v3/**"]
   pull_request:
     branches: ["master"]
+
+concurrency:
+  group: tests-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   test:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v5
         with:
           enable-cache: true
-      - name: Sync
+      - name: Sync locked environment
         run: uv sync --frozen
-      - name: Core accounting and French tax tests
-        run: uv run python tests/test_core.py
-      - name: PEA audit tests
-        run: uv run python tests/test_pea.py
-      - name: Broker matrix tests
-        run: uv run python tests/test_brokers.py
-      - name: Incremental data cache tests
-        run: uv run python tests/test_data.py
-      - name: News point-in-time and LLM cache tests
-        run: uv run python tests/test_news_llm.py
+
+      # Standalone scripts, no pytest dependency.  A glob keeps this complete
+      # when a new test file lands; every script is run in its own process.
+      - name: All test scripts (no network)
+        run: |
+          set -euo pipefail
+          for f in tests/test_*.py; do
+            echo "::group::$f"
+            uv run python "$f"
+            echo "::endgroup::"
+          done
+
+      # The real cache is 459 MB and is not committed.  If a runner has it,
+      # reproduce the full TECH baseline for 100 bootstrap paths (the 10k-path
+      # run is local evidence, not CI).  If it does not, prove the reproduction
+      # entry point fails/skips cleanly instead of reaching Yahoo.
+      - name: Cache-aware reproduction smoke
+        run: |
+          set -euo pipefail
+          if compgen -G "cache/bars/*.csv" >/dev/null; then
+            uv run python scripts/reproduce.py headline --paths 100 --no-strict
+            uv run python scripts/reproduce.py audit
+          else
+            echo "cache/bars absent in CI: full-cache reproduction skipped"
+            uv run python scripts/reproduce.py audit --allow-missing
+          fi
+
       - name: CLI smoke
         run: |
           uv run python -m bot.cli --help >/dev/null

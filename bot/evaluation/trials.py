@@ -261,11 +261,20 @@ class TrialRegistry:
             df = df[df["verdict"].isin(["accept", "paper", "reject", "inconclusive"])]
         return int(len(df))
 
-    def trial_count(self, branch: str | None = None) -> int:
-        """Sum of ``n_trials`` over completed experiments (the DSR N)."""
+    def trial_count(
+        self, branch: str | None = None, exclude_branch: str | None = None
+    ) -> int:
+        """Sum of ``n_trials`` over completed experiments (the DSR N).
+
+        ``exclude_branch`` lets reports omit accounting-mode/reporting rows that
+        are not independent strategy trials (for example the ``v2/data-eval``
+        baseline reproduction rows).
+        """
         df = self.read()
         if branch is not None:
             df = df[df["branch"] == branch]
+        if exclude_branch is not None:
+            df = df[df["branch"] != exclude_branch]
         df = df[df["verdict"].isin(["accept", "paper", "reject", "inconclusive"])]
         return int(pd.to_numeric(df["n_trials"], errors="coerce").fillna(1).sum())
 

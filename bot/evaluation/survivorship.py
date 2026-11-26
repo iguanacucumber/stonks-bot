@@ -205,8 +205,11 @@ def equal_weight_multiple(
 
 
 def run_tech_variant(
-    panel: pd.DataFrame, mem: pd.DataFrame, capital: float = 10_000.0
-) -> dict:
+    panel: pd.DataFrame,
+    mem: pd.DataFrame,
+    capital: float = 10_000.0,
+    return_result: bool = False,
+) -> dict | tuple[dict, object]:
     """Run the shipped TECH monthly 2.5x CTO book with a supplied membership.
 
     This mirrors `scripts/france.py:run_book("TECH", "CTO", "Interactive
@@ -238,8 +241,8 @@ def run_tech_variant(
     pre = float(res.equity.iloc[-1]) * capital * fx
     exit_tax = float(res.unrealized_tax) * capital * fx
     after = pre - exit_tax
-    years = len(res.equity) / 252.0
-    return {
+    years = (len(res.equity) - 1) / 252.0
+    out = {
         "after_tax": after,
         "after_tax_multiple": after / capital,
         "cagr": (after / capital) ** (1.0 / years) - 1.0,
@@ -252,6 +255,9 @@ def run_tech_variant(
         "years": years,
         "fx": fx,
     }
+    if return_result:
+        return out, res
+    return out
 
 
 def build_report(

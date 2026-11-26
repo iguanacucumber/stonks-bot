@@ -10,17 +10,17 @@
 
 - TECH membership source: the hand-written list in `bot/markets.py`, one snapshot at `2014-01-01`. It is not a historical index constituent file.
 - US membership source: the fja05680 S&P 500 history CSV (`bot/universe.py`), point-in-time, plus four manual 2026 changes.
-- Missing Yahoo histories: **421** symbols in `cache/missing_symbols.txt` (delisted, acquired or renamed); the US panel drops them. That is residual survivorship bias even in the US book.
+- Missing Yahoo histories: **421** symbols globally in `cache/missing_symbols.txt` (delisted, acquired or renamed). For the US book specifically, **128/789** unique 2014+ S&P members are dropped; the global count is not the US coverage number.
 
-## Bias estimate
+## Sensitivity (not a lower bound)
 
-| variant | after-tax multiple | maxDD | trades | what it removes |
-|---|---:|---:|---:|---|
-| static-49 baseline | **57.01x** | -67.8% | 1836 | nothing |
-| S&P-dated TECH | **23.22x** | -87.6% | 832 | look-ahead for names added to the S&P after 2015; still only today's winners |
-| public-at-2015 | **50.64x** | -68.3% | 1856 | later IPOs (ARM, CRWD, DDOG, OKTA, PYPL...) |
+| variant | terminal-FX | EUR ledger | maxDD | trades | what changes |
+|---|---:|---:|---:|---:|---|
+| static-49 baseline | **57.01x** | 52.89x | -67.8% | 1836 | nothing |
+| S&P-dated TECH | **23.22x** | 21.43x | -87.6% | 832 | dated membership; non-S&P names removed |
+| public-at-2015 | **50.64x** | 46.57x | -68.3% | 1856 | later IPOs removed |
 
-The S&P-dated sensitivity is **33.79x lower** (59% of the baseline). That is a *lower bound* on the selection effect: it still contains only names that survived to 2026, and it drops the non-S&P names from the static list. The true NASDAQ-2015 universe is not reconstructible from this cache because failed and acquired names have no Yahoo history.
+The S&P-dated run is **33.79x lower** (59% of the baseline) on terminal-FX. This is a **sensitivity, not a lower bound**: the S&P-dated universe is not nested inside the static-49 list (it removes ASML, ARM, MELI, TEAM, ZS and ANT, and it starts names at their index addition), and it still contains only 2026 survivors. It shows that the TECH result is highly sensitive to universe construction; it does not measure the true NASDAQ-2015 bias, which is not reconstructible from this cache because failed and acquired names have no Yahoo history. The EUR ledger columns are the real-life accounting modes, not a causal decomposition.
 
 ## US point-in-time coverage
 
@@ -49,7 +49,7 @@ Static equal-weight basket: **19.46x** over the window vs QQQ **6.71x**; median 
 - UNSAFE: That the 57x after-tax multiple is an expected forward return.
 - UNSAFE: That the static-49 momentum result generalises to the NASDAQ universe of 2015.
 
-**Bottom line:** the 57.01x TECH headline is an upper bound on a biased universe, not an expected return. Report ETF-only (QQQ/SMH) results as survivorship-free evidence; treat stock-sleeve alpha as unproven until a point-in-time NASDAQ membership file with delisted names is added.
+**Bottom line:** even the real-life EUR-ledger TECH number (52.89x) is an upper bound on a biased universe, not an expected return; the 57.01x terminal-FX headline is not the real-life result. Report ETF-only (QQQ/SMH) results as survivorship-free evidence; treat stock-sleeve alpha as unproven until a point-in-time NASDAQ membership file with delisted names is added.
 
 ## Reproduce
 

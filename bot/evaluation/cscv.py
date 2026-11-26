@@ -175,6 +175,11 @@ def deflated_sharpe(
     The Sharpe ratios in the formula are **per-observation** (daily), not
     annualised: ``mean(r) / std(r)``.  The result's ``sharpe_annual`` is provided
     for display only.
+
+    ``n_trials`` is treated as the number of independent trials.  Real experiment
+    registries are rarely independent (same path, overlapping variants), so the
+    p-value is indicative, not a definitive significance test.  Prefer CSCV with
+    a per-trial return matrix when it exists.
     """
     r = pd.Series(returns, dtype=float).dropna().to_numpy()
     n = len(r)

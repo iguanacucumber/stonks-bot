@@ -3,8 +3,8 @@
 - Snapshot: **2026-11-25**
 - Symbols checked: **1196** (3,515,514 bar rows)
 - Fresh symbols: **1175**; stale: **21**
-- Hard failures: **0**; warnings: **42**
-- Verdict: **PASS**
+- Hard failures: **0**; warnings: **196** (42 example rows stored in JSON)
+- Verdict: **PASS (required symbols)**
 
 ## Warnings by check
 

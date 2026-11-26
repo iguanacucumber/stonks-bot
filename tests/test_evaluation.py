@@ -165,10 +165,10 @@ def test_bootstrap_constant_returns() -> None:
         method="block",
         block=21,
         seed=1,
-        tax_rate=0.314,
+        exit_tax_rate=0.314,
     )
     close(
-        float(tax.after_tax_terminal.min()),
+        float(tax.exit_tax_terminal.min()),
         1.0 + (expected - 1.0) * (1 - 0.314),
         1e-10,
         "bootstrap after-tax",
@@ -185,9 +185,9 @@ def test_bootstrap_constant_loss() -> None:
     close(float(res.terminal.max()), expected, 1e-10, "loss terminal")
     close(float(res.max_dd.max()), expected - 1.0, 1e-10, "loss maxDD")
     taxed = bootstrap_mod.bootstrap(
-        np.full(n, r), n_paths=20, method="block", block=5, seed=3, tax_rate=0.314
+        np.full(n, r), n_paths=20, method="block", block=5, seed=3, exit_tax_rate=0.314
     )
-    close(float(taxed.after_tax_terminal.max()), expected, 1e-10, "loss no refund")
+    close(float(taxed.exit_tax_terminal.max()), expected, 1e-10, "loss no refund")
 
 
 def test_bootstrap_reproducible() -> None:
@@ -204,9 +204,9 @@ def test_bootstrap_reproducible() -> None:
         "max_dd_p5",
     }
     taxed = bootstrap_mod.bootstrap(
-        r, n_paths=20, method="stationary", seed=11, tax_rate=0.314
+        r, n_paths=20, method="stationary", seed=11, exit_tax_rate=0.314
     )
-    assert "after_tax_p5" in taxed.summary()
+    assert "exit_tax_overlay_p5" in taxed.summary()
     table = bootstrap_mod.bootstrap_table(r, n_paths=20, seed=2)
     assert list(table["method"]) == ["stationary", "block"]
     assert (table["n_days"] == 400).all()

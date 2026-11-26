@@ -99,12 +99,12 @@ def ledger_summary(
             broker_fixed_eur=broker_fixed_eur,
         )
         ledger = eur_ledger.replay(res, panel, market, cfg)
-    years = len(res.equity) / 252.0
+    years = (len(res.equity) - 1) / 252.0
     return {
         "mode": "eur_ledger",
         "multiple": float(ledger.multiple),
         "after_tax_value": float(ledger.after_tax),
-        "cagr": float(ledger.cagr),
+        "cagr": cagr_from_multiple(float(ledger.multiple), years),
         "max_dd": float(ledger.maxdd),
         "fees": float(ledger.fees),
         "tax_paid": float(ledger.tax_paid),
@@ -134,7 +134,7 @@ def dimension_table(
     f = france.after_tax(res, capital, market)
     native = native_after_tax_multiple(res, capital)
     factor = float(fx) if fx is not None else float(f["fx"])
-    years = float(f["years"])
+    years = (len(res.equity) - 1) / 252.0
     rows = [
         {
             "accounting_mode": "native",

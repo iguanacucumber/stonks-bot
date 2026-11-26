@@ -432,6 +432,7 @@ def audit_cache(
     out["split_adjusted"] = int(info_counts.get("split_adjusted", 0))
     out["gap_symbols"] = int(warning_counts.get("date_gap", 0))
     out["ok"] = not out["hard_failures"]
+    out["verdict"] = "pass_required_symbols" if out["ok"] else "fail"
     return out
 
 
@@ -464,7 +465,7 @@ def markdown_summary(report: dict) -> str:
         f"- Hard failures: **{sum(hard_counts.values())}**; "
         f"warnings: **{sum(warn_counts.values())}** "
         f"({len(warn)} example rows stored in JSON)",
-        f"- Verdict: **{'PASS' if report.get('ok') else 'FAIL'}**",
+        f"- Verdict: **{'PASS (required symbols)' if report.get('ok') else 'FAIL'}**",
         "",
     ]
     if hard:

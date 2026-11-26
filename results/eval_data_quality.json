@@ -31,7 +31,7 @@
   "bars_dir": "/home/user/projects/stonks-wt-v2-eval/cache/bars",
   "fresh_symbols": 1175,
   "gap_symbols": 5,
-  "generated_at": "2026-11-26T15:01:18+00:00",
+  "generated_at": "2026-11-26T15:17:33+00:00",
   "hard_failure_counts": {},
   "hard_failures": [],
   "info": [
@@ -219,6 +219,7 @@
     "warnings": 154
   },
   "unadjusted_split": 40,
+  "verdict": "pass_required_symbols",
   "warning_counts": {
     "alias_self": 2,
     "date_gap": 5,
