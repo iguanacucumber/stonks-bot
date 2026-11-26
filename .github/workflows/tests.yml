@@ -52,3 +52,5 @@ jobs:
         run: |
           uv run python -m bot.cli --help >/dev/null
           uv run python -m bot.cli backtest --help >/dev/null
+          uv run python scripts/ops.py --help >/dev/null
+          uv run python scripts/ops_drill.py >/dev/null

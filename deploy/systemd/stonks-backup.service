@@ -1,0 +1,14 @@
+# Daily verified backup. Install but do not enable automatically.
+[Unit]
+Description=stonks-bot state and paper ledger backup
+Documentation=file:/opt/stonks-bot/docs/ops.md
+
+[Service]
+Type=oneshot
+WorkingDirectory=/opt/stonks-bot
+User=stonks
+Group=stonks
+UMask=0077
+ExecStart=/usr/bin/env uv run python scripts/ops.py backup --out /var/backups/stonks-bot
+TimeoutStartSec=10min
+Nice=10

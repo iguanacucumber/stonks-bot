@@ -1,0 +1,12 @@
+[Unit]
+Description=Daily stonks-bot backup
+Documentation=file:/opt/stonks-bot/docs/ops.md
+
+[Timer]
+OnCalendar=Mon..Fri 22:30 UTC
+Persistent=true
+RandomizedDelaySec=300
+Unit=stonks-backup.service
+
+[Install]
+WantedBy=timers.target
