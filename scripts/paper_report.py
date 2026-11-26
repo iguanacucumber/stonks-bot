@@ -80,7 +80,10 @@ def main():
     daily = book_paths(args.book)[0]
     if not daily.exists():
         print(f"no paper rows yet ({daily.name}, book {args.book})")
-        print(f"GATE: WAIT 0/{args.min_rows} distinct dates (book {args.book})")
+        print(
+            f"GATE: WAIT 0/{args.min_rows} verified dates "
+            f"(book {args.book}, market {args.market})"
+        )
         return
     live = pd.read_csv(daily)
     live = live[live.market == args.market].copy()
@@ -109,7 +112,10 @@ def main():
             f"({skipped} intraday, {incomplete} incomplete skipped, "
             f"book {args.book})"
         )
-        print(f"GATE: WAIT 0/{args.min_rows} distinct dates (book {args.book})")
+        print(
+            f"GATE: WAIT 0/{args.min_rows} verified dates "
+            f"(book {args.book}, market {args.market})"
+        )
         return
     live = live.sort_values("time").drop_duplicates("quote_date", keep="last")
     live = live.set_index("quote_date").sort_index()
@@ -181,7 +187,10 @@ def main():
     df = pd.DataFrame(rows)
     if df.empty:
         print(f"no comparable rows yet ({pending} waiting for a completed close)")
-        print(f"GATE: WAIT 0/{args.min_rows} verified dates (book {args.book})")
+        print(
+            f"GATE: WAIT 0/{args.min_rows} verified dates "
+            f"(book {args.book}, market {args.market})"
+        )
         return
     print(df.round(4).to_string(index=False))
     if exposure:
