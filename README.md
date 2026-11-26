@@ -147,6 +147,6 @@ uv run python scripts/live.py reconcile --book monthly --market US
 
 Le dry-run est le défaut ; `--paper` est le seul mode qui écrit. L'état est atomique sous `state/live/`, les ordres sont idempotents, les rails bloquent les données périmées, les jours fériés, le gross/turnover excessif et les doublons. Le ledger papier est **pré-impôt et au coût moyen** : il ne remplace pas le grand livre EUR après impôt. Aucun broker réel, aucune clé.
 
-Les détails techniques sont dans le [README anglais](README.en.md), les [résultats brokers](results/brokers.md), les [résultats France](results/france.md) et le [test de robustesse](results/robustness_best.md).
+Les détails techniques sont dans le [README anglais](README.en.md), les [résultats brokers](results/brokers.md), les [résultats France](results/france.md), le [test de robustesse](results/robustness_best.md) et le [résumé v2](results/v2_summary.md).
 
-<sub>Les performances passées ne préjugent pas des performances futures. Dernière mise à jour : 26 novembre 2026, données au 25 novembre 2026.</sub>
+<sub>Les performances passées ne préjugent pas des performances futures. Dernière mise à jour : 26 novembre 2026, données au 25 novembre 2026. Résumé v2 et tests : `results/v2_summary.md`.</sub>
