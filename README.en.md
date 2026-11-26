@@ -49,8 +49,8 @@ The S&P sleeve (used when SMH lags) is:
 peak-to-trough. `balanced` gives up about half the terminal wealth for roughly
 10 pp less drawdown; it is the profile for a human who must stay invested. Both
 opt-ins are post-hoc and labelled `paper`, not forward-validated. Run
-`uv run python -m bot.cli backtest --country fr --profile balanced` to reproduce
-the balanced book. See `docs/profiles.md`.
+`uv run python -m bot.cli backtest --country fr --profile balanced` for the
+balanced book, or `--profile monthly --leverage 1.5` for the conservative one. See `docs/profiles.md`.
 
 ## Short horizons: tested, rejected
 
