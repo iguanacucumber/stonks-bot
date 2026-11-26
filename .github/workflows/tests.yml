@@ -22,6 +22,8 @@ jobs:
         run: uv run python tests/test_pea.py
       - name: Broker matrix tests
         run: uv run python tests/test_brokers.py
+      - name: Incremental data cache tests
+        run: uv run python tests/test_data.py
       - name: CLI smoke
         run: |
           uv run python -m bot.cli --help >/dev/null

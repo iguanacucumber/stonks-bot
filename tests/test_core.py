@@ -4,8 +4,10 @@ from __future__ import annotations
 
 import sys
 from dataclasses import replace
+from datetime import datetime, timezone
 from pathlib import Path
 from tempfile import TemporaryDirectory
+from zoneinfo import ZoneInfo
 
 import numpy as np
 import pandas as pd
@@ -15,7 +17,7 @@ sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(ROOT / "scripts"))
 
 from bot import backtest, france, markets, strategy, universe  # noqa: E402
-from paper_daily import book_config, book_paths  # noqa: E402
+from paper_daily import book_config, book_paths, is_close_valid, replay_file  # noqa: E402
 from paper_report import target_diff  # noqa: E402
 
 
@@ -496,6 +498,20 @@ def main():
     assert book_paths("monthly")[1].name == "paper_ledger.csv"
     assert book_paths("tax")[0].name == "paper_daily_tax.csv"
     assert book_paths("tax")[1].name == "paper_ledger_tax.csv"
+    assert replay_file("monthly", "TECH") == book_paths("monthly")[2]
+    assert replay_file("monthly", "US").name == "paper_replay_us.csv"
+
+    # a holiday row must not inherit yesterday's close as a new track-record day
+    last = pd.Timestamp("2026-11-25")
+    after_close = datetime(2026, 11, 25, 23, 30, tzinfo=timezone.utc).astimezone(
+        ZoneInfo("America/New_York")
+    )
+    before_close = datetime(2026, 11, 25, 20, 15, tzinfo=timezone.utc).astimezone(
+        ZoneInfo("America/New_York")
+    )
+    assert is_close_valid(last, last, after_close)
+    assert not is_close_valid(last, last, before_close)
+    assert not is_close_valid(pd.Timestamp("2026-11-26"), last, after_close)
 
     td = target_diff({"A": 0.5, "B": 0.5}, {"A": 0.5, "C": 0.5})
     assert td["names"] == "1/3"

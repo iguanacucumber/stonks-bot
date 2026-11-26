@@ -68,11 +68,35 @@ def book_paths(book: str) -> tuple[Path, Path, Path]:
     return BOOK_FILES[book]
 
 
+def replay_file(book: str, market: str) -> Path:
+    """Keep a separate replay trace per market; TECH keeps the historical name."""
+    path = book_paths(book)[2]
+    if market == "TECH":
+        return path
+    return path.with_name(f"{path.stem}_{market.lower()}{path.suffix}")
+
+
+def is_close_valid(
+    quote_date: pd.Timestamp, session_date: pd.Timestamp, et: datetime
+) -> bool:
+    """Only a row dated on an actual completed session may count forward."""
+    return et.hour >= 16 and quote_date == session_date
+
+
 def refresh(market: str) -> None:
-    """Force-refresh the small ETF/stock set so the panel advances daily."""
+    """Advance cached bars one session; history is never refetched."""
+    if market == "US":
+        # US has no static UNIVERSES entry: advance the membership panel. Only
+        # symbols whose last cached bar is stale are requested, and dead tickers
+        # back off for 7 days.
+        mem = universe.load_membership()
+        data.update_panel(mem, workers=12)
+        return
     spec = markets.MARKETS[market]
     syms = markets.UNIVERSES[market] + [spec["bench"]] + list(markets.CORE_SYMBOLS)
-    data.fetch_all(syms, force=True)
+    if spec["fx"] != "USD":
+        syms.append(markets.FX[spec["fx"]][0])
+    data.update_symbols(sorted(set(syms)), workers=8, gate=spec["bench"])
 
 
 def load(
@@ -313,7 +337,8 @@ def main():
         help="recompute the last close-valid row from final bars (keeps live prices)",
     )
     args = ap.parse_args()
-    daily_path, ledger_path, replay_path = book_paths(args.book)
+    daily_path, ledger_path, _ = book_paths(args.book)
+    replay_path = replay_file(args.book, args.market)
 
     panel, mkt, res, cfg = load(
         args.market,
@@ -353,7 +378,6 @@ def main():
     now = datetime.now(timezone.utc)
     et = now.astimezone(ZoneInfo("America/New_York"))
     quote_date = pd.Timestamp(et.date())
-    close_valid = et.hour >= 16
     # day P&L: prior book overnight, post-open book intraday (next-open fills)
     raw_close = panel.pivot(index="date", columns="ticker", values="close")
     raw_open = (
@@ -362,6 +386,10 @@ def main():
         else raw_close
     )
     last = mkt.dates[-1]
+    # A row is close-valid only when today's own bar is in the panel. On a
+    # holiday or an unpublished close, marking yesterday's bar under today's
+    # date would invent a track-record day.
+    close_valid = is_close_valid(quote_date, last, et)
     if quote_date >= last and len(mkt.dates) > 1:
         dm = last
         dprev = mkt.dates[-2] if quote_date == last else last

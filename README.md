@@ -180,7 +180,8 @@ stock alpha.
 
 ```bash
 uv sync
-uv run python -m bot.cli ingest                 # ~8 min, cached
+uv run python -m bot.cli ingest                 # ~8 min first run, cached
+uv run python scripts/update_data.py            # advance US+TECH one session
 uv run python -m bot.cli backtest --random-seeds 50
 uv run python -m bot.cli backtest --profile tax --tax-rate 0.37
 uv run python -m bot.cli backtest --rebalance-mode days --exec close  # old clock
@@ -214,9 +215,16 @@ Try `uv run python -m bot.cli pnl --market TECH`.
 intraday polling only changes what you see, not the signals.
 
 Timing with a warm cache (16-core laptop): `backtest --random-seeds 20` ~11 s, bot-vs-SPY
-only ~2 s, `paper` ~3 s (network-bound), `ingest` ~8 min (downloads ~780 Yahoo series).
+only ~2 s, `paper` ~3 s, `ingest` ~8 min first run (downloads ~780 Yahoo series).
 The engine is numpy-first: membership and price lookups are matrix operations, per-date
 signals are cached, and panel pivots are shared across configs.
+
+**Incremental data.** `update_data.py`, `paper_daily.py --refresh` and the scheduled jobs
+share one cache path: only symbols whose last bar is behind the last completed US session
+are requested, dead tickers back off for 7 days, and a closed/holiday session costs one
+benchmark request instead of a universe sweep. The US panel parquet is rewritten only when
+a new bar arrives; a current cache does zero network fetches. Splits and dividends are
+detected from the overlap and trigger one full-history refetch for that symbol only.
 
 Tests:
 
