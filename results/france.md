@@ -8,6 +8,14 @@ the whole panel, including the trend, to EUR first. The difference is the
 FX path changing the trend timing, not a tax effect. 5 bps spread is
 charged on top of the broker tariff.
 
+**Broker comparison:** [results/brokers.md](brokers.md) extends this two-broker
+audit to eight French presets (Interactive Brokers, Saxo, XTB, Fortuneo,
+BoursoBank, DEGIRO; Bourse Direct and Trade Republic retained) on the same
+after-tax books. It is the up-to-date broker table. The TECH rows below are the
+old close-fill baseline: the merged honest-open engine gives Trade Republic
+**39.50x** and Interactive Brokers **50.89x** on the €10k core-only CTO, so the
+38.80x in this file is **legacy** and not directly comparable to `brokers.md`.
+
 ## French rules used
 
 | item | rule |

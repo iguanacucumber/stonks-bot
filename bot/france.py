@@ -11,19 +11,10 @@ import pandas as pd
 
 from . import data, markets
 
-# Broker tariffs. `broker_grid`/`us_grid`: (max ticket in EUR, fixed fee in EUR).
-# Above the last bracket the broker's bps rate applies.
+# Broker tariffs, Config fields only. `broker_grid`/`us_grid`: (max ticket in
+# EUR, fixed fee in EUR). Above the last bracket the broker's bps rate applies.
+# Tariffs checked 2026-11-26; sources and caveats live in BROKER_INFO, not here.
 BROKERS = {
-    "Interactive Brokers": dict(
-        # PEA: 0.05%, min 1.25 EUR; US: 0.005 USD/share, min 1 USD (~0.25 bps);
-        # FX 0.002%. Lowest all-in cost for the US core.
-        broker_grid=((2500, 1.25),),
-        broker_bps=5.0,
-        us_grid=((40000, 1.0),),
-        us_bps=0.25,
-        fx_bps=2.0,
-        custody_bps=0.0,
-    ),
     "Bourse Direct": dict(
         broker_grid=((500, 0.99), (1000, 1.90), (2000, 2.90), (4400, 3.80)),
         broker_bps=9.0,
@@ -40,13 +31,137 @@ BROKERS = {
         fx_bps=25.0,
         custody_bps=0.0,
     ),
+    # PEA and CTO. Tiered plan: 0.05% (min 1.25 EUR, max 29 EUR) on Euronext.
+    # US fixed plan: USD 0.005/share, min USD 1; at USD 200/share = 0.25 bps.
+    # FX: 0.002% manual conversion (min USD 2); 0.03% if auto-converted in-trade.
+    # The 2 bps model is a conservative middle ground, not the published rate.
+    "Interactive Brokers": dict(
+        broker_grid=((2500, 1.25),),
+        broker_bps=5.0,
+        us_grid=((40000, 1.0),),
+        us_bps=0.25,
+        fx_bps=2.0,
+        custody_bps=0.0,
+    ),
+    # Classic tariff; 2026 promo (0% on 70 PEA stocks) deliberately ignored.
+    "Saxo Banque": dict(
+        broker_grid=((2500, 2.0),),
+        broker_bps=8.0,
+        us_grid=((1250, 1.0),),
+        us_bps=8.0,
+        fx_bps=25.0,
+        custody_bps=0.0,
+    ),
+    # PEA: 0% to EUR 100k/month, then 0.2%. CTO US: 0% commission, 0.5% FX.
+    "XTB": dict(
+        broker_grid=(),
+        broker_bps=0.0,
+        us_grid=(),
+        us_bps=0.0,
+        fx_bps=50.0,
+        custody_bps=0.0,
+    ),
+    # PEA Starter: 0.35%, one order <= EUR 500 free each month (not modelled).
+    # US Starter: 0.20%, min EUR 20, plus EUR 30 foreign-broker fee per order.
+    "Fortuneo": dict(
+        broker_grid=(),
+        broker_bps=35.0,
+        us_grid=((10000, 50.0),),
+        us_bps=20.0,
+        fx_bps=25.0,
+        custody_bps=0.0,
+    ),
+    # Decouverte: EUR 1.99 to EUR 500, then 0.60%; PEA capped at 0.50% by law.
+    # US CTO: 0.60%.
+    "BoursoBank": dict(
+        broker_grid=((500, 1.99),),
+        broker_bps=50.0,
+        us_grid=(),
+        us_bps=60.0,
+        fx_bps=25.0,
+        custody_bps=0.0,
+    ),
+    # CTO only. EUR 1 brokerage + EUR 1 handling = EUR 2/order on Euronext/US.
+    # Source checked 2026-11-26 says AutoFX 0.25%; the 10 bps below is the
+    # study's requested assumption and is optimistic. See results/brokers.md.
+    "DEGIRO": dict(
+        broker_grid=((1e12, 2.0),),
+        broker_bps=0.0,
+        us_grid=((1e12, 2.0),),
+        us_bps=0.0,
+        fx_bps=10.0,
+        custody_bps=0.0,
+    ),
 }
+
+# Registry metadata: never merged into strategy.Config. `pea` gates --wrapper pea.
+BROKER_INFO = {
+    "Bourse Direct": dict(
+        pea=True,
+        source="https://www.boursedirect.fr/fr/tarifs",
+        note="Euronext 0.99/1.90/2.90/3.80 EUR, 0.09% above 4.4k; "
+        "US 8.50 EUR to 10k then 0.09%; 0.036%/yr custody on foreign names; "
+        "0.25% FX modelled.",
+    ),
+    "Trade Republic": dict(
+        pea=True,
+        source="https://traderepublic.com/fr-fr/pea",
+        note="EUR 1/order, no custody, ~0.25% FX on USD names.",
+    ),
+    "Interactive Brokers": dict(
+        pea=True,
+        source="https://www.interactivebrokers.ie/fr/pricing/commissions-stocks.php",
+        note="Euronext 0.05%, min 1.25 EUR (tiered plan; fixed plan min 3 EUR); "
+        "US USD 0.005/share, min USD 1; FX 0.002% manual / 0.03% auto, "
+        "modelled at 2 bps; no custody.",
+    ),
+    "Saxo Banque": dict(
+        pea=True,
+        source="https://www.home.saxo/fr-fr/accounts/pea",
+        note="Classic 0.08%, min EUR 2 Euronext / USD 1 US; 0.25% FX; "
+        "no custody. 2026 promo (0% on 70 PEA stocks) ignored.",
+    ),
+    "XTB": dict(
+        pea=True,
+        source="https://www.xtb.com/fr/pea",
+        note="PEA 0% to EUR 100k/month, then 0.2%; US CTO 0% commission, "
+        "0.5% FX conversion; no custody.",
+    ),
+    "Fortuneo": dict(
+        pea=True,
+        source="https://www.fortuneo.fr/bourse",
+        note="PEA Starter 0.35%, first order <= EUR 500 each month free "
+        "(not modelled); US CTO 0.20%, min EUR 20, + EUR 30 foreign-broker "
+        "fee (modelled as EUR 50 to 10k; the EUR 30 is omitted above 10k); "
+        "0.25% FX; no custody.",
+    ),
+    "BoursoBank": dict(
+        pea=True,
+        source="https://www.boursobank.com/aide-en-ligne/bourse/comment-investir-en-bourse/fonctionnement-de-la-bourse/question/comment-sont-calcules-les-frais-de-courtage-43063140",
+        note="Decouverte EUR 1.99 to EUR 500 then 0.60%, PEA capped at 0.50%; "
+        "US CTO 0.60%; 0.25% FX; no custody.",
+    ),
+    "DEGIRO": dict(
+        pea=False,
+        source="https://degiro.fr/data/pdf/fr/Tarifs.pdf",
+        note="CTO only, no PEA. EUR 2/order (1 EUR brokerage + 1 EUR "
+        "handling) on Euronext and US; AutoFX is 0.25% in the 2026 tariff, "
+        "but the study models 10 bps and reports a 25 bps sensitivity.",
+    ),
+}
+
+PEA_BROKERS = tuple(name for name, info in BROKER_INFO.items() if info["pea"])
 
 ALIASES = {
     "bourse-direct": "Bourse Direct",
     "trade-republic": "Trade Republic",
     "interactive-brokers": "Interactive Brokers",
     "ibkr": "Interactive Brokers",
+    "saxo": "Saxo Banque",
+    "xtb": "XTB",
+    "fortuneo": "Fortuneo",
+    "boursobank": "BoursoBank",
+    "degiro": "DEGIRO",
 }
 
 # The CLI picks this automatically for --country fr. Other presets stay for
@@ -68,6 +183,15 @@ CURRENCY = {
 
 def broker_name(broker: str) -> str:
     return ALIASES.get(broker, broker)
+
+
+def require_pea_broker(broker: str) -> str:
+    """Return the canonical broker name or raise if it has no PEA."""
+    name = broker_name(broker)
+    if name not in PEA_BROKERS:
+        allowed = ", ".join(sorted(PEA_BROKERS))
+        raise ValueError(f"{name} does not offer a PEA. PEA brokers: {allowed}.")
+    return name
 
 
 def broker_kwargs(broker: str, capital: float) -> dict:
