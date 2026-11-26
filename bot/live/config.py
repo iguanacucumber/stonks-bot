@@ -56,6 +56,9 @@ class LiveConfig:
     book: str = "monthly"
     market: str = BEST_EVIDENCE_MARKET
     broker: str = "paper"
+    # Read-only broker sessions can inspect/reconcile but never submit, cancel or
+    # replace. The adapter also enforces this at every write entry point.
+    read_only: bool = False
     capital: float = 10_000.0
     currency: str | None = None  # native quote currency; inferred from market
     start: str = "2015-01-01"
@@ -211,6 +214,9 @@ class LiveConfig:
         raw = asdict(self)
         raw.pop("state_dir", None)
         raw.pop("forward_gate", None)
+        # read-only is a session permission, not a book change: toggling it must
+        # not invalidate an existing paper state file.
+        raw.pop("read_only", None)
         blob = json.dumps(raw, sort_keys=True, separators=(",", ":"))
         return hashlib.sha256(blob.encode()).hexdigest()[:16]
 

@@ -10,9 +10,14 @@ paper session.
 
 from __future__ import annotations
 
+import json
 import sys
+from contextlib import redirect_stdout
+from io import StringIO
 from pathlib import Path
 from tempfile import TemporaryDirectory
+from types import SimpleNamespace
+from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
@@ -23,6 +28,8 @@ from bot.live.brokers.ibkr import (  # noqa: E402
     IBKRDuplicateOrder,
     IBKRPaperBroker,
     IBKRPaperConfig,
+    IBKRReadOnlySnapshot,
+    IBKRReadOnlyError,
     IBKRTransientError,
     IBKRUnavailable,
 )
@@ -30,10 +37,14 @@ from bot.live.config import LiveConfig  # noqa: E402
 from bot.live.engine import LiveEngine  # noqa: E402
 from bot.live.models import (  # noqa: E402
     REJECTED,
+    Fill,
     OrderIntent,
     Plan,
     Portfolio,
+    Position,
 )
+from bot.live.signal import SnapshotError  # noqa: E402
+from bot.live.state import LiveState, StateStore  # noqa: E402
 
 
 class FakeTransport:
@@ -55,6 +66,17 @@ class FakeTransport:
         self.fail_after_record = False
         self.positions_rows: list[dict] = []
         self.cash_value = 10_000.0
+        self.summary_payload: dict = {
+            "accountcode": account,
+            "netliquidation": 10_000.0,
+        }
+        self.executions_rows: list[dict] = []
+        self.account_summary_calls = 0
+        self.executions_calls = 0
+        self.positions_calls = 0
+        self.cash_calls = 0
+        self.open_orders_calls = 0
+        self.fail_positions_times = 0
         self._next_oid = 1
         self._next_conid = 1000
 
@@ -126,6 +148,7 @@ class FakeTransport:
         return row
 
     def open_orders(self) -> list[dict]:
+        self.open_orders_calls += 1
         return [
             dict(row)
             for row in self.orders.values()
@@ -149,13 +172,28 @@ class FakeTransport:
         return {"order_id": broker_order_id, "order_status": "Submitted"}
 
     def positions(self) -> list[dict]:
+        self.positions_calls += 1
+        if self.fail_positions_times > 0:
+            self.fail_positions_times -= 1
+            raise IBKRTransientError("simulated positions timeout")
         return list(self.positions_rows)
 
     def cash(self) -> float:
+        self.cash_calls += 1
         return self.cash_value
 
+    def account_summary(self) -> dict:
+        self.account_summary_calls += 1
+        return dict(self.summary_payload)
 
-def _broker(fake: FakeTransport, **kw) -> IBKRPaperBroker:
+    def executions(self) -> list[dict]:
+        self.executions_calls += 1
+        return list(self.executions_rows)
+
+
+def _broker(
+    fake: FakeTransport, *, read_only: bool | None = None, **kw
+) -> IBKRPaperBroker:
     cfg = IBKRPaperConfig(
         account_id=fake.account,
         base_url="https://localhost:5000/v1/api",
@@ -165,7 +203,7 @@ def _broker(fake: FakeTransport, **kw) -> IBKRPaperBroker:
         backoff_base=0.0,
         **kw,
     )
-    return IBKRPaperBroker(fake, cfg, sleeper=lambda _: None)
+    return IBKRPaperBroker(fake, cfg, sleeper=lambda _: None, read_only=read_only)
 
 
 def _plan(order: OrderIntent, fill_session: str = "2026-01-02") -> Plan:
@@ -211,6 +249,16 @@ def test_config_is_paper_only_and_env_only() -> None:
     assert cfg.account_id == "DU123"
     assert cfg.base_url == "https://localhost:5000/v1/api"
     assert cfg.max_retries == 4 and cfg.verify_ssl is False
+    ro = IBKRPaperConfig.from_env(
+        {"IBKR_PAPER_ACCOUNT": "DU123", "IBKR_PAPER_READ_ONLY": "true"}
+    )
+    assert ro.read_only is True
+    # Read-only is a session permission, not a book change; it must not invalidate
+    # an existing paper state file.
+    assert (
+        LiveConfig(broker="ibkr-paper", read_only=True).signature()
+        == LiveConfig(broker="ibkr-paper", read_only=False).signature()
+    )
     assert (
         LiveConfig(broker="paper").signature()
         != LiveConfig(broker="ibkr-paper").signature()
@@ -364,6 +412,281 @@ def test_stale_position_fails_reconcile() -> None:
     assert any("cash" in issue for issue in rep.issues)
 
 
+def test_read_only_snapshot_methods_and_no_writes() -> None:
+    fake = FakeTransport()
+    fake.positions_rows = [{"ticker": "SMH", "position": 10.0, "avgCost": 10.0}]
+    fake.cash_value = 999.0
+    fake.summary_payload = {
+        "accountcode": fake.account,
+        "netliquidation": 1_099.0,
+    }
+    fake.executions_rows = [
+        {
+            "execution_id": "E1",
+            "ticker": "SMH",
+            "side": "BUY",
+            "quantity": 10.0,
+            "trade_time": "2026-01-02",
+        }
+    ]
+    broker = _broker(fake, read_only=True)
+    assert broker.read_only
+    assert broker.account_summary()["accountcode"] == fake.account
+    assert broker.positions()[0]["ticker"] == "SMH"
+    assert broker.cash() == 999.0
+    assert broker.open_orders() == []
+    assert broker.executions()[0]["execution_id"] == "E1"
+    snap = broker.read_snapshot(now="2026-01-02T22:00:00+00:00")
+    assert isinstance(snap, IBKRReadOnlySnapshot)
+    assert snap.account_id == fake.account
+    assert snap.cash == 999.0
+    assert len(snap.positions) == 1
+    assert len(snap.executions) == 1
+
+    order = OrderIntent("ro-1", "SMH", "BUY", 1.0, 10.0, "test", "2026-01-02")
+    plan = _plan(order)
+    for call, args in (
+        (broker.submit, (order, "2026-01-02", "t")),
+        (broker.cancel, ("OID1",)),
+        (broker.replace, ("OID1",)),
+        (broker.execute, (plan, {}, "t", Portfolio(cash=1_000.0))),
+    ):
+        try:
+            call(*args)
+            raise AssertionError(f"read-only {call.__name__} must raise")
+        except IBKRReadOnlyError:
+            pass
+    assert fake.place_calls == 0
+    assert fake.cancel_calls == []
+    assert fake.replace_calls == []
+    assert not fake.orders
+
+
+def _readonly_snapshot(
+    fake: FakeTransport, fetched_at: str = "2026-01-02T22:00:00+00:00"
+):
+    return IBKRReadOnlySnapshot(
+        account_id=fake.account,
+        fetched_at=fetched_at,
+        summary=dict(fake.summary_payload),
+        positions=list(fake.positions_rows),
+        cash=fake.cash_value,
+        open_orders=[],
+        executions=list(fake.executions_rows),
+    )
+
+
+def test_strict_reconcile_positions_cash_and_human_diff() -> None:
+    fake = FakeTransport()
+    broker = _broker(fake, read_only=True)
+    portfolio = Portfolio(cash=1_000.0)
+    portfolio.positions["SMH"] = Position(10.0, 10.0, 10.0)
+    fake.positions_rows = [{"ticker": "SMH", "position": 10.0}]
+    fake.cash_value = 1_000.0
+    snap = _readonly_snapshot(fake)
+    state = SimpleNamespace(plans={}, all_fills=lambda: [], pending_plan=None)
+    rep = broker.reconcile_strict(
+        portfolio, state=state, snapshot=snap, now=snap.fetched_at
+    )
+    assert rep.ok, rep.issues
+
+    fake.positions_rows = [
+        {"ticker": "SMH", "position": 9.0},
+        {"ticker": "QQQ", "position": 2.0},
+    ]
+    rep = broker.reconcile_strict(
+        portfolio, state=state, snapshot=_readonly_snapshot(fake), now=snap.fetched_at
+    )
+    assert not rep.ok
+    assert "SMH" in rep.position_diffs
+    assert "QQQ" in rep.extra_positions
+    assert any("SMH" in line and "broker" in line for line in rep.lines())
+    assert any("QQQ" in line and "extra" in line for line in rep.lines())
+
+    fake.positions_rows = [{"ticker": "SMH", "position": 10.0}]
+    fake.cash_value = 998.0
+    rep = broker.reconcile_strict(
+        portfolio, state=state, snapshot=_readonly_snapshot(fake), now=snap.fetched_at
+    )
+    assert not rep.ok
+    assert any("cash" in issue for issue in rep.issues)
+
+
+def test_strict_reconcile_unknown_execution_partial_and_stale() -> None:
+    fake = FakeTransport()
+    broker = _broker(fake, read_only=True)
+    portfolio = Portfolio(cash=1_000.0)
+    portfolio.positions["SMH"] = Position(10.0, 10.0, 10.0)
+    fake.positions_rows = [{"ticker": "SMH", "position": 10.0}]
+    fake.cash_value = 1_000.0
+    fill = Fill(
+        fill_id="f1",
+        order_id="o1",
+        ticker="SMH",
+        side="BUY",
+        qty=4.0,
+        price=10.0,
+        commission=0.0,
+        session="2026-01-02",
+        created_at="t",
+    )
+    state = SimpleNamespace(plans={}, all_fills=lambda: [fill], pending_plan=None)
+    fake.executions_rows = [
+        {
+            "execution_id": "E1",
+            "ticker": "SMH",
+            "side": "BUY",
+            "quantity": 10.0,
+            "trade_time": "2026-01-02",
+        }
+    ]
+    rep = broker.reconcile_strict(
+        portfolio,
+        state=state,
+        snapshot=_readonly_snapshot(fake),
+        now="2026-01-02T22:00:00+00:00",
+    )
+    assert not rep.ok
+    assert rep.unknown_executions
+
+    fake.executions_rows = []
+    stale = _readonly_snapshot(fake, fetched_at="2020-01-01T00:00:00+00:00")
+    rep = broker.reconcile_strict(
+        portfolio, state=state, snapshot=stale, now="2026-01-02T22:00:00+00:00"
+    )
+    assert not rep.ok
+    assert rep.stale
+    assert any("stale" in issue for issue in rep.issues)
+
+
+def test_read_only_timeout_fails_closed_without_writes() -> None:
+    fake = FakeTransport()
+    fake.fail_positions_times = 10
+    broker = _broker(fake, read_only=True)
+    try:
+        broker.read_snapshot(now="2026-01-02T22:00:00+00:00")
+        raise AssertionError("read-only snapshot must fail after retries")
+    except IBKRUnavailable:
+        pass
+    assert fake.positions_calls == 3  # initial + two retries
+    assert fake.place_calls == 0
+    assert fake.cancel_calls == []
+    assert fake.replace_calls == []
+
+
+def test_read_only_cli_refuses_paper_writes() -> None:
+    sys.path.insert(0, str(ROOT / "scripts"))
+    import live as live_cli
+
+    out = StringIO()
+    with redirect_stdout(out):
+        rc = live_cli.main(
+            [
+                "run",
+                "--book",
+                "monthly",
+                "--broker",
+                "ibkr-paper",
+                "--read-only",
+                "--paper",
+            ]
+        )
+    assert rc == 2
+    assert "read-only" in out.getvalue().lower()
+
+
+def test_cli_reconcile_read_only_uses_strict_broker() -> None:
+    sys.path.insert(0, str(ROOT / "scripts"))
+    import live as live_cli
+
+    fake = FakeTransport()
+    fake.positions_rows = []
+    fake.cash_value = 10_000.0
+    broker = _broker(fake, read_only=True)
+    with TemporaryDirectory() as tmp:
+        cfg = LiveConfig(
+            book="monthly",
+            market="US",
+            broker="ibkr-paper",
+            read_only=True,
+            state_dir=tmp,
+        )
+        StateStore(cfg).save(LiveState.new(cfg))
+        out = StringIO()
+        with patch("bot.live.engine.make_broker", return_value=broker):
+            with redirect_stdout(out):
+                rc = live_cli.main(
+                    [
+                        "reconcile",
+                        "--book",
+                        "monthly",
+                        "--market",
+                        "US",
+                        "--broker",
+                        "ibkr-paper",
+                        "--read-only",
+                        "--state-dir",
+                        tmp,
+                        "--json",
+                    ]
+                )
+    payload = json.loads(out.getvalue())
+    assert rc == 0, payload
+    assert payload["ok"]
+    assert payload["broker"]["ok"]
+    assert payload["broker"]["account_id"] == fake.account
+    assert fake.place_calls == 0
+    assert fake.cancel_calls == []
+    assert fake.replace_calls == []
+
+
+def test_cli_status_read_only_exposes_broker_view() -> None:
+    sys.path.insert(0, str(ROOT / "scripts"))
+    import live as live_cli
+
+    fake = FakeTransport()
+    fake.positions_rows = [{"ticker": "SMH", "position": 2.0, "avgCost": 10.0}]
+    fake.cash_value = 9_980.0
+    broker = _broker(fake, read_only=True)
+    with TemporaryDirectory() as tmp:
+        out = StringIO()
+        with patch("bot.live.engine.make_broker", return_value=broker):
+            with patch(
+                "bot.live.engine.build_snapshot",
+                side_effect=SnapshotError("synthetic no-cache status"),
+            ):
+                with patch(
+                    "live.build_snapshot",
+                    side_effect=SnapshotError("synthetic no-cache status"),
+                ):
+                    with redirect_stdout(out):
+                        rc = live_cli.main(
+                            [
+                                "status",
+                                "--book",
+                                "monthly",
+                                "--market",
+                                "US",
+                                "--broker",
+                                "ibkr-paper",
+                                "--read-only",
+                                "--state-dir",
+                                tmp,
+                                "--json",
+                            ]
+                        )
+    payload = json.loads(out.getvalue())
+    assert rc == 2  # data snapshot blocked in the synthetic no-cache test
+    assert payload["read_only"] is True
+    view = payload["broker_read_only"]
+    assert view["account_id"] == fake.account
+    assert view["cash"] == 9_980.0
+    assert view["positions"][0]["ticker"] == "SMH"
+    assert fake.place_calls == 0
+    assert fake.cancel_calls == []
+    assert fake.replace_calls == []
+
+
 def test_engine_end_to_end_submit_fill_reconcile() -> None:
     # Reuse the synthetic live panel and FX patch from the live test.
     from test_live import _cfg, fixed_fx, synthetic
@@ -414,6 +737,13 @@ def main() -> None:
         test_cancel_and_replace,
         test_broker_down_retries_then_fails_closed,
         test_stale_position_fails_reconcile,
+        test_read_only_snapshot_methods_and_no_writes,
+        test_strict_reconcile_positions_cash_and_human_diff,
+        test_strict_reconcile_unknown_execution_partial_and_stale,
+        test_read_only_timeout_fails_closed_without_writes,
+        test_read_only_cli_refuses_paper_writes,
+        test_cli_reconcile_read_only_uses_strict_broker,
+        test_cli_status_read_only_exposes_broker_view,
         test_engine_end_to_end_submit_fill_reconcile,
     ]
     for fn in checks:

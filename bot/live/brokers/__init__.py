@@ -37,5 +37,10 @@ def make_broker(cfg, *, broker: Any = None, env: dict[str, str] | None = None):
             fractional_shares=cfg.fractional_shares,
         )
     if name == "ibkr-paper":
-        return IBKRPaperBroker.from_env(env=env)
+        # `read_only` is fail-safe: an explicit config true always wins; when it
+        # is false the environment flag IBKR_PAPER_READ_ONLY may still force it.
+        return IBKRPaperBroker.from_env(
+            env=env,
+            read_only=True if getattr(cfg, "read_only", False) else None,
+        )
     raise ValueError(f"unknown broker {name!r}; choose paper or ibkr-paper")
