@@ -33,10 +33,11 @@ import pandas as pd  # noqa: E402
 
 from bot.live import reconcile, report  # noqa: E402
 from bot.live.config import BEST_EVIDENCE_MARKET, LiveConfig, load_config  # noqa: E402
+from bot.live.corporate import CorporateAction, apply_to_state  # noqa: E402
 from bot.live.engine import EngineError, LiveEngine, resolve_session  # noqa: E402
 from bot.live.health import health  # noqa: E402
 from bot.live.signal import SnapshotError, build_snapshot  # noqa: E402
-from bot.live.state import StateConfigMismatch, StateError  # noqa: E402
+from bot.live.state import StateConfigMismatch, StateError, StateStore  # noqa: E402
 
 EXIT_OK = 0
 EXIT_ERROR = 1
@@ -444,6 +445,53 @@ def _reconcile(args: argparse.Namespace) -> int:
     return EXIT_OK if rep.ok else EXIT_RECONCILE
 
 
+def _corporate(args: argparse.Namespace) -> int:
+    cfg = _config(args)
+    if cfg.read_only:
+        print("ERROR: --read-only forbids corporate-action state writes")
+        return EXIT_BLOCKED
+    store = StateStore(cfg)
+    state = store.load(allow_config_change=args.allow_config_change)
+    if state is None:
+        print("ERROR: no state file; run a paper session first")
+        return EXIT_ERROR
+    event_id = args.event_id or f"{args.kind}-{args.ticker.upper()}-{args.session}"
+    if any(e.get("event_id") == event_id for e in state.corporate_actions):
+        print(f"ERROR: corporate action {event_id} already applied")
+        return EXIT_ERROR
+    try:
+        action = CorporateAction(
+            event_id=event_id,
+            kind=args.kind,
+            ticker=args.ticker,
+            session=args.session,
+            ratio=args.ratio,
+            amount_per_share=args.amount,
+            withholding_rate=args.withholding,
+            fx_rate=args.fx_rate,
+            note=args.note or "",
+        )
+        event = apply_to_state(state, action)
+        store.save(state)
+        store.upsert_corporate_action(event)
+    except (ValueError, StateError) as exc:
+        print(f"ERROR: {exc}")
+        return EXIT_ERROR
+    if args.json:
+        print(
+            json.dumps(
+                {"event": event, "state": str(store.path)}, indent=2, sort_keys=True
+            )
+        )
+    else:
+        print(
+            f"CORPORATE ACTION OK  {event_id}  {action.kind} {action.ticker} "
+            f"{action.session}  cash_delta={event['net_cash']:,.2f} "
+            f"qty_after={event['qty_after']:g}"
+        )
+    return EXIT_OK
+
+
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__)
     sub = ap.add_subparsers(dest="cmd", required=True)
@@ -469,6 +517,21 @@ def main(argv: list[str] | None = None) -> int:
     _add_common(c)
     c.add_argument("--repair-ledger", action="store_true")
     c.set_defaults(func=_reconcile)
+
+    ca = sub.add_parser(
+        "corporate", help="apply a split or cash dividend to paper state (no broker)"
+    )
+    _add_common(ca)
+    ca.add_argument("--kind", choices=("split", "dividend"), required=True)
+    ca.add_argument("--ticker", required=True)
+    ca.add_argument("--session", required=True)
+    ca.add_argument("--ratio", type=float, default=1.0)
+    ca.add_argument("--amount", type=float, default=0.0, help="gross dividend/share")
+    ca.add_argument("--withholding", type=float, default=0.0)
+    ca.add_argument("--fx-rate", type=float, default=None)
+    ca.add_argument("--event-id", default=None)
+    ca.add_argument("--note", default=None)
+    ca.set_defaults(func=_corporate)
 
     args = ap.parse_args(argv)
     try:

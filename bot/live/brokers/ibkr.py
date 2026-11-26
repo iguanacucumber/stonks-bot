@@ -224,6 +224,8 @@ class IBKRTransport(Protocol):
 
     def executions(self) -> list[dict[str, Any]]: ...
 
+    def contract_info(self, conid: int) -> dict[str, Any]: ...
+
 
 class ClientPortalTransport:
     """Thin Client Portal Web API client.
@@ -270,6 +272,13 @@ class ClientPortalTransport:
         try:
             payload = resp.json() if resp.content else {}
         except ValueError:
+            # A 2xx with non-JSON body is malformed, not an empty account view.
+            if resp.status_code < 400:
+                raise IBKRRequestError(
+                    f"{method} {path}: malformed JSON response",
+                    status_code=resp.status_code,
+                    payload={"text": resp.text[:1000]},
+                )
             payload = {"text": resp.text[:1000]}
         if resp.status_code in (408, 425, 429) or resp.status_code >= 500:
             raise IBKRTransientError(
@@ -402,6 +411,12 @@ class ClientPortalTransport:
         )
         return [x for x in rows if isinstance(x, dict)]
 
+    def contract_info(self, conid: int) -> dict[str, Any]:
+        payload = self._request("GET", f"/iserver/contract/{int(conid)}/info")
+        if not isinstance(payload, dict):
+            raise IBKRRequestError("unexpected contract-info payload")
+        return payload
+
 
 @dataclass
 class BrokerReconcile:
@@ -519,8 +534,8 @@ class IBKRPaperBroker:
     def ensure_ready(self) -> None:
         if self._ready:
             return
-        self.transport.authenticate()
-        accounts = self.transport.accounts()
+        self._retry(self.transport.authenticate)
+        accounts = self._retry(self.transport.accounts)
         if self.config.account_id not in accounts:
             raise IBKRConfigError(
                 f"account {self.config.account_id} is not in the gateway's "
@@ -577,6 +592,10 @@ class IBKRPaperBroker:
     def executions(self) -> list[dict[str, Any]]:
         self.ensure_ready()
         return self._retry(self.transport.executions)
+
+    def contract_info(self, conid: int) -> dict[str, Any]:
+        self.ensure_ready()
+        return self._retry(self.transport.contract_info, int(conid))
 
     def read_snapshot(self, now: str | None = None) -> IBKRReadOnlySnapshot:
         """Fetch one coherent read-only account view; never writes."""

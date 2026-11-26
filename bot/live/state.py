@@ -122,6 +122,11 @@ class LiveState:
     fees_paid_eur: float = 0.0
     financing_paid_eur: float = 0.0
     realized_pnl_eur: float = 0.0
+    dividend_income: float = 0.0
+    dividend_withholding: float = 0.0
+    dividend_income_eur: float = 0.0
+    dividend_withholding_eur: float = 0.0
+    corporate_actions: list[dict[str, Any]] = field(default_factory=list)
     last_fx_rate: float | None = None
     last_fx_date: str | None = None
     last_equity_eur: float | None = None
@@ -214,6 +219,11 @@ class LiveState:
             "fees_paid_eur": _f(self.fees_paid_eur),
             "financing_paid_eur": _f(self.financing_paid_eur),
             "realized_pnl_eur": _f(self.realized_pnl_eur),
+            "dividend_income": _f(self.dividend_income),
+            "dividend_withholding": _f(self.dividend_withholding),
+            "dividend_income_eur": _f(self.dividend_income_eur),
+            "dividend_withholding_eur": _f(self.dividend_withholding_eur),
+            "corporate_actions": [dict(x) for x in self.corporate_actions],
             "last_fx_rate": _f(self.last_fx_rate, 8),
             "last_fx_date": self.last_fx_date,
             "last_equity_eur": _f(self.last_equity_eur),
@@ -267,6 +277,11 @@ class LiveState:
             fees_paid_eur=float(raw.get("fees_paid_eur", 0.0)),
             financing_paid_eur=float(raw.get("financing_paid_eur", 0.0)),
             realized_pnl_eur=float(raw.get("realized_pnl_eur", 0.0)),
+            dividend_income=float(raw.get("dividend_income", 0.0)),
+            dividend_withholding=float(raw.get("dividend_withholding", 0.0)),
+            dividend_income_eur=float(raw.get("dividend_income_eur", 0.0)),
+            dividend_withholding_eur=float(raw.get("dividend_withholding_eur", 0.0)),
+            corporate_actions=[dict(x) for x in (raw.get("corporate_actions") or [])],
             last_fx_rate=(
                 None if raw.get("last_fx_rate") is None else float(raw["last_fx_rate"])
             ),
@@ -302,6 +317,9 @@ class StateStore:
         self.cfg = cfg
         self.path = cfg.state_path
         self.ledger_path = cfg.ledger_path
+        self.corporate_actions_path = cfg.ledger_path.with_name(
+            f"{cfg.ledger_path.stem}_corporate_actions.csv"
+        )
         self.lock_path = cfg.lock_path
 
     def exists(self) -> bool:
@@ -411,5 +429,56 @@ class StateStore:
             if not row:
                 continue
             if self.upsert_ledger(row):
+                changed += 1
+        return changed
+
+    def corporate_action_rows(self) -> list[dict[str, str]]:
+        if not self.corporate_actions_path.exists():
+            return []
+        with open(self.corporate_actions_path, newline="") as fh:
+            return list(csv.DictReader(fh))
+
+    def upsert_corporate_action(self, event: dict[str, Any]) -> bool:
+        """Insert/replace one corporate-action row keyed by event_id."""
+        event_id = str(event.get("event_id", ""))
+        if not event_id:
+            raise StateError("corporate action needs an event_id")
+        rows = self.corporate_action_rows()
+        clean = {str(k): ("" if v is None else str(v)) for k, v in event.items()}
+        out: list[dict[str, str]] = []
+        found = False
+        for old in rows:
+            if old.get("event_id") == event_id:
+                if not found:
+                    out.append(clean)
+                found = True
+            else:
+                out.append(old)
+        if not found:
+            out.append(clean)
+        out.sort(key=lambda r: (r.get("session", ""), r.get("event_id", "")))
+        fields: list[str] = []
+        for r in out:
+            for k in r:
+                if k not in fields:
+                    fields.append(k)
+        self.corporate_actions_path.parent.mkdir(parents=True, exist_ok=True)
+        tmp = self.corporate_actions_path.with_name(
+            f"{self.corporate_actions_path.name}.{os.getpid()}.tmp"
+        )
+        with open(tmp, "w", newline="") as fh:
+            writer = csv.DictWriter(fh, fieldnames=fields, extrasaction="ignore")
+            writer.writeheader()
+            for r in out:
+                writer.writerow(r)
+            fh.flush()
+            os.fsync(fh.fileno())
+        os.replace(tmp, self.corporate_actions_path)
+        return True
+
+    def sync_corporate_actions(self, state: LiveState) -> int:
+        changed = 0
+        for event in state.corporate_actions:
+            if self.upsert_corporate_action(event):
                 changed += 1
         return changed

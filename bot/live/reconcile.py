@@ -12,6 +12,7 @@ from dataclasses import dataclass, field
 from typing import Any
 
 from .config import LiveConfig
+from .corporate import apply_event
 from .models import Portfolio
 from .state import LiveState, StateStore
 
@@ -116,11 +117,25 @@ def reconcile(
                         f"fill {fill.fill_id} session {fill.session} != plan fill "
                         f"{plan.fill_session}"
                     )
+
+    # Rebuild in session order. A corporate action is an open-of-session event,
+    # so it applies before that session's fills (priority 0 vs 1).
+    timeline = [
+        (str(e.get("session", "")), 0, "action", e) for e in state.corporate_actions
+    ]
+    timeline += [(str(f.session), 1, "fill", f) for f in fills.values()]
+    for _, _, kind, item in sorted(timeline, key=lambda x: (x[0], x[1])):
+        if kind == "action":
             try:
-                realized += rebuilt.apply_fill(fill)
+                apply_event(rebuilt, item)
             except ValueError as exc:
                 report.fail(str(exc))
-            fees += fill.commission
+        else:
+            try:
+                realized += rebuilt.apply_fill(item)
+            except ValueError as exc:
+                report.fail(str(exc))
+            fees += item.commission
 
     rebuilt.cash -= float(state.financing_paid)
     for ticker, pos in sorted(state.portfolio.positions.items()):
@@ -244,9 +259,20 @@ def reconcile(
                 "cannot use it"
             )
 
+    # Corporate-action ledger: every state event must have its persisted row.
+    ca_rows = store.corporate_action_rows()
+    ca_ids = {row.get("event_id") for row in ca_rows}
+    for event in state.corporate_actions:
+        eid = event.get("event_id")
+        if eid not in ca_ids:
+            report.fail(f"corporate action {eid} has no ledger row")
+    for eid in sorted(ca_ids - {e.get("event_id") for e in state.corporate_actions}):
+        report.warn(f"corporate-action ledger row not in state: {eid}")
+
     report.metrics["plans"] = len(state.plans)
     report.metrics["orders"] = len(orders)
     report.metrics["fills"] = len(fills)
+    report.metrics["corporate_actions"] = len(state.corporate_actions)
     report.metrics["positions"] = sum(
         1 for p in state.portfolio.positions.values() if p.active
     )
