@@ -157,6 +157,39 @@ verified date, not a track record; do not quote a forward edge until 5/5. If the
 legacy logger cannot produce a close-valid row, the book is marked unhealthy even
 though the live state may be valid; the two tracks are deliberately kept separate.
 
+## Gate report (read-only)
+
+`scripts/forward_gate.py` is the audit gate. It reads `results/paper_audit.csv`
+and the per-book `paper_daily*.csv`; it never writes an audit or paper row.
+`--write-status` updates only `results/forward_gate.md` (equity, drawdown, data
+freshness, reconcile, next required session, per-book checks). `--check` is the
+automation-safe exit-code wrapper.
+
+```bash
+uv run python scripts/forward_gate.py                  # table
+uv run python scripts/forward_gate.py --json           # machine-readable
+uv run python scripts/forward_gate.py --check --write-status
+uv run python scripts/forward_gate.py --check --since 2026-11-25
+```
+
+Exit codes: `0` PASS (all required books >=5 verified), `2` WAIT (short but
+healthy), `3` BLOCKED (missing/duplicate/conflicting rows, stale benchmark,
+missed required session, or reconcile failure), `1` unexpected error. `--since`
+prints NEW VERIFIED dates; it does not change the gate count.
+
+Run it immediately after the daily job so a MISSED/BLOCKED condition is visible in
+the same cron/service log:
+
+```bash
+uv run python scripts/forward_daily.py --paper --tax
+uv run python scripts/forward_gate.py --check --write-status
+```
+
+Only distinct verified dates count. Duplicate dates, non-verified rows, preview
+rows with `close_valid=False`, holidays and missing files are reported explicitly.
+The current gate on 2026-11-26 (holiday) is US 0/5, TECH 1/5, tax 0/5; the next
+required session is 2026-11-27. No 2026-11-26 row exists and none is fabricated.
+
 ## Tests
 
 ```bash
