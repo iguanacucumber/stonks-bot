@@ -164,6 +164,19 @@ and the tax/estate benefit is clear; otherwise reject the vehicle change while
 documenting the qualitative estate benefit. No look-ahead in FX conversion;
 tests use synthetic bars.
 
+### H7 — Futures leverage (v6)
+
+Test whether 2.5x index exposure is cheaper through equity-index futures
+(ES/NQ) than through an ETF plus 5%/yr margin. Use continuous ES=F/NQ=F and
+MES=F/MNQ=F histories; model quarterly roll at 1 bp + 0.5 bp commission,
+0.5 bp monthly rebalance, 4.50%/yr implied futures financing, 0%/3% cash
+collateral interest, and annual French PFU with ten-year loss carry. No
+look-ahead: position set at the prior close.
+
+Pass: futures after-tax EUR wealth and maxDD must both be better than the
+same-index ETF+margin control, and futures must win a majority of 5-year
+windows. Otherwise reject and keep ETF+margin.
+
 ## File ownership
 
 - `bot/research/`: harness (orchestrator).
@@ -177,6 +190,8 @@ tests use synthetic bars.
   `results/pit_tech.md`.
 - v5 UCITS work: `bot/research/ucits.py`, `scripts/research_ucits_core.py`,
   `tests/test_ucits.py`, `results/ucits_core.md`.
+- v6 futures work: `bot/futures.py`, `scripts/research_futures.py`,
+  `tests/test_futures.py`, `results/futures.md`.
 
 Workers do not edit shared earnings code (`bot/backtest.py`, `bot/strategy.py`)
 and do not commit. The orchestrator reviews and commits.
