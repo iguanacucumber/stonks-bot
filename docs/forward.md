@@ -29,6 +29,9 @@ sends a real order.
 6. Reconcile each live book (fills, orders, positions, cash, EUR fields, ledger).
 7. Write `results/forward_status.md` with books, session, orders, reconcile state,
    paper dates and verified-gate status. Exit `0` only when every book is healthy.
+8. The daily automation then runs `forward_gate.py --lock` (append the proof
+   lockbox) and `forward_watchdog.py` (missed-session/blocked-run alert). The
+   daily command itself never writes the lockbox.
 
 Dry-run is the default. It plans and prints; it writes no state, ledger or status
 file. `--paper` is the only writer.
@@ -42,7 +45,9 @@ uv run python scripts/forward_daily.py --no-refresh
 # Daily paper run: refresh stale bars, run both books, reconcile, write status
 uv run python scripts/forward_daily.py --paper
 
-# Include the core-only tax book
+# Include the core-only tax book. The gate has a separate tax/TECH row, so the
+# daily automation must use --tax or the tax gate will block after its first
+# expected session.
 uv run python scripts/forward_daily.py --paper --tax
 
 # Replay a completed session through the live engine only.
@@ -93,19 +98,93 @@ gate. The tax book is a third, separate gate.
 - **Partial run:** each book is independent. A US failure does not silently mark
   TECH as failed or vice versa; the status table shows which book needs attention.
 
+## Proof lockbox (append-only)
+
+`results/forward_proof.jsonl` is the proof ledger. It is separate from the gate
+counter: `forward_gate.py` still counts only distinct verified dates in
+`paper_audit.csv`. The lockbox records one JSONL line per verified
+`(date, book, market)` with:
+
+- `date`, `book`, `market`, the session at lock time and `recorded_at`;
+- the cumulative gate count at that date (`gate.verified`/`target`/`status`) and
+  the total the gate observed (`gate.observed`);
+- SHA-256 hashes and paths for `paper_audit.csv`, the book's
+  `paper_daily*.csv` and the live state file (state is local; `present: false`
+  with `sha256: null` on a clean checkout);
+- the exact verification command, the completed session and
+  `close_valid: true`;
+- `prev_hash` and `record_hash`, a SHA-256 hash chain over the whole record.
+
+Append only, after the gate is clean:
+
+```bash
+uv run python scripts/forward_gate.py --check --write-status \
+  --lock --require-state --lockbox results/forward_proof.jsonl
+```
+
+`--require-state` refuses a new record when `state/live/<book>_<market>.json`
+is absent. The production daily run should use it; a historical backfill on a
+clean checkout may omit it and will record `live_state.present=false`.
+
+The lockbox rejects, before writing:
+
+- a non-NYSE-session date (weekend/holiday) or a date after the completed
+  session;
+- a duplicate `(date, book, market)` (a rerun is a no-op, never a second row);
+- an audit-only row: the same date must have a close-valid paper row;
+- a record created before the session's actual close (13:30 ET half-day,
+  16:30 ET normal), even if a caller passes a synthetic report;
+- a broken/edited/reordered hash chain, a partial final line, or a gate count
+  that is not sequential for the book.
+
+The lockbox cannot stop someone deleting the file; it makes an edit, reorder,
+duplicate or partial append detectable, and the watchdog compares it with the
+audit. Commit/push it with `results/` so the external copy can detect deletion
+or truncation.
+
+## Watchdog (fail closed)
+
+```bash
+uv run python scripts/forward_watchdog.py
+uv run python scripts/forward_watchdog.py --json
+```
+
+The watchdog reads the gate, the lockbox and `results/forward_status.md`. It
+exits `2` when the gate is BLOCKED, a verified audit date is unlocked, the
+lockbox chain is invalid, the daily status is missing/ATTENTION, the daily
+session is behind the last completed session, or a required session was missed.
+A healthy short track is exit `0` with status `WAIT`. It prints the exact next
+session, whether it is a half-day (`13:00` close, gate at `13:30 ET`), the
+per-book remaining dates and the ETA. It never writes an audit/paper row.
+
 ## Scheduler examples
 
 Do not enable automatically. Run after the US close and after the data updater.
-`--paper` triggers the incremental refresh; keep one scheduler only.
+`--paper` triggers the incremental refresh; keep one scheduler only. The daily
+path is three commands: daily run, clean-gate lock, watchdog. Run the watchdog
+even when the daily command fails so the alert includes the reason.
+
+```bash
+uv run python scripts/forward_daily.py --paper --tax
+uv run python scripts/forward_gate.py --check --write-status \
+  --lock --require-state
+uv run python scripts/forward_watchdog.py
+```
 
 Cron (server timezone UTC; 21:45 UTC is 16:45 ET in EST, 17:45 ET in EDT):
 
 ```cron
 45 21 * * 1-5 stonks cd /opt/stonks-bot && \
   mkdir -p state/live && \
-  flock -n state/live/forward.lock \
-  uv run python scripts/forward_daily.py --paper >> state/live/forward.log 2>&1
+  flock -n state/live/forward.lock sh -c '\
+    uv run python scripts/forward_daily.py --paper --tax >> state/live/forward.log 2>&1; \
+    uv run python scripts/forward_gate.py --check --write-status --lock --require-state >> state/live/forward.log 2>&1; \
+    uv run python scripts/forward_watchdog.py >> state/live/forward.log 2>&1'
 ```
+
+The watchdog is the last command, so its exit code is the cron alert. On a
+half-day the 21:45 UTC run is 17:45 ET (or 16:45 ET in winter); both are after
+the 13:30 ET data gate, but never run a half-day manually before 13:30 ET.
 
 Because cron uses a fixed UTC hour, use a systemd timer with a timezone if the
 one-hour DST shift matters. Example (adjust paths/user):
@@ -120,7 +199,12 @@ After=network-online.target
 [Service]
 Type=oneshot
 WorkingDirectory=/opt/stonks-bot
-ExecStart=/usr/bin/env uv run python scripts/forward_daily.py --paper
+# Run the daily books, append the proof lockbox, then let the watchdog set the
+# unit result. --tax is required because the gate has a separate tax/TECH row.
+ExecStart=/bin/sh -c '\
+  uv run python scripts/forward_daily.py --paper --tax; \
+  uv run python scripts/forward_gate.py --check --write-status --lock --require-state; \
+  exec uv run python scripts/forward_watchdog.py'
 User=stonks
 Group=stonks
 ```
@@ -158,13 +242,14 @@ verified date, not a track record; do not quote a forward edge until 5/5. If the
 legacy logger cannot produce a close-valid row, the book is marked unhealthy even
 though the live state may be valid; the two tracks are deliberately kept separate.
 
-## Gate report (read-only)
+## Gate report (audit-only)
 
 `scripts/forward_gate.py` is the audit gate. It reads `results/paper_audit.csv`
 and the per-book `paper_daily*.csv`; it never writes an audit or paper row.
 `--write-status` updates only `results/forward_gate.md` (equity, drawdown, data
-freshness, reconcile, next required session, per-book checks). `--check` is the
-automation-safe exit-code wrapper.
+freshness, reconcile, next required session, per-book checks). `--lock` is the
+only other write: it appends the proof lockbox after a clean gate. `--check` is
+the automation-safe exit-code wrapper.
 
 ```bash
 uv run python scripts/forward_gate.py                  # table
@@ -173,6 +258,8 @@ uv run python scripts/forward_gate.py --check --write-status
 uv run python scripts/forward_gate.py --check --snapshot results/forward_gate_snapshot.json
 uv run python scripts/forward_gate.py --check --log results/forward_gate_log.jsonl
 uv run python scripts/forward_gate.py --check --since 2026-11-25
+uv run python scripts/forward_gate.py --check --write-status --lock
+uv run python scripts/forward_watchdog.py
 ```
 
 Exit codes: `0` **PASS or WAIT** (a healthy short track is not an automation
@@ -197,7 +284,13 @@ Only distinct verified dates count. Duplicate dates/conflicting rows are exclude
 entirely and mark the book BLOCKED; non-verified rows, preview rows with
 `close_valid=False`, holidays and missing files are reported explicitly. The
 current gate on 2026-11-26 (holiday) is US 0/5, TECH 1/5, tax 0/5; the next
-required session is 2026-11-27. No 2026-11-26 row exists and none is fabricated.
+required session is 2026-11-27 (half-day, 13:00 ET close). No 2026-11-26 row
+exists and none is fabricated. The lockbox contains the real 2026-11-25
+`monthly/TECH` record only; 2026-11-27 cannot be locked before 13:30 ET.
+
+`results/forward_proof.md` is the human proof summary. Its current wall-clock
+blocker is explicit: the 11-27 session has not happened yet at this commit, so
+the gate is WAIT and the lockbox has no 11-27 row.
 
 The calendar's remaining sessions from 2026-11-25 are:
 
@@ -222,6 +315,8 @@ to a writable session. A half-day snapshot before 13:30 is never close-valid.
 
 ```bash
 uv run python tests/test_forward.py
+uv run python tests/test_forward_gate.py
+uv run python tests/test_forward_proof.py
 uv run python tests/test_live.py
 uv run python tests/test_ops.py
 uv run python tests/test_core.py
@@ -243,3 +338,9 @@ health failure.
 - Paper uses adjusted cache prices, not raw broker fills; no real broker, no secrets.
 - `paper_daily.py`/`paper_report.py` remain the source of the verified gate; changing
   their assumptions requires re-baselining.
+- The lockbox is append-only evidence, not a second accounting engine. It cannot
+  prove a live state file existed after the fact; it records the hash if present
+  at lock time. Use `--require-state` on the production daily path so every new
+  session has a state hash.
+- Deleting the lockbox is not silently accepted: the watchdog fails when the
+  audit has verified dates with no lockbox record. Keep the pushed copy.

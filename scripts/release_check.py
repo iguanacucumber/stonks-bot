@@ -37,12 +37,14 @@ import tempfile
 import time
 from typing import Callable
 
+import pandas as pd
+
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(ROOT / "scripts"))
 
 from bot.dashboard.collect import gates_from_audit, parse_forward_status  # noqa: E402
-from bot.live import calendar  # noqa: E402
+from bot.live import calendar, proof  # noqa: E402
 import reproduce as reproduce_cli  # noqa: E402
 
 EXPECTED_SNAPSHOT = "2026-11-25"
@@ -461,6 +463,48 @@ def check_forward_gate(
     return "WAIT", detail
 
 
+def check_forward_proof(lockbox_path: Path, audit_path: Path) -> tuple[str, str]:
+    """Every verified audit date must have an append-only lockbox record.
+
+    The lockbox is evidence, never a counter. A missing/edited chain is a FAIL;
+    a short but fully locked track is a WAIT.
+    """
+    if not audit_path.exists():
+        return "FAIL", f"{audit_path.name} is missing"
+    try:
+        records = proof.load_records(lockbox_path, now=datetime.now(timezone.utc))
+    except proof.ProofError as exc:
+        return "FAIL", f"lockbox invalid: {exc}"
+    if not lockbox_path.exists():
+        records = []
+    locked = {(str(r["date"]), str(r["book"]), str(r["market"])) for r in records}
+    audit_rows = pd.read_csv(audit_path)
+    if not {"book", "market", "date", "verified"}.issubset(audit_rows.columns):
+        return "FAIL", f"{audit_path.name} missing required columns"
+    verified = audit_rows[
+        audit_rows["verified"].astype(str).str.lower().isin(["true", "1", "yes"])
+    ]
+    dates = verified.assign(date=pd.to_datetime(verified["date"]).dt.date)
+    missing: list[str] = []
+    for (book, market, day), group in dates.groupby(["book", "market", "date"]):
+        key = (str(day), str(book), str(market))
+        if len(group) > 1:
+            missing.append(f"{book}/{market} {day} duplicate audit rows")
+        elif key not in locked:
+            missing.append(f"{book}/{market} {day} unlocked")
+    if missing:
+        return "FAIL", "; ".join(sorted(missing))
+    if not records:
+        return "WAIT", "no verified dates and no lockbox records yet"
+    last = max(str(r["date"]) for r in records)
+    counts: dict[tuple[str, str], int] = {}
+    for rec in records:
+        key = (str(rec["book"]), str(rec["market"]))
+        counts[key] = counts.get(key, 0) + 1
+    books = ", ".join(f"{b}/{m}={n}" for (b, m), n in sorted(counts.items()))
+    return "PASS", (f"{len(records)} record(s), last={last}, chain=OK, locked={books}")
+
+
 def parse_short3_verdict(text: str) -> str | None:
     """Extract a short-horizon III verdict from a markdown report."""
     match = re.search(
@@ -773,6 +817,20 @@ def run_checks(
             "forward_gate",
             gate_check,
             command="results/forward_gate.md + paper_audit.csv",
+        )
+    )
+
+    def proof_check() -> tuple[str, str]:
+        return check_forward_proof(
+            ROOT / "results" / "forward_proof.jsonl",
+            ROOT / "results" / "paper_audit.csv",
+        )
+
+    report.checks.append(
+        _run(
+            "forward_proof",
+            proof_check,
+            command="results/forward_proof.jsonl verify + audit keys",
         )
     )
 

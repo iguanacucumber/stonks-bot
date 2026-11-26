@@ -1,6 +1,7 @@
 cache/
 results/*.csv
 results/*.jsonl
+!results/forward_proof.jsonl
 .venv/
 __pycache__/
 results/*.log

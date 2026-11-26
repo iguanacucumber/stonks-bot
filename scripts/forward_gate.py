@@ -17,7 +17,12 @@ Run:
   uv run python scripts/forward_gate.py
   uv run python scripts/forward_gate.py --json
   uv run python scripts/forward_gate.py --check --write-status
+  uv run python scripts/forward_gate.py --check --write-status --lock
   uv run python scripts/forward_gate.py --check --since 2026-11-25
+
+``--lock`` appends newly verified dates to ``results/forward_proof.jsonl`` only
+when the gate is WAIT/PASS. The lockbox is evidence, not a counter; the gate
+still counts only distinct verified dates in ``paper_audit.csv``.
 """
 
 from __future__ import annotations
@@ -36,7 +41,7 @@ sys.path.insert(0, str(ROOT))
 import pandas as pd  # noqa: E402
 
 from bot import data  # noqa: E402
-from bot.live import calendar  # noqa: E402
+from bot.live import calendar, proof  # noqa: E402
 
 ET = ZoneInfo("America/New_York")
 DEFAULT_BOOKS = (("monthly", "US"), ("monthly", "TECH"), ("tax", "TECH"))
@@ -64,6 +69,8 @@ class BookGate:
     duplicate_dates: int = 0
     last_verified: str | None = None
     last_paper: str | None = None
+    verified_dates: list[str] = field(default_factory=list)
+    close_valid_dates: list[str] = field(default_factory=list)
     next_required: str | None = None
     remaining_required: list[str] = field(default_factory=list)
     eta: str | None = None
@@ -91,6 +98,8 @@ class BookGate:
             "duplicate_dates": self.duplicate_dates,
             "last_verified": self.last_verified,
             "last_paper": self.last_paper,
+            "verified_dates": self.verified_dates,
+            "close_valid_dates": self.close_valid_dates,
             "next_required": self.next_required,
             "remaining_required": self.remaining_required,
             "eta": self.eta,
@@ -114,6 +123,7 @@ class GateReport:
     books: list[BookGate]
     issues: list[str] = field(default_factory=list)
     status_path: str | None = None
+    lockbox: dict | None = None
 
     @property
     def ok(self) -> bool:
@@ -132,6 +142,7 @@ class GateReport:
             "blocked": self.blocked,
             "issues": self.issues,
             "status_path": self.status_path,
+            "lockbox": self.lockbox,
             "books": [b.to_dict() for b in self.books],
         }
 
@@ -154,6 +165,13 @@ class GateReport:
                 out.append(f"    NEW VERIFIED: {', '.join(b.new_verified)}")
         for issue in self.issues:
             out.append(f"  BLOCKED: {issue}")
+        if self.lockbox:
+            out.append(
+                "  lockbox: "
+                f"{self.lockbox.get('records', 0)} record(s), "
+                f"last={self.lockbox.get('last') or 'none'}, "
+                f"chain={self.lockbox.get('chain', '?')}"
+            )
         return out
 
 
@@ -194,8 +212,12 @@ def _paper_path(book: str, results_dir: Path) -> Path:
     )
 
 
-def _state_path(book: str, market: str) -> Path:
-    return ROOT / "state" / "live" / f"{book}_{market.lower()}.json"
+def _state_dir(state_dir: Path | None = None) -> Path:
+    return Path(state_dir) if state_dir is not None else ROOT / "state" / "live"
+
+
+def _state_path(book: str, market: str, state_dir: Path | None = None) -> Path:
+    return _state_dir(state_dir) / f"{book}_{market.lower()}.json"
 
 
 def _read_audit(results_dir: Path) -> pd.DataFrame:
@@ -230,9 +252,11 @@ def _read_paper(book: str, market: str, results_dir: Path) -> pd.DataFrame:
     return df
 
 
-def _reconcile_state(book: str, market: str) -> tuple[str, list[str]]:
+def _reconcile_state(
+    book: str, market: str, state_dir: Path | None = None
+) -> tuple[str, list[str]]:
     """Read-only state/ledger reconcile; no state is 'no state', not a failure."""
-    path = _state_path(book, market)
+    path = _state_path(book, market, state_dir)
     if not path.exists():
         return "no state", []
     try:
@@ -240,7 +264,11 @@ def _reconcile_state(book: str, market: str) -> tuple[str, list[str]]:
         from bot.live.config import LiveConfig
         from bot.live.state import StateStore
 
-        cfg = LiveConfig(book=book, market=market)
+        cfg = LiveConfig(
+            book=book,
+            market=market,
+            state_dir=str(_state_dir(state_dir)),
+        )
         rep = reconcile.reconcile(
             cfg, StateStore(cfg).load(allow_config_change=True), StateStore(cfg)
         )
@@ -287,6 +315,7 @@ def collect_gate(
     now: str | datetime | None = None,
     since: str | None = None,
     bench_last: str | date | None = None,
+    state_dir: Path | None = None,
 ) -> GateReport:
     results_dir = Path(results_dir or (ROOT / "results"))
     books = books or list(DEFAULT_BOOKS)
@@ -388,6 +417,9 @@ def collect_gate(
                 sub = sub[~sub["date"].dt.date.astype(str).isin(set(invalid_dates))]
             bg.verified = int(sub["verified"].sum())
             bg.rejected = int((~sub["verified"]).sum())
+            bg.verified_dates = sorted(
+                {str(d) for d in sub.loc[sub["verified"], "date"].dt.date.astype(str)}
+            )
             if bg.verified:
                 bg.last_verified = str(sub.loc[sub["verified"], "date"].max().date())
         # New verified dates since a supplied baseline.
@@ -405,6 +437,9 @@ def collect_gate(
             bg.paper_rows = len(paper)
             close = paper[paper["close_valid"]].copy()
             bg.close_valid = int(close["quote_date"].nunique())
+            bg.close_valid_dates = sorted(
+                {str(d) for d in close["quote_date"].dt.date.astype(str)}
+            )
             if len(paper):
                 bg.last_paper = str(paper["quote_date"].max().date())
             if len(close) and "equity" in close:
@@ -469,19 +504,18 @@ def collect_gate(
         except Exception as exc:  # noqa: BLE001
             bg.issues.append(f"paper read failed: {exc}")
 
-        bg.reconcile, rec_issues = _reconcile_state(book, market)
+        bg.reconcile, rec_issues = _reconcile_state(book, market, state_dir)
         if bg.reconcile == "FAIL":
             bg.issues.extend(f"reconcile: {x}" for x in rec_issues)
 
-        last_seen = None
-        for value in (bg.last_verified, bg.last_paper):
-            if value:
-                d = date.fromisoformat(value)
-                last_seen = d if last_seen is None else max(last_seen, d)
-        if bg.last_verified is None and bg.last_paper is not None:
-            # A preview row is not verified, but it tells us the book has started.
-            pass
-        bg.next_required = str(_next_required(last_seen, today, after_close))
+        # Only a verified date advances the required-session list. A preview row
+        # with close_valid=False is not evidence and must never hide the session
+        # it failed to verify; otherwise an unverified row on 11-27 would make
+        # the gate expect 11-30 and silently skip the missed 11-27.
+        last_verified = (
+            date.fromisoformat(bg.last_verified) if bg.last_verified else None
+        )
+        bg.next_required = str(_next_required(last_verified, today, after_close))
         next_session = date.fromisoformat(bg.next_required)
         # The remaining sessions are the next real NYSE sessions needed to reach
         # the target. Do not skip a normal session (for example 11-30) just
@@ -608,6 +642,29 @@ def _write_status(report: GateReport, path: Path) -> None:
             lines.append(f"- NEW VERIFIED: {', '.join(b.new_verified)}")
     if report.issues:
         lines += ["", "## Global blockers", ""] + [f"- {x}" for x in report.issues]
+    if report.lockbox:
+        lines += ["", "## Proof lockbox", ""]
+        lock_path = str(report.lockbox.get("path") or "")
+        try:
+            lock_path = str(Path(lock_path).resolve().relative_to(ROOT.resolve()))
+        except ValueError:
+            pass
+        lines.append(f"- path: `{lock_path}`")
+        lines.append(
+            f"- records: {report.lockbox.get('records', 0)}; "
+            f"last: {report.lockbox.get('last') or 'none'}; "
+            f"chain: {report.lockbox.get('chain', '?')}"
+        )
+        new = report.lockbox.get("appended") or []
+        skipped = report.lockbox.get("skipped") or []
+        if new:
+            lines.append(f"- appended this run: {', '.join(new)}")
+        if skipped:
+            lines.append(f"- already locked: {', '.join(skipped)}")
+        lines.append(
+            "- the lockbox records hashes and a hash chain; it never changes "
+            "`paper_audit.csv` or a paper row."
+        )
     lines += [
         "",
         "Only distinct verified dates in `results/paper_audit.csv` count. "
@@ -619,6 +676,43 @@ def _write_status(report: GateReport, path: Path) -> None:
     tmp = path.with_name(f"{path.name}.tmp")
     tmp.write_text("\n".join(lines))
     tmp.replace(path)
+
+
+def _verification_command(lockbox_path: Path) -> str:
+    try:
+        shown = lockbox_path.resolve().relative_to(ROOT.resolve())
+    except ValueError:
+        shown = lockbox_path
+    return (
+        f"uv run python scripts/forward_gate.py --check --write-status --lock {shown}"
+    )
+
+
+def _lock_report(
+    report: GateReport,
+    *,
+    lockbox_path: Path,
+    results_dir: Path,
+    state_dir: Path | None,
+    require_state: bool = False,
+) -> proof.AppendResult:
+    """Append verified dates from an already-computed gate report."""
+    result = proof.append_from_report(
+        report,
+        results_dir=results_dir,
+        state_dir=state_dir or (ROOT / "state" / "live"),
+        lockbox=lockbox_path,
+        repo_root=ROOT,
+        now=report.now,
+        command=_verification_command(lockbox_path),
+        require_state=require_state,
+    )
+    report.lockbox = result.to_dict()
+    try:
+        report.lockbox["path"] = str(lockbox_path.resolve().relative_to(ROOT.resolve()))
+    except ValueError:
+        pass
+    return result
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -636,8 +730,24 @@ def main(argv: list[str] | None = None) -> int:
         default=None,
         help="append one compact JSONL gate record (no secrets)",
     )
+    ap.add_argument(
+        "--lock",
+        action="store_true",
+        help="append newly verified sessions to the proof lockbox",
+    )
+    ap.add_argument(
+        "--lockbox",
+        default=None,
+        help="lockbox JSONL path (default results/forward_proof.jsonl)",
+    )
+    ap.add_argument(
+        "--require-state",
+        action="store_true",
+        help="refuse a new lock record when the live state file is absent",
+    )
     ap.add_argument("--status-file", default=None)
     ap.add_argument("--results-dir", default=None)
+    ap.add_argument("--state-dir", default=None)
     ap.add_argument("--target", type=int, default=TARGET_DEFAULT)
     ap.add_argument("--now", default=None, help=argparse.SUPPRESS)
     ap.add_argument(
@@ -667,10 +777,27 @@ def main(argv: list[str] | None = None) -> int:
             now=args.now,
             since=args.since,
             bench_last=args.bench_last,
+            state_dir=Path(args.state_dir) if args.state_dir else None,
         )
     except Exception as exc:  # noqa: BLE001
         print(f"ERROR: {exc}")
         return EXIT_ERROR
+    results_dir = Path(args.results_dir) if args.results_dir else ROOT / "results"
+    lockbox_path = (
+        Path(args.lockbox) if args.lockbox else results_dir / proof.DEFAULT_NAME
+    )
+    if args.lock:
+        try:
+            _lock_report(
+                report,
+                lockbox_path=lockbox_path,
+                results_dir=results_dir,
+                state_dir=Path(args.state_dir) if args.state_dir else None,
+                require_state=args.require_state,
+            )
+        except proof.ProofError as exc:
+            print(f"LOCKBOX BLOCKED: {exc}")
+            return EXIT_BLOCKED
     if args.write_status:
         path = (
             Path(args.status_file)
