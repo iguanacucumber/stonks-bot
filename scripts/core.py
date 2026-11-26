@@ -13,7 +13,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 import pandas as pd  # noqa: E402
 
-from bot import backtest, markets, strategy, universe  # noqa: E402
+from bot import backtest, markets, strategy  # noqa: E402
 
 BASE = dict(
     rebalance_mode="calendar",
@@ -53,8 +53,6 @@ def main():
     rows = []
     for name in markets.MARKETS:
         panel, mem = markets.build(name)
-        if name != "US":
-            universe.canonical = lambda t: t
         f_s, m_s = one(panel, mem, "SOXX")
         f_m, m_m = one(panel, mem, "SMH")
         rows.append(
@@ -73,8 +71,6 @@ def main():
     df = pd.DataFrame(rows)
     for name in ("US", "TECH"):
         panel, mem = markets.build(name)
-        if name != "US":
-            universe.canonical = lambda t: t
         s2, _ = one(panel, mem, "SOXX", 2.0, matrix=False)
         m2, _ = one(panel, mem, "SMH", 2.0, matrix=False)
         df.loc[df.market == name, ["soxx2x", "smh2x"]] = [s2, m2]

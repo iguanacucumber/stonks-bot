@@ -21,7 +21,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 import pandas as pd  # noqa: E402
 
-from bot import backtest, data, markets, strategy, universe  # noqa: E402
+from bot import backtest, data, markets, strategy  # noqa: E402
 
 START = "2015-01-01"
 END_2022 = "2022-12-30"
@@ -101,9 +101,6 @@ def tier1() -> list[dict]:
     rows = []
     for name, spec in markets.MARKETS.items():
         panel, mem = markets.build(name)
-        if name != "US":
-            # Yahoo Europe keeps the "." in symbols; the S&P alias map does not.
-            universe.canonical = lambda t: t
         traded = [t for t in panel.ticker.unique() if t not in ("SPY", "SOXX")]
         cov = full_history(panel, traded)
         bench_res, bm, _ = benchmark(panel, mem)

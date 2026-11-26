@@ -6,7 +6,7 @@ ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 import numpy as np
 import pandas as pd
-from bot import backtest, france, markets, strategy, universe
+from bot import backtest, france, markets, strategy
 from scripts.france import BASE
 
 BANDS = (0.01, 0.015, 0.02, 0.025, 0.03, 0.04, 0.05)
@@ -31,7 +31,6 @@ def bootstrap(rets, block=21, n=1000, seed=13):
 
 def main():
     panel, mem = markets.build("TECH")
-    universe.canonical = lambda t: t
     kw = dict(BASE)
     kw.update(france.kwargs("TECH", "Interactive Brokers", "cto", 10000, panel))
     res = {}

@@ -16,7 +16,7 @@ ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(ROOT / "scripts"))
 
-from bot import backtest, france, markets, strategy, universe  # noqa: E402
+from bot import backtest, france, markets, strategy  # noqa: E402
 from paper_daily import (  # noqa: E402
     book_config,
     book_paths,
@@ -587,6 +587,21 @@ def main():
         )
     )
     assert len(r1.trades) >= len(r2.trades), "bimonthly should trade no more"
+
+    # membership resolves against the panel, not one mutable global: the US
+    # alias AAA.B becomes AAA-B, while a non-US AI.PA keeps its dot.
+    mdates = pd.bdate_range("2020-01-01", periods=2)
+    mrows = [
+        (d, t, 100.0, 1_000_000) for t in ("AAA-B", "AI.PA", "SPY") for d in mdates
+    ]
+    mpanel = pd.DataFrame(mrows, columns=["date", "ticker", "adjclose", "volume"])
+    mmem = pd.DataFrame({"date": [mdates[0], mdates[0]], "ticker": ["AAA.B", "AI.PA"]})
+    mmkt = strategy.Market(
+        mpanel,
+        mmem,
+        strategy.Config(start=str(mdates[0].date()), core=None, trend_ma=0),
+    )
+    assert mmkt.members_at(mdates[0]) == {"AAA-B", "AI.PA"}
 
     print(
         f"ok: {len(res.equity)} days, final {res.equity.iloc[-1]:.3f}, "

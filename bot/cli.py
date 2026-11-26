@@ -94,9 +94,6 @@ def _load(
     panel, mem = markets.build(
         market, with_range=limit_bps is not None, core_close_fill=core_close_fill
     )
-    if market != "US":
-        # Yahoo Europe/Asia keep the "." in symbols; the S&P alias map does not.
-        universe.canonical = lambda t: t
     kw = dict(PROFILES[profile])
     if country == "fr":
         kw.update(france.kwargs(market, broker, wrapper, capital, panel))

@@ -18,7 +18,7 @@ sys.path.insert(0, str(ROOT / "scripts"))
 
 import pandas as pd  # noqa: E402
 
-from bot import backtest, markets, universe  # noqa: E402
+from bot import backtest, markets  # noqa: E402
 import universal as U  # noqa: E402
 
 SHIPPED = dict(leverage=2.5, trend_ma=200, trend_scale=0.5)
@@ -29,8 +29,6 @@ def tier1_rows() -> list[dict]:
     rows = []
     for name in markets.MARKETS:
         panel, mem = markets.build(name)
-        if name != "US":
-            universe.canonical = lambda t: t
         bench = U.benchmark(panel, mem)[0]
         bench_final = 10000 * bench.equity.iloc[-1]
         for bps in COSTS:

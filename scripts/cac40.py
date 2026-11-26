@@ -113,7 +113,6 @@ def build():
 
 def main():
     # Yahoo Europe keeps the dot; the S&P alias map would rewrite "." to "-"
-    universe.canonical = lambda t: t
     universe.sector_map = lambda: dict(SECTORS)
     panel, mem = build()
 

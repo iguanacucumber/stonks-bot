@@ -15,7 +15,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 import pandas as pd  # noqa: E402
 
-from bot import backtest, markets, strategy, universe  # noqa: E402
+from bot import backtest, markets, strategy  # noqa: E402
 
 BASE = dict(
     rebalance_mode="calendar",
@@ -55,8 +55,6 @@ def main():
     rows = []
     for name in markets.MARKETS:
         panel, mem = markets.build(name)
-        if name != "US":
-            universe.canonical = lambda t: t
         row = {"market": name, "label": markets.MARKETS[name]["label"]}
         for pname, pkw in PROFILES.items():
             pre = one(panel, mem, 0.0, **pkw)

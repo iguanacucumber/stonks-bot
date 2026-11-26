@@ -16,7 +16,7 @@ sys.path.insert(0, str(ROOT))
 
 import pandas as pd  # noqa: E402
 
-from bot import backtest, markets, strategy, universe  # noqa: E402
+from bot import backtest, markets, strategy  # noqa: E402
 
 CFG = dict(
     start="2015-01-01",
@@ -34,8 +34,6 @@ def main() -> None:
     rows = []
     for name in markets.MARKETS:
         panel, mem = markets.build(name)
-        if name != "US":
-            universe.canonical = lambda t: t
         mkt = strategy.Market(panel, mem, strategy.Config(**CFG))
         res = backtest.run(mkt)
         spy = backtest.spy_result(mkt)

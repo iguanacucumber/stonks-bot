@@ -116,8 +116,6 @@ def load(
     core_close_fill: bool = False,
 ):
     panel, mem = markets.build(market, core_close_fill=core_close_fill)
-    if market != "US":
-        universe.canonical = lambda t: t
     cfg = strategy.Config(
         start="2015-01-01",
         rebalance_mode="calendar",

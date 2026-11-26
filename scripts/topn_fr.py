@@ -16,7 +16,7 @@ sys.path.insert(0, str(ROOT))
 import numpy as np  # noqa: E402
 import pandas as pd  # noqa: E402
 
-from bot import backtest, france, markets, strategy, universe  # noqa: E402
+from bot import backtest, france, markets, strategy  # noqa: E402
 from scripts.france import BASE  # noqa: E402
 
 NS = (4, 5, 6, 7, 8, 10)
@@ -45,7 +45,6 @@ def annual(eq: pd.Series, year: int) -> float:
 
 def main() -> None:
     panel, mem = markets.build("TECH")
-    universe.canonical = lambda t: t
     kw = dict(BASE)
     kw.update(france.kwargs("TECH", "Interactive Brokers", "cto", 10000, panel))
     rows = []

@@ -68,8 +68,6 @@ def markets_shipped() -> tuple[pd.DataFrame, pd.DataFrame]:
     t1, t2 = [], []
     for name in markets.MARKETS:
         panel, mem = markets.build(name)
-        if name != "US":
-            universe.canonical = lambda t: t
         r, m, _ = universal.run(
             panel,
             mem,

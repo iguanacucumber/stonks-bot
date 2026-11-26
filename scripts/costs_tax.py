@@ -17,7 +17,7 @@ sys.path.insert(0, str(ROOT))
 
 import pandas as pd  # noqa: E402
 
-from bot import backtest, markets, strategy, universe  # noqa: E402
+from bot import backtest, markets, strategy  # noqa: E402
 
 BASE = dict(
     start="2015-01-01",
@@ -47,8 +47,6 @@ def main() -> None:
     rows = []
     for name in markets.MARKETS:
         panel, mem = markets.build(name)
-        if name != "US":
-            universe.canonical = lambda t: t
         row = {"market": name, "label": markets.MARKETS[name]["label"]}
         for label, kw in PROFILES.items():
             for bps in COSTS:

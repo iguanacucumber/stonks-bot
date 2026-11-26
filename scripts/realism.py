@@ -13,7 +13,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 import pandas as pd  # noqa: E402
 
-from bot import backtest, markets, strategy, universe  # noqa: E402
+from bot import backtest, markets, strategy  # noqa: E402
 
 BASE = dict(
     rebalance_mode="calendar",
@@ -87,8 +87,6 @@ def main():
     cost_rows, tax_rows, var_rows, scen_rows, salt_rows = [], [], [], [], []
     for name in ("US", "TECH"):
         panel, mem = markets.build(name)
-        if name != "US":
-            universe.canonical = lambda t: t
         for exec_price, cost in GRID:
             r = one(panel, mem, exec_price=exec_price, cost_bps=cost)
             cost_rows.append({"market": name, "exec": exec_price, "cost": cost, **r})

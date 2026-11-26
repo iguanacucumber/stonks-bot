@@ -17,7 +17,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 import numpy as np  # noqa: E402
 import pandas as pd  # noqa: E402
 
-from bot import backtest, markets, strategy, universe  # noqa: E402
+from bot import backtest, markets, strategy  # noqa: E402
 
 BASE = dict(
     rebalance_mode="calendar",
@@ -66,10 +66,6 @@ if PROFILE == "tax":
         core_mode="always", leverage_band=0.30, tax_lots="hifo", tax_rate=0.37
     )
 PANEL = markets.build(MARKET)
-if MARKET != "US":
-    universe.canonical = lambda t: t
-
-
 def main():
     panel, mem = PANEL
     dates = panel["date"].drop_duplicates().sort_values().to_numpy()

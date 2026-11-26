@@ -19,7 +19,7 @@ sys.path.insert(0, str(ROOT))
 import numpy as np  # noqa: E402
 import pandas as pd  # noqa: E402
 
-from bot import backtest, france, markets, strategy, universe  # noqa: E402
+from bot import backtest, france, markets, strategy  # noqa: E402
 
 START = "2015-01-01"
 CAPITAL = 10_000.0
@@ -41,7 +41,6 @@ def load(range_: bool, core_close_fill: bool = False):
     panel, mem = markets.build(
         "TECH", with_range=range_, core_close_fill=core_close_fill
     )
-    universe.canonical = lambda t: t
     return panel, mem
 
 

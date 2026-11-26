@@ -16,7 +16,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 import pandas as pd  # noqa: E402
 
-from bot import backtest, markets, strategy, universe  # noqa: E402
+from bot import backtest, markets, strategy  # noqa: E402
 
 START = "2015-01-01"
 BASE = dict(
@@ -72,8 +72,6 @@ def main():
     rows = []
     for name in ("US", "TECH"):
         panel, mem = markets.build(name)
-        if name != "US":
-            universe.canonical = lambda t: t
         for profile, kw in PROFILES.items():
             res, m = run(panel, mem, **kw)
             eq = res.equity

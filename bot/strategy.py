@@ -216,7 +216,10 @@ class Market:
         # pandas factorize, not np.unique: sorting 1M strings dominates the build.
         dcode, dvals = pd.factorize(membership["date"], sort=True)
         tcode, tvals = pd.factorize(membership["ticker"])
-        canon = np.array([universe.canonical(t) for t in tvals])
+        # Resolve against the panel: non-US Yahoo symbols keep their dots, while
+        # S&P aliases such as BRK.B need the canonical hyphen symbol.
+        columns = set(self.px.columns)
+        canon = np.array([t if t in columns else universe.canonical(t) for t in tvals])
         cinv, cuniq = pd.factorize(canon)
         arr = np.zeros((len(dvals), len(cuniq)), dtype=bool)
         arr[dcode, cinv[tcode]] = True

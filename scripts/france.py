@@ -33,7 +33,7 @@ sys.path.insert(0, str(ROOT))
 
 import pandas as pd  # noqa: E402
 
-from bot import backtest, france, markets, strategy, universe  # noqa: E402
+from bot import backtest, france, markets, strategy  # noqa: E402
 
 START = "2015-01-01"
 BASE = dict(
@@ -102,8 +102,6 @@ def run_book(
     mode: str,
 ) -> dict:
     panel, mem = load(market, mode)
-    if market != "US":
-        universe.canonical = lambda t: t
     kw = dict(BASE)
     kw.update(france.kwargs(market, broker, wrapper.lower(), capital, panel))
     if profile == "tax":

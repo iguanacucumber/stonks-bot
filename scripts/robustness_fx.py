@@ -18,7 +18,7 @@ sys.path.insert(0, str(ROOT))
 import numpy as np  # noqa: E402
 import pandas as pd  # noqa: E402
 
-from bot import backtest, france, markets, strategy, universe  # noqa: E402
+from bot import backtest, france, markets, strategy  # noqa: E402
 
 BASE = dict(
     leverage=2.5,
@@ -58,7 +58,6 @@ def bootstrap(rets: np.ndarray, block: int = 21, n: int = 1000, seed: int = 11):
 
 def main() -> None:
     panel, mem = markets.build("TECH")
-    universe.canonical = lambda t: t
     dates = pd.DatetimeIndex(panel["date"].drop_duplicates().sort_values())
 
     windows = []

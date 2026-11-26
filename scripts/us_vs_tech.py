@@ -15,7 +15,7 @@ sys.path.insert(0, str(ROOT))
 
 import pandas as pd  # noqa: E402
 
-from bot import backtest, france, markets, strategy, universe  # noqa: E402
+from bot import backtest, france, markets, strategy  # noqa: E402
 from scripts.france import BASE, run_book  # noqa: E402
 
 
@@ -35,8 +35,6 @@ def main() -> None:
             f"exit {r['exit_tax']:.0f} trades {r['trades']}"
         )
         panel, mem = markets.build(market)
-        if market != "US":
-            universe.canonical = lambda t: t
         kw = dict(BASE)
         kw.pop("start", None)
         kw.update(france.kwargs(market, "Interactive Brokers", "cto", 10000, panel))
