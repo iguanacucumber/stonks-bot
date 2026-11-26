@@ -12,6 +12,7 @@ results/*.log
 !results/paper_ledger_us.csv
 !results/paper_audit.csv
 !results/eval_trials.csv
+!results/covered_calls.csv
 
 # worktree symlinks
 /.venv
