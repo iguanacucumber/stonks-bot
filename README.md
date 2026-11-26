@@ -143,6 +143,13 @@ Sleeve breadth: 4 names reaches **75.3x** after tax (p5 3.27x) but fails the
 2022 test by 0.2 pp and doubles concentration; 5 names falls to 53.4x. Keep the
 6-name sleeve for the forward book; 4 is a risk-on candidate, not the default.
 `results/topn_fr.md`.
+
+Market choice: **US monthly at IBKR is 71.1x after tax, maxDD -63.2%**, versus
+TECH 57.0x / -67.8%. US wins the full window and 2 of 3 five-year windows
+(2018, 2021), with lower full-window drawdown. It is the best backtest; the
+default stays TECH until the current 1/5 forward gate completes, because
+switching now would reset the only live validation. Use `--market US` for the
+best book today. `results/us_vs_tech.md`.
 The optimum depends on the broker's cost structure. `--country fr` now defaults to
 **TECH + monthly + IBKR**; `--profile tax` selects the core-only book. Pass your actual
 `--fx-bps` (per side) to let the CLI choose: at **≥15 bps** it switches the default to
