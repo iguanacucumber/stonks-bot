@@ -2,7 +2,7 @@ name: tests
 
 on:
   push:
-    branches: ["master", "v2/**", "agent/**", "fix/**", "v3/**"]
+    branches: ["master", "v*/**", "agent/**", "fix/**"]
   pull_request:
     branches: ["master"]
 
@@ -33,20 +33,38 @@ jobs:
             echo "::endgroup::"
           done
 
-      # The real cache is 459 MB and is not committed.  If a runner has it,
-      # reproduce the full TECH baseline for 100 bootstrap paths (the 10k-path
-      # run is local evidence, not CI).  If it does not, prove the reproduction
-      # entry point fails/skips cleanly instead of reaching Yahoo.
-      - name: Cache-aware reproduction smoke
+      # The real cache is 459 MB and is not committed.  The guard requires the
+      # complete core set *and* the expected snapshot; one stray bar file must
+      # never trigger a full baseline run.
+      - name: Cache completeness guard
+        id: cache
         run: |
           set -euo pipefail
-          if [ -f cache/bars/SPY.csv ] && [ -f cache/bars/SMH.csv ] && [ -f cache/panel.parquet ]; then
-            uv run python scripts/reproduce.py headline --paths 100 --no-strict
-            uv run python scripts/reproduce.py audit
+          if uv run python scripts/acceptance.py --check-cache --json; then
+            echo "full=true" >> "$GITHUB_OUTPUT"
           else
-            echo "full cache absent in CI: full-cache reproduction skipped"
-            uv run python scripts/reproduce.py audit --allow-missing
+            echo "full=false" >> "$GITHUB_OUTPUT"
           fi
+
+      - name: Acceptance smoke (cache-aware)
+        run: |
+          set -euo pipefail
+          if [ "${{ steps.cache.outputs.full }}" = "true" ]; then
+            uv run python scripts/acceptance.py --json
+          else
+            uv run python scripts/acceptance.py --allow-missing-cache --json
+          fi
+
+      # Full-cache reproduction is local evidence, not a CI requirement.
+      - name: Full-cache reproduction
+        if: steps.cache.outputs.full == 'true'
+        run: |
+          uv run python scripts/reproduce.py headline --paths 100 --no-strict
+          uv run python scripts/reproduce.py audit
+
+      - name: Cache-less reproduction skip
+        if: steps.cache.outputs.full != 'true'
+        run: echo "core cache incomplete or stale - full-cache reproduction skipped"
 
       - name: CLI smoke
         run: |

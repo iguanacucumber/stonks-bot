@@ -84,6 +84,32 @@ def cache_missing(root: Path | None = None) -> list[str]:
     return missing
 
 
+def cache_snapshot(root: Path | None = None) -> str | None:
+    """Return the QQQ snapshot date, or None when it cannot be read."""
+    root = CACHE if root is None else Path(root)
+    path = root / "bars" / "QQQ.csv"
+    if not path.exists() or path.stat().st_size == 0:
+        return None
+    try:
+        dates = pd.read_csv(path, usecols=["date"])["date"]
+        return str(pd.to_datetime(dates).max().date())
+    except Exception:  # noqa: BLE001 - readiness check, never fetch
+        return None
+
+
+def cache_status(root: Path | None = None) -> tuple[list[str], str | None]:
+    """Return readiness problems and the snapshot for a core cache.
+
+    A partial cache is missing, and a stale snapshot is not safe for a full
+    baseline run.  This is the same guard CI uses before touching the engine.
+    """
+    missing = cache_missing(root)
+    snapshot = cache_snapshot(root) if not missing else None
+    if snapshot is not None and snapshot != EXPECTED_SNAPSHOT:
+        missing.append(f"snapshot {snapshot} != {EXPECTED_SNAPSHOT}")
+    return missing, snapshot
+
+
 def _call_json(
     fn: Callable[[list[str]], int], argv: list[str]
 ) -> tuple[int, dict, str]:
@@ -470,8 +496,29 @@ def main(argv: list[str] | None = None) -> int:
         action="store_true",
         help="treat a missing cache as SKIP and exit 0 (CI smoke)",
     )
+    ap.add_argument(
+        "--check-cache",
+        action="store_true",
+        help="exit 0 only when the full core cache is present and fresh",
+    )
     ap.add_argument("--keep", action="store_true", help="keep the temp state dir")
     args = ap.parse_args(argv)
+
+    if args.check_cache:
+        missing, snapshot = cache_status()
+        payload = {
+            "ok": not missing,
+            "snapshot": snapshot,
+            "snapshot_expected": EXPECTED_SNAPSHOT,
+            "cache_missing": missing,
+        }
+        if args.json:
+            print(json.dumps(payload, indent=2, sort_keys=True))
+        elif missing:
+            print(f"CACHE INCOMPLETE: {', '.join(missing)}")
+        else:
+            print(f"CACHE READY: snapshot={snapshot}")
+        return 0 if not missing else 3
 
     base = Path("/tmp/opencode")
     if not base.exists():

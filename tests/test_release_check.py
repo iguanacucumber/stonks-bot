@@ -130,6 +130,16 @@ def test_forward_gate_wait_and_blocked() -> None:
         status, detail = rc.check_forward_gate(gate, audit, expected)
         assert status == "FAIL" and "audit 0 != status 1" in detail
 
+        # The tax row is part of the release gate; dropping it is a hard fail.
+        gate.write_text(
+            GATE.replace(
+                "| tax | TECH | WAIT | 0/5 | 2026-11-27 | n/a | n/a | fresh | no state |\n",
+                "",
+            )
+        )
+        status, detail = rc.check_forward_gate(gate, audit, expected)
+        assert status == "FAIL" and "missing tax/TECH" in detail
+
 
 def test_short3_verdict_missing_pending_and_reject() -> None:
     with TemporaryDirectory() as td:
@@ -173,12 +183,46 @@ def test_secret_scan_and_cache_detection() -> None:
     with TemporaryDirectory() as td:
         tmp = Path(td)
         clean = tmp / "clean.md"
+        placeholder = tmp / "placeholder.md"
         dirty = tmp / "dirty.env"
         clean.write_text("STONKS_ALERT_WEBHOOK_URL=\n")
+        placeholder.write_text(
+            "STONKS_SMTP_PASSWORD=changeme\nSTONKS_ALERT_TELEGRAM_BOT_TOKEN=<token>\n"
+        )
         dirty.write_text("token=ghp_" + "a" * 36 + "\n")
-        assert rc.scan_for_secrets([clean]) == []
+        assert rc.scan_for_secrets([clean, placeholder]) == []
         assert rc.scan_for_secrets([dirty]) == [str(dirty)]
         assert rc.cache_missing(tmp)
+
+
+def test_acceptance_validator_rejects_skip() -> None:
+    good = {
+        "ok": True,
+        "checks": [{"name": "cache", "status": "PASS"}],
+    }
+    assert rc.validate_acceptance_payload(good) == "1/1 checks pass"
+    skipped = {
+        "ok": True,
+        "checks": [{"name": "cache", "status": "SKIP"}],
+    }
+    try:
+        rc.validate_acceptance_payload(skipped)
+    except AssertionError as exc:
+        assert "not run" in str(exc)
+    else:
+        raise AssertionError("SKIP was accepted as a full release-check result")
+
+
+def test_release_temp_dir_contract() -> None:
+    with TemporaryDirectory() as td:
+        tmp = Path(td)
+        state, owned = rc._make_state_dir(tmp)
+        assert state == tmp and owned is False
+        state, owned = rc._make_state_dir(None, base=tmp)
+        assert owned is True and state.parent == tmp and state.exists()
+        import shutil
+
+        shutil.rmtree(state)
 
 
 def main() -> None:
