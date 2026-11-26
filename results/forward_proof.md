@@ -114,8 +114,9 @@ accelerated by a code change, a replay or a fabricated row.
 
 ## Release check
 
-`scripts/release_check.py` was re-run on this branch: **PASS**, 11 PASS / 1 WAIT
-/ 0 FAIL, 37/37 test scripts. The new `forward_proof` check reports:
+`scripts/release_check.py` was re-run on this branch after rebasing onto
+`origin/master`: **PASS**, 11 PASS / 1 WAIT / 0 FAIL, 38/38 test scripts. The
+new `forward_proof` check reports:
 
 ```text
 forward_proof PASS  1 record(s), last=2026-11-25, chain=OK, locked=monthly/TECH=1
