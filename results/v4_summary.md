@@ -8,7 +8,7 @@ research only; no real orders.
 | workstream | issue | branch | PR | merge commit |
 |---|---|---|---|---|
 | PIT Nasdaq-100 universe | #35 | `v4/pit-tech` | #41 | `19d9d03` |
-| Tax-loss harvesting | #36 | `v4/tax-harvest` | #42 | pending rebase |
+| Tax-loss harvesting | #36 | `v4/tax-harvest` | #42 | `034fa2b` |
 | Forward paper loop | #37 | `v4/forward` | #39 | `c5004a6` |
 | EUR/USD hedge | #38 | `v4/fx-hedge` | #40 | `9a5843d` |
 
