@@ -144,7 +144,7 @@ Sleeve breadth: 4 names reaches **75.3x** after tax (p5 3.27x) but fails the
 6-name sleeve for the forward book; 4 is a risk-on candidate, not the default.
 `results/topn_fr.md`.
 
-Market choice: **US monthly at IBKR is 71.1x after tax, maxDD -63.2%**, versus
+Market choice: **US monthly at IBKR is 70.9x after tax, maxDD -63.2%**, versus
 TECH 57.0x / -67.8%. US wins the full window and **7/7 five-year starts** (median
 **6.83x** vs SPY 1.74x, worst 2.95x), with lower drawdown. It is the best
 backtest; the default stays TECH until the current 1/5 forward gate completes,
