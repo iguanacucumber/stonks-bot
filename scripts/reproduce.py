@@ -20,9 +20,9 @@ trade-date FX).  The terminal-FX number is never used as the real-life result.
 
 Expected snapshot 2026-11-25, IBKR CTO, €10k:
 
-    TECH monthly   51.82x native  57.01x terminal-FX  53.45x EUR ledger
-    TECH tax       46.26x         50.89x              49.32x
-    US monthly     64.41x         70.86x              66.72x
+    TECH monthly   51.82x native  57.01x terminal-FX  53.42x EUR ledger
+    TECH tax       46.26x         50.89x              49.27x
+    US monthly     64.41x         70.86x              66.69x
 
 Strict mode fails the command if the cache moves those numbers.
 """
@@ -61,10 +61,10 @@ BASELINE_BOOKS = (
     ("US", "tax"),
 )
 EXPECTED_BASELINE = {
-    ("TECH", "monthly"): {"native": 51.82, "terminal_fx": 57.01, "eur_ledger": 52.98},
-    ("TECH", "tax"): {"native": 46.26, "terminal_fx": 50.89, "eur_ledger": 48.80},
-    ("US", "monthly"): {"native": 64.41, "terminal_fx": 70.86, "eur_ledger": 66.17},
-    ("US", "tax"): {"native": 46.26, "terminal_fx": 50.89, "eur_ledger": 48.80},
+    ("TECH", "monthly"): {"native": 51.82, "terminal_fx": 57.01, "eur_ledger": 53.42},
+    ("TECH", "tax"): {"native": 46.26, "terminal_fx": 50.89, "eur_ledger": 49.27},
+    ("US", "monthly"): {"native": 64.41, "terminal_fx": 70.86, "eur_ledger": 66.69},
+    ("US", "tax"): {"native": 46.26, "terminal_fx": 50.89, "eur_ledger": 49.27},
 }
 BASELINE_TOL = 0.05
 EXPECTED = {
@@ -438,7 +438,7 @@ def headline(args: argparse.Namespace) -> int:
     if not currency.eur_ledger_available():
         print(
             "  eur_ledger   unavailable on this branch: bot/eur_ledger.py is "
-            "PR #22; documented 53.45x in results/eur_ledger.md"
+            "PR #22; documented 53.42x in results/eur_ledger.md"
         )
 
     # Bootstrap: 10k stationary and circular-block paths.
@@ -553,7 +553,7 @@ def headline(args: argparse.Namespace) -> int:
         lines += [
             "",
             "`eur_ledger` is not available in this checkout: `bot/eur_ledger.py` is "
-            "missing. Its committed result is **53.45x** "
+            "missing. Its committed result is **53.42x** "
             "(`results/eur_ledger.md`); do not use the terminal-FX headline as the "
             "real-life EUR number.",
         ]
@@ -565,7 +565,7 @@ def headline(args: argparse.Namespace) -> int:
         f"{args.paths:,} paths, 21-day mean block, seed 7. The exit-tax overlay "
         f"applies the path's effective final rate ({exit_rate:.1%}) to gains above "
         "1.0; realised taxes are already inside the returns. This is **not** the "
-        "EUR-ledger after-tax path and is not comparable to 53.45x.",
+        "EUR-ledger after-tax path and is not comparable to 53.42x.",
         "",
         "| method | terminal p5 | terminal p50 | terminal p95 | maxDD p5 | exit-tax overlay p5 |",
         "|---|---:|---:|---:|---:|---:|",
@@ -897,7 +897,7 @@ def survivorship_command(args: argparse.Namespace) -> int:
     lines += [f"- UNSAFE: {x}" for x in report["verdict"]["unsafe_claims"]]
     lines += [
         "",
-        "**Bottom line:** even the real-life EUR-ledger TECH number (53.45x) is an "
+        "**Bottom line:** even the real-life EUR-ledger TECH number (53.42x) is an "
         "upper bound on a biased universe, not an expected return; the 57.01x "
         "terminal-FX headline is not the real-life result. Report ETF-only "
         "(QQQ/SMH) results as survivorship-free evidence; treat stock-sleeve alpha "

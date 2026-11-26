@@ -205,6 +205,30 @@ def test_year_dependent_dividend_rate() -> None:
     assert abs(out.after_tax - 990.86) < 1e-9
 
 
+def test_reinvested_dividend_basis() -> None:
+    # Adjusted closes already reinvest the gross dividend. If that same gross
+    # amount were not added to the lot basis, a later sale would tax it again as
+    # price gain: 9 -> 10 after a 1 EUR dividend would pay dividend PFU plus
+    # 0.314 capital-gains PFU. Basis-adjusted, only the dividend PFU remains.
+    d = ["2020-01-02", "2020-06-01", "2020-12-31"]
+    r = Res({x: 1.0 for x in d}, [trade(d[0], "BUY", 0.1, 9.0)])
+    divs = pd.DataFrame(
+        {"date": [pd.Timestamp(d[1])], "ticker": ["AAA"], "amount": [1.0]}
+    )
+    out = eur_ledger.replay(
+        r,
+        panel(d, [9.0, 9.0, 10.0]),
+        "FR",
+        free(tax_rate=0.314, withholding_rate=0.0, capital=10.0),
+        dividends=divs,
+    )
+    assert abs(out.dividend_basis_added - 1.0) < 1e-9
+    assert abs(out.unrealized_gain) < 1e-9
+    assert abs(out.exit_tax) < 1e-9
+    assert abs(out.after_tax - 10.686) < 1e-9
+    print("ok: reinvested dividend raises basis, no dividend double tax")
+
+
 def test_cash_accumulation() -> None:
     d = ["2020-01-02", "2020-01-03", "2020-01-06"]
     r = Res({x: 1.0 for x in d}, [trade(d[0], "BUY", 0.01, 10.0)])
@@ -260,7 +284,9 @@ def test_loss_carry_is_separate() -> None:
     # Dividend PFU is paid even though a capital loss is carried forward.
     assert abs(out.dividend_tax_total - 3.14) < 1e-9
     assert abs(out.tax_paid) < 1e-12  # 2022 gain absorbed by the 2020 loss
-    assert abs(out.loss_carry - 40.0) < 1e-9
+    # The dividend raises the 2022 lot basis by the gross 10 EUR, so the 2022
+    # capital gain is zero and the full 2020 loss remains carried.
+    assert abs(out.loss_carry - 50.0) < 1e-9
     assert abs(out.dividends_gross - 10.0) < 1e-9
 
 
@@ -268,6 +294,7 @@ def main() -> None:
     test_parse_and_cache()
     test_withholding_and_credit()
     test_year_dependent_dividend_rate()
+    test_reinvested_dividend_basis()
     test_cash_accumulation()
     test_loss_carry_is_separate()
     print(

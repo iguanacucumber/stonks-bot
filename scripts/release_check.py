@@ -46,10 +46,10 @@ import reproduce as reproduce_cli  # noqa: E402
 
 EXPECTED_SNAPSHOT = "2026-11-25"
 EXPECTED_EUR = {
-    ("US", "monthly"): 66.17,
-    ("TECH", "monthly"): 52.98,
-    ("US", "tax"): 48.80,
-    ("TECH", "tax"): 48.80,
+    ("US", "monthly"): 66.69,
+    ("TECH", "monthly"): 53.42,
+    ("US", "tax"): 49.27,
+    ("TECH", "tax"): 49.27,
 }
 EXPECTED_GATES = {
     ("monthly", "US"): 0,
