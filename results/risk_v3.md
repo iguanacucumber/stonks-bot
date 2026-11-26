@@ -21,6 +21,24 @@ US baseline also: pre-tax 84.275x, EUR bootstrap p5/median 3.40x/84.96x
 2019-01-29), EUR 2015-2019 2.98x / 24.4% CAGR / -56.0% DD, EUR 2020-2026 28.31x /
 62.5% CAGR / -57.5% DD, 1,692 trades, 15.5x annual turnover.
 
+### Dividend-tax amendment (before the main sweep)
+
+Adjusted closes reinvest dividends gross, so the EUR-ledger numbers above still
+omit French PFU on distributions. The runner now subtracts an explicit daily
+drag on gross weights: SMH 1.0%, SPY 1.3%, QQQ 0.6%, TLT 3.8%, IEF 2.8%,
+BIL 4.5%, GLD 0%, other equities 1.2% default, all at 31.4%. This is a modelled
+yield, not a point-in-time dividend history; it is deliberately harsh on bond
+and cash sleeves.
+
+| book | EUR after tax, gross-div | dividend drag | **EUR after tax, net** | net maxDD | net p5 |
+|---|---:|---:|---:|---:|---:|
+| **US monthly (primary)** | 66.022x | 67 bps/yr | **60.998x** | **-57.76%** | **2.38x** |
+| TECH monthly (secondary) | 52.894x | 67 bps/yr | 48.819x | -66.19% | 2.10x |
+
+The primary baseline is now **60.998x, -57.76% maxDD, 2.38x p5, 23.6% / 61.4%
+half CAGRs**. The gross-div 66.02x is retained only for reconciliation with PR
+#22. All decision gates below use the net-of-dividend-tax baseline.
+
 The original TECH baseline below is retained as the secondary reproduction and as
 the continuation of the pre-registered TECH table.
 
@@ -144,25 +162,29 @@ cap; if none is above trend, hold BIL. 1x gross, 5 bps cost, next-open fill.
 No international equity sleeve is included because EFA/EEM are not in the
 committed cache; this is stated as a limitation.
 
-- A1: 60% TECH book + 40% SPY, fixed, total target gross 1.9.
-- A2: 60% TECH book + 40% cross-asset trend sleeve, fixed, total gross 1.9.
-- A3: 50% TECH book + 50% cross-asset trend sleeve, total gross 1.75.
-- A4: dynamic vol-parity TECH/ETF-trend weights, 63-day realized vol of each
+- A1: 60% **primary book** + 40% SPY, fixed, total target gross 1.9.
+- A2: 60% **primary book** + 40% cross-asset trend sleeve, fixed, total gross 1.9.
+- A3: 50% **primary book** + 50% cross-asset trend sleeve, total gross 1.75.
+- A4: dynamic vol-parity primary/ETF-trend weights, 63-day realized vol of each
   standalone sleeve, weight cap 30-80%, rebalanced monthly; total gross
   `w*2.5 + (1-w)*1.0`.
-- A5: 70% TECH book + 30% cross-asset trend sleeve, total gross 2.05.
+- A5: 70% **primary book** + 30% cross-asset trend sleeve, total gross 2.05.
+- A6 (post-hoc balanced neighbour): 70% **primary book** + 30% SPY, total gross
+  2.05. A1's 60/40 and A6's 70/30 are the two ends of the balanced trade-off;
+  neither was selected by a full-sample parameter sweep. A6 is not eligible for
+  max-growth adoption.
 - All combined books run inside one engine/account so French tax and costs are
   account-level, not a synthetic blend. The custom selector scales the TECH and
   ETF sleeve targets; `cfg.leverage` is 2.5 and the selector returns
   `target_gross / 2.5`.
 - The standalone ETF trend sleeve (E0) is reported as a benchmark and is a
   diagnostic, not a candidate profile.
-- Balanced gates (opt-in profile, not default, **US primary**):
-  1. EUR maxDD no worse than -45% (at least 12.5 pp better than the -57.54%
+- Balanced gates (opt-in profile, not default, **US primary, net dividends**):
+  1. EUR maxDD no worse than -47% (at least 10.8 pp better than the -57.76%
      US baseline);
-  2. EUR after-tax multiple >= 30x (at least 45% of the 66.02x baseline);
-  3. bootstrap after-tax p5 >= 2.58x (no worse than the US baseline);
-  4. EUR 2018 and 2022 both better than the US baseline (-30.09%, -33.31%);
+  2. EUR after-tax multiple >= 28x (at least 46% of the 61.00x baseline);
+  3. bootstrap after-tax p5 >= 2.38x (no worse than the US baseline);
+  4. EUR 2018 and 2022 both better than the US baseline (-30.5%, -33.6%);
   5. each half (2015-2019, 2020-2026) after-tax CAGR >= 20% and half maxDD no
      worse than -50%;
   6. 2x-cost EUR after-tax multiple >= 25x.
@@ -196,25 +218,26 @@ engine accounting, and is labelled as such:
   bootstrap p5 at least 20% better. If the premium drag is not paid back in
   compounding, reject.
 
-## Max-growth acceptance (pre-registered, US primary)
+## Max-growth acceptance (pre-registered, US primary, net dividends)
 
 A variant replaces the max-growth default only if all hold:
 
-1. EUR after-tax multiple >= 66.02x, or >= 62.72x (95%) with p5 at least 20%
+1. EUR after-tax multiple >= 61.00x, or >= 57.95x (95%) with p5 at least 20%
    higher and EUR maxDD at least 10 pp better.
-2. EUR maxDD no worse than -57.54%.
-3. EUR 2018 no worse than -32.1% and 2022 no worse than -35.3%; at least one of
+2. EUR maxDD no worse than -57.76%.
+3. EUR 2018 no worse than -32.5% and 2022 no worse than -35.6%; at least one of
    the two improves by >= 3 pp.
-4. Bootstrap EUR after-tax p5 >= 2.58x.
+4. Bootstrap EUR after-tax p5 >= 2.38x.
 5. It beats its leverage-matched control on EUR after-tax multiple or p5.
 6. Neither half (2015-2019, 2020-2026) loses more than 2 pp of CAGR versus the
-   US baseline halves (24.4%, 62.5%).
+   US baseline halves (23.6%, 61.4%).
 7. Neighbouring pre-registered parameter values point the same way; no
    knife-edge. If the primary fails but a neighbour wins, the family is rejected.
 
-TECH secondary max-growth gates remain: EUR after-tax >= 52.89x, maxDD no worse
-than -66.02%, 2018 no worse than -11.8%, 2022 no worse than -54.3%, p5 >= 2.39x,
-beats the matched control, and neither half loses more than 2 pp of CAGR.
+TECH secondary max-growth gates (net dividends): EUR after-tax >= 48.82x, maxDD
+no worse than -66.19%, 2018 no worse than -12.3%, 2022 no worse than -54.5%,
+p5 >= 2.10x, beats the matched control, and neither half loses more than 2 pp of
+CAGR.
 
 If a family fails, all its variants stay in the report and the default does not
 change.
@@ -248,7 +271,8 @@ Every variant gets a label; failures are kept.
 
 ## Trial count
 
-- Strategy variants: 1 baseline + 6 V + 3 D + 3 R + 5 A + 4 H = 22.
+- Strategy variants: 1 baseline + 7 V (including post-hoc V7) + 3 D + 3 R +
+  5 pre-registered A + 4 H = 23, plus one post-hoc balanced neighbour A6 = 24.
 - Diagnostic runs: 6 leverage-matched V controls + 1 ETF-trend benchmark +
   1 cost-sensitivity baseline + finalist cost reruns. Reported separately.
 - No post-hoc parameter sweep will be used to rescue a failed family. If a
