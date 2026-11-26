@@ -113,7 +113,7 @@ La stratégie française combine le CAC 40 et le cœur SMH. Elle finit à 6,4x c
 | balanced (opt-in papier) | 70 % livre US + 30 % SPY | 36,9x | -46,0 % | -27,4 % |
 | conservative (opt-in papier) | US mensuel 1,5x | 19,4x | -40,2 % | -20,3 % |
 
-`max_growth` maximise le capital mais perd plus de la moitié au pire creux. `balanced` abandonne environ la moitié du capital final pour 10 points de baisse en moins ; c'est le profil d'un humain qui doit rester investi. Les deux opt-in sont post-hoc et étiquetés `paper`, pas validés forward. Détails : `docs/profiles.md`.
+`max_growth` maximise le capital mais perd plus de la moitié au pire creux. `balanced` abandonne environ la moitié du capital final pour 10 points de baisse en moins ; c'est le profil d'un humain qui doit rester investi. Les deux opt-in sont post-hoc et étiquetés `paper`, pas validés forward. `uv run python -m bot.cli backtest --country fr --profile balanced` reproduit le profil balanced. Détails : `docs/profiles.md`.
 
 ## Le risque, sans filtre
 

@@ -29,10 +29,10 @@ is the annual tax-lot replay. These are liquidation values, not promises.
 ## Implementation
 
 - `max_growth`: current CLI default (`--country fr`, US, monthly, 2.5x).
-- `balanced`: needs a selector that blends 70% of the primary book with 30% SPY
-  and scales the total to 2.05 gross before the daily 200-day cut. The risk
-  workstream's `scripts/risk_v3.py` has the reference selector; integrate it into
-  the CLI only after the PR is merged and the gates are re-run.
+- `balanced`: `python -m bot.cli backtest --country fr --profile balanced`
+  (`bot/profiles.py`). It blends 70% of the primary book with 30% SPY and scales
+  the total to 2.05 gross before the daily 200-day cut. Post-hoc and `paper`;
+  not a default.
 - `conservative`: `--leverage 1.5` on the US monthly book. It is a leverage choice,
   not a new strategy.
 
