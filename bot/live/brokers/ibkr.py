@@ -96,6 +96,10 @@ class IBKRDuplicateOrder(IBKRRequestError):
     """IBKR rejected a duplicate ``cOID``; the caller should adopt the old order."""
 
 
+class IBKRReadOnlyError(IBKRError):
+    """A write was attempted on a broker explicitly opened read-only."""
+
+
 @dataclass(frozen=True)
 class IBKRPaperConfig:
     """Environment-only configuration. No secret is stored here."""
@@ -108,6 +112,7 @@ class IBKRPaperConfig:
     max_retries: int = 3
     backoff_base: float = 0.5
     verify_ssl: bool = True
+    read_only: bool = False
 
     def __post_init__(self) -> None:
         account = str(self.account_id).strip()
@@ -154,6 +159,7 @@ class IBKRPaperConfig:
             max_retries=_env_int(e, "IBKR_PAPER_MAX_RETRIES", 3),
             backoff_base=_env_float(e, "IBKR_PAPER_BACKOFF", 0.5),
             verify_ssl=_env_bool(e, "IBKR_PAPER_VERIFY_SSL", True),
+            read_only=_env_bool(e, "IBKR_PAPER_READ_ONLY", False),
         )
 
 
@@ -213,6 +219,10 @@ class IBKRTransport(Protocol):
     def positions(self) -> list[dict[str, Any]]: ...
 
     def cash(self) -> float: ...
+
+    def account_summary(self) -> dict[str, Any]: ...
+
+    def executions(self) -> list[dict[str, Any]]: ...
 
 
 class ClientPortalTransport:
@@ -375,6 +385,23 @@ class ClientPortalTransport:
                     return float(row[key])
         raise IBKRRequestError("ledger has no cash balance")
 
+    def account_summary(self) -> dict[str, Any]:
+        payload = self._request("GET", f"/portfolio/{self.config.account_id}/summary")
+        if not isinstance(payload, dict):
+            raise IBKRRequestError("unexpected account-summary payload")
+        return payload
+
+    def executions(self) -> list[dict[str, Any]]:
+        payload = self._request("GET", "/iserver/account/trades")
+        if isinstance(payload, list):
+            return [x for x in payload if isinstance(x, dict)]
+        rows = (
+            payload.get("trades", payload.get("executions", []))
+            if isinstance(payload, dict)
+            else []
+        )
+        return [x for x in rows if isinstance(x, dict)]
+
 
 @dataclass
 class BrokerReconcile:
@@ -387,6 +414,12 @@ class BrokerReconcile:
     broker_positions: dict[str, float] = field(default_factory=dict)
     bot_cash: float = 0.0
     bot_positions: dict[str, float] = field(default_factory=dict)
+    missing_positions: list[str] = field(default_factory=list)
+    extra_positions: list[str] = field(default_factory=list)
+    position_diffs: dict[str, tuple[float, float]] = field(default_factory=dict)
+    unknown_executions: list[str] = field(default_factory=list)
+    stale: bool = False
+    account_id: str | None = None
 
     def fail(self, message: str) -> None:
         self.ok = False
@@ -396,15 +429,43 @@ class BrokerReconcile:
         out = [
             (
                 f"IBKR RECONCILE {'OK' if self.ok else 'FAIL'}  "
+                f"account={self.account_id or '?'}  "
                 f"bot_cash={self.bot_cash:,.2f}  broker_cash="
                 f"{'?' if self.broker_cash is None else f'{self.broker_cash:,.2f}'}"
             )
         ]
+        for ticker in sorted(set(self.broker_positions) | set(self.bot_positions)):
+            if ticker in self.missing_positions:
+                out.append(f"  FAIL: {ticker} missing at broker")
+            elif ticker in self.extra_positions:
+                out.append(f"  FAIL: {ticker} extra at broker")
+            elif ticker in self.position_diffs:
+                b, s = self.position_diffs[ticker]
+                out.append(
+                    f"  FAIL: {ticker} broker {b:g} vs bot {s:g} (diff {b - s:+g})"
+                )
         for issue in self.issues:
             out.append(f"  FAIL: {issue}")
+        for unknown in self.unknown_executions:
+            out.append(f"  FAIL: unknown execution {unknown}")
         for warning in self.warnings:
             out.append(f"  WARN: {warning}")
+        if self.ok:
+            out.append("broker positions, cash, open orders and executions agree")
         return out
+
+
+@dataclass
+class IBKRReadOnlySnapshot:
+    """A read-only account view with an explicit fetch timestamp."""
+
+    account_id: str
+    fetched_at: str
+    summary: dict[str, Any]
+    positions: list[dict[str, Any]]
+    cash: float
+    open_orders: list[dict[str, Any]]
+    executions: list[dict[str, Any]]
 
 
 class IBKRPaperBroker:
@@ -419,9 +480,11 @@ class IBKRPaperBroker:
         *,
         sleeper: Callable[[float], None] | None = None,
         clock: Callable[[], float] | None = None,
+        read_only: bool | None = None,
     ):
         self.transport = transport
         self.config = config
+        self.read_only = bool(config.read_only if read_only is None else read_only)
         self._sleep = sleeper or time.sleep
         self._clock = clock or time.monotonic
         self._ready = False
@@ -436,13 +499,22 @@ class IBKRPaperBroker:
         env: Mapping[str, str] | None = None,
         transport: IBKRTransport | None = None,
         sleeper: Callable[[float], None] | None = None,
+        read_only: bool | None = None,
     ) -> IBKRPaperBroker:
         config = IBKRPaperConfig.from_env(env)
         return cls(
             transport or ClientPortalTransport(config),
             config,
             sleeper=sleeper,
+            read_only=read_only,
         )
+
+    def _guard_write(self, action: str) -> None:
+        if self.read_only:
+            raise IBKRReadOnlyError(
+                f"read-only IBKR session: refusing {action}; "
+                "no order, cancel or replace was sent"
+            )
 
     def ensure_ready(self) -> None:
         if self._ready:
@@ -484,6 +556,45 @@ class IBKRPaperBroker:
         if key not in self._conids:
             self._conids[key] = self._retry(self.transport.resolve_conid, ticker)
         return self._conids[key]
+
+    # --- read-only account surface -------------------------------------
+    def account_summary(self) -> dict[str, Any]:
+        self.ensure_ready()
+        return self._retry(self.transport.account_summary)
+
+    def positions(self) -> list[dict[str, Any]]:
+        self.ensure_ready()
+        return self._retry(self.transport.positions)
+
+    def cash(self) -> float:
+        self.ensure_ready()
+        return float(self._retry(self.transport.cash))
+
+    def open_orders(self) -> list[dict[str, Any]]:
+        self.ensure_ready()
+        return self._retry(self.transport.open_orders)
+
+    def executions(self) -> list[dict[str, Any]]:
+        self.ensure_ready()
+        return self._retry(self.transport.executions)
+
+    def read_snapshot(self, now: str | None = None) -> IBKRReadOnlySnapshot:
+        """Fetch one coherent read-only account view; never writes."""
+        self.ensure_ready()
+        summary = self._retry(self.transport.account_summary)
+        positions = self._retry(self.transport.positions)
+        cash = float(self._retry(self.transport.cash))
+        orders = self._retry(self.transport.open_orders)
+        executions = self._retry(self.transport.executions)
+        return IBKRReadOnlySnapshot(
+            account_id=self.config.account_id,
+            fetched_at=now or _utc_now(),
+            summary=summary if isinstance(summary, dict) else {},
+            positions=[x for x in positions if isinstance(x, dict)],
+            cash=cash,
+            open_orders=[x for x in orders if isinstance(x, dict)],
+            executions=[x for x in executions if isinstance(x, dict)],
+        )
 
     def _payload(self, order: OrderIntent, coid: str) -> dict[str, Any]:
         return {
@@ -588,6 +699,7 @@ class IBKRPaperBroker:
         now: str | None = None,
     ) -> dict[str, Any]:
         """Submit (or adopt) one order exactly once. Returns the broker record."""
+        self._guard_write("submit")
         self.ensure_ready()
         coid = self.client_order_id(order)
         if coid in self._orders:
@@ -737,6 +849,7 @@ class IBKRPaperBroker:
         ``bars`` is the engine's session-open gate. IBKR supplies the actual fill;
         the adapter never fabricates a price from the cached bar.
         """
+        self._guard_write("execute")
         self.ensure_ready()
         fills: list[Fill] = []
         orders = sorted(
@@ -754,6 +867,7 @@ class IBKRPaperBroker:
         return self._retry(self.transport.order_status, broker_order_id)
 
     def cancel(self, broker_order_id: str) -> Any:
+        self._guard_write("cancel")
         self.ensure_ready()
         return self._retry(self.transport.cancel_order, broker_order_id)
 
@@ -764,6 +878,7 @@ class IBKRPaperBroker:
         qty: float | None = None,
         limit_price: float | None = None,
     ) -> Any:
+        self._guard_write("replace")
         self.ensure_ready()
         status = self._retry(self.transport.order_status, broker_order_id)
         conid = status.get("conid") or status.get("contract_id")
@@ -838,6 +953,169 @@ class IBKRPaperBroker:
                 f"{float(portfolio.cash):,.2f} (tol {cash_tol:,.2f})"
             )
         return report
+
+    def reconcile_strict(
+        self,
+        portfolio: Portfolio,
+        *,
+        state: Any | None = None,
+        snapshot: IBKRReadOnlySnapshot | None = None,
+        now: str | None = None,
+        max_snapshot_age: float = 300.0,
+    ) -> BrokerReconcile:
+        """Read-only reconciliation with positions, cash, orders and executions.
+
+        `state` is a LiveState-like object. It is used to detect unknown broker
+        open orders and executions; without it, any broker execution/open order
+        fails the reconciliation. A snapshot older than `max_snapshot_age`
+        seconds also fails closed.
+        """
+        snap = snapshot or self.read_snapshot()
+        report = BrokerReconcile(
+            broker_cash=float(snap.cash),
+            broker_positions=_position_map(snap.positions),
+            bot_cash=float(portfolio.cash),
+            bot_positions={
+                ticker: float(pos.qty)
+                for ticker, pos in portfolio.positions.items()
+                if abs(pos.qty) > 1e-9
+            },
+            account_id=snap.account_id,
+        )
+        # Snapshot age: a read taken for a different session is not evidence.
+        current = _parse_ts(now) if now else datetime.now(UTC)
+        fetched = _parse_ts(snap.fetched_at)
+        if current is None or fetched is None:
+            report.fail("broker snapshot timestamp is missing or unparseable")
+        elif abs((current - fetched).total_seconds()) > max(1.0, max_snapshot_age):
+            report.stale = True
+            report.fail(
+                f"stale broker snapshot: fetched {snap.fetched_at}, "
+                f"now {current.isoformat(timespec='seconds')}"
+            )
+
+        for ticker in sorted(set(report.broker_positions) | set(report.bot_positions)):
+            b = report.broker_positions.get(ticker, 0.0)
+            s = report.bot_positions.get(ticker, 0.0)
+            if abs(b - s) > 1e-4:
+                report.position_diffs[ticker] = (b, s)
+                if ticker not in report.bot_positions:
+                    report.extra_positions.append(ticker)
+                elif ticker not in report.broker_positions:
+                    report.missing_positions.append(ticker)
+                report.fail(f"{ticker}: broker {b:g} != bot {s:g} (diff {b - s:+g})")
+
+        cash_tol = max(1.0, abs(float(portfolio.cash)) * 1e-6)
+        if abs(float(snap.cash) - float(portfolio.cash)) > cash_tol:
+            report.fail(
+                f"cash: broker {float(snap.cash):,.2f} != bot "
+                f"{float(portfolio.cash):,.2f} (tol {cash_tol:,.2f})"
+            )
+
+        bot_orders = []
+        if state is not None:
+            for plan in getattr(state, "plans", {}).values():
+                for order in plan.orders:
+                    if order.status in (PENDING, PARTIAL):
+                        bot_orders.append(order)
+        for row in snap.open_orders:
+            ticker = _ticker_of(row)
+            side = str(row.get("side") or row.get("buySell") or "").upper()
+            qty = abs(_number(row, "quantity", "qty", "remainingQuantity"))
+            matched = any(
+                o.ticker.upper() == ticker
+                and o.side.upper() == side
+                and abs(abs(float(o.remaining)) - qty) <= 1e-4
+                for o in bot_orders
+            )
+            if ticker and not matched:
+                report.fail(f"unknown open order at broker: {ticker} {side} {qty:g}")
+
+        if snap.executions:
+            if state is None:
+                report.unknown_executions.append("all executions (no bot state)")
+                report.fail("broker executions present but no bot state to match")
+            else:
+                fills = list(state.all_fills())
+                for row in snap.executions:
+                    ticker = _ticker_of(row)
+                    side = _side_of(row)
+                    qty = abs(
+                        _number(row, "quantity", "size", "shares", "filledQuantity")
+                    )
+                    session = _execution_session(row)
+                    matched = any(
+                        f.ticker.upper() == ticker
+                        and f.side.upper() == side
+                        and abs(abs(float(f.qty)) - qty) <= 1e-4
+                        and (not session or str(f.session).startswith(session))
+                        for f in fills
+                    )
+                    if ticker and not matched:
+                        label = f"{ticker} {side} {qty:g}"
+                        if session:
+                            label += f" {session}"
+                        report.unknown_executions.append(label)
+                if report.unknown_executions:
+                    report.fail(
+                        f"{len(report.unknown_executions)} unknown execution(s) at broker"
+                    )
+        return report
+
+
+def _ticker_of(row: Mapping[str, Any]) -> str:
+    value = (
+        row.get("ticker")
+        or row.get("symbol")
+        or row.get("contractDesc")
+        or row.get("description")
+        or ""
+    )
+    return str(value).split()[0].upper() if str(value).strip() else ""
+
+
+def _side_of(row: Mapping[str, Any]) -> str:
+    raw = str(row.get("side") or row.get("buySell") or "").upper()
+    if raw in ("BOT", "BUY", "B"):
+        return "BUY"
+    if raw in ("SLD", "SELL", "S"):
+        return "SELL"
+    return raw
+
+
+def _execution_session(row: Mapping[str, Any]) -> str:
+    raw = (
+        row.get("trade_time")
+        or row.get("tradeTime")
+        or row.get("date")
+        or row.get("execution_time")
+        or ""
+    )
+    return str(raw)[:10] if raw else ""
+
+
+def _position_map(rows: list[Mapping[str, Any]]) -> dict[str, float]:
+    out: dict[str, float] = {}
+    for row in rows:
+        ticker = _ticker_of(row)
+        if not ticker:
+            continue
+        qty = _number(row, "position", "qty", "quantity")
+        if abs(qty) > 1e-9:
+            out[ticker] = float(qty)
+    return out
+
+
+def _parse_ts(value: str | datetime | None) -> datetime | None:
+    if value is None:
+        return None
+    if isinstance(value, datetime):
+        return value.astimezone(UTC) if value.tzinfo else value.replace(tzinfo=UTC)
+    try:
+        parsed = datetime.fromisoformat(str(value).replace("Z", "+00:00"))
+    except ValueError:
+        return None
+    return parsed.astimezone(UTC) if parsed.tzinfo else parsed.replace(tzinfo=UTC)
 
 
 def _utc_now() -> str:

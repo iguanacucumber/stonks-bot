@@ -54,6 +54,11 @@ def _add_common(ap: argparse.ArgumentParser) -> None:
         "ibkr-paper requires a Client Portal Gateway and env credentials",
     )
     ap.add_argument(
+        "--read-only",
+        action="store_true",
+        help="IBKR inspection/reconcile only; submission/cancel/replace are refused",
+    )
+    ap.add_argument(
         "--market",
         default=None,
         help=f"any market in bot.markets; default {BEST_EVIDENCE_MARKET} "
@@ -93,6 +98,7 @@ def _config(args: argparse.Namespace) -> LiveConfig:
         "book": args.book,
         "market": args.market,
         "broker": args.broker,
+        "read_only": True if args.read_only else None,
         "capital": args.capital,
         "leverage": args.leverage,
         "dd_stop": args.dd_stop,
@@ -230,27 +236,39 @@ def _status(args: argparse.Namespace) -> int:
         print(f"ERROR: {exc}")
         return EXIT_ERROR
     if args.json:
-        print(
-            json.dumps(
-                {
-                    "status": {
-                        "session": result.session,
-                        "equity": result.equity,
-                        "cash": result.cash,
-                        "gross": result.gross,
-                        "currency": cfg.native_currency,
-                        "reporting_currency": cfg.reporting_currency,
-                        "fx": result.fx,
-                        "blocked_reason": result.blocked_reason,
-                    },
-                    "health": h.to_dict(),
-                    "forward_gate": _forward_gate(cfg),
-                    "recommendation": cfg.recommendation,
-                },
-                indent=2,
-                sort_keys=True,
-            )
-        )
+        payload = {
+            "status": {
+                "session": result.session,
+                "equity": result.equity,
+                "cash": result.cash,
+                "gross": result.gross,
+                "currency": cfg.native_currency,
+                "reporting_currency": cfg.reporting_currency,
+                "fx": result.fx,
+                "blocked_reason": result.blocked_reason,
+            },
+            "health": h.to_dict(),
+            "forward_gate": _forward_gate(cfg),
+            "recommendation": cfg.recommendation,
+            "read_only": cfg.read_only,
+        }
+        if cfg.read_only and cfg.broker == "ibkr-paper":
+            try:
+                snap = engine.broker.read_snapshot(now=args.now)
+                payload["broker_read_only"] = {
+                    "account_id": snap.account_id,
+                    "fetched_at": snap.fetched_at,
+                    "summary": snap.summary,
+                    "positions": snap.positions,
+                    "cash": snap.cash,
+                    "open_orders": snap.open_orders,
+                    "executions": snap.executions,
+                }
+            except Exception as exc:  # noqa: BLE001
+                payload["broker_read_only"] = {"error": str(exc)}
+                print(json.dumps(payload, indent=2, sort_keys=True, default=str))
+                return EXIT_BLOCKED
+        print(json.dumps(payload, indent=2, sort_keys=True, default=str))
     else:
         print(
             report.format_report(
@@ -264,6 +282,21 @@ def _status(args: argparse.Namespace) -> int:
         _print_state(cfg)
         print("\nhealth")
         print("\n".join(h.lines()))
+        if cfg.read_only and cfg.broker == "ibkr-paper":
+            try:
+                snap = engine.broker.read_snapshot(now=args.now)
+            except Exception as exc:  # noqa: BLE001 - operator-facing failure
+                print(f"IBKR READ-ONLY ERROR: {exc}")
+                return EXIT_BLOCKED
+            print(
+                f"\nIBKR READ-ONLY account={snap.account_id} "
+                f"fetched_at={snap.fetched_at} cash={snap.cash:,.2f}"
+            )
+            for row in snap.positions:
+                print(f"  position {row}")
+            for row in snap.open_orders:
+                print(f"  open order {row}")
+            print(f"  executions={len(snap.executions)} (read-only, no orders sent)")
     return EXIT_OK if (not result.blocked and h.ok) else EXIT_BLOCKED
 
 
@@ -301,8 +334,11 @@ def _plan(args: argparse.Namespace) -> int:
 
 def _run(args: argparse.Namespace) -> int:
     cfg = _config(args)
-    engine = LiveEngine(cfg)
     paper = bool(args.paper)
+    if paper and cfg.read_only:
+        print("ERROR: --read-only forbids --paper; no state or order was written")
+        return EXIT_BLOCKED
+    engine = LiveEngine(cfg)
     try:
         if paper:
             result = engine.run(
@@ -345,13 +381,24 @@ def _reconcile(args: argparse.Namespace) -> int:
     cfg = _config(args)
     engine = LiveEngine(cfg)
     broker_rep = None
+    if cfg.read_only and args.repair_ledger:
+        print("ERROR: --read-only forbids --repair-ledger")
+        return EXIT_BLOCKED
     try:
         state = engine.store.load(allow_config_change=args.allow_config_change)
         rep = reconcile.reconcile(
             cfg, state, engine.store, repair_ledger=args.repair_ledger
         )
         if cfg.broker != "paper" and state is not None:
-            broker_rep = engine.broker.reconcile(state.portfolio)
+            strict = getattr(engine.broker, "reconcile_strict", None)
+            if strict is not None:
+                broker_rep = strict(
+                    state.portfolio,
+                    state=state,
+                    now=args.now,
+                )
+            else:
+                broker_rep = engine.broker.reconcile(state.portfolio)
             rep.ok = rep.ok and broker_rep.ok
     except (StateError, EngineError) as exc:
         print(f"ERROR: {exc}")
@@ -377,6 +424,12 @@ def _reconcile(args: argparse.Namespace) -> int:
                             "warnings": broker_rep.warnings,
                             "broker_cash": broker_rep.broker_cash,
                             "broker_positions": broker_rep.broker_positions,
+                            "missing_positions": broker_rep.missing_positions,
+                            "extra_positions": broker_rep.extra_positions,
+                            "position_diffs": broker_rep.position_diffs,
+                            "unknown_executions": broker_rep.unknown_executions,
+                            "stale": broker_rep.stale,
+                            "account_id": broker_rep.account_id,
                         }
                     ),
                 },
