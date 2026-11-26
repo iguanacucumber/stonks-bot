@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import sys
 from pathlib import Path
 
@@ -49,10 +50,12 @@ def verified_mask(df: pd.DataFrame) -> pd.Series:
     """A forward date counts only when returns, weights and fills all match."""
     parts = df["fills"].astype(str).str.split("/", n=1, expand=True)
     full_fills = parts[0] == parts[1]
+    nonempty = pd.to_numeric(parts[0], errors="coerce").fillna(0) > 0
     return (
         (df["diff_bps"].abs() <= MAX_RETURN_DIFF_BPS)
         & (df["max_w_diff_bps"] <= MAX_WEIGHT_DIFF_BPS)
         & full_fills
+        & nonempty
     )
 
 
@@ -61,7 +64,10 @@ def audit_frame(
 ) -> pd.DataFrame:
     """Machine-readable per-date audit: live vs shadow return, gross and fills."""
     left = pd.DataFrame(rows)
-    right = pd.DataFrame(exposure)[["date", "max_w_diff_bps", "fills"]]
+    if exposure:
+        right = pd.DataFrame(exposure)[["date", "max_w_diff_bps", "fills"]]
+    else:
+        right = pd.DataFrame({"date": [], "max_w_diff_bps": [], "fills": []})
     df = left.merge(right, on="date", how="left")
     df.insert(0, "book", book)
     df.insert(1, "market", market)
@@ -88,6 +94,12 @@ def main():
     live = pd.read_csv(daily)
     live = live[live.market == args.market].copy()
     live["quote_date"] = pd.to_datetime(live["quote_date"])
+    live["time"] = pd.to_datetime(live["time"], utc=True, format="mixed")
+    live["reconciled"] = (
+        live["reconciled"].astype(str).str.lower().isin(["true", "1"])
+        if "reconciled" in live.columns
+        else False
+    )
     if "close_valid" in live.columns:
         live["close_valid"] = (
             live["close_valid"].astype(str).str.lower().isin(["true", "1"])
@@ -99,13 +111,8 @@ def main():
     incomplete = 0
     if "data_complete" in live.columns:
         dc = live["data_complete"].astype(str).str.lower().isin(["true", "1"])
-        rec = (
-            live["reconciled"].astype(str).str.lower().isin(["true", "1"])
-            if "reconciled" in live.columns
-            else pd.Series(False, index=live.index)
-        )
-        incomplete = int((~dc & ~rec).sum())
-        live = live[dc | rec]
+        incomplete = int((~dc & ~live["reconciled"]).sum())
+        live = live[dc | live["reconciled"]]
     if live.empty:
         print(
             f"no complete close-valid paper rows for {args.market} "
@@ -117,8 +124,12 @@ def main():
             f"(book {args.book}, market {args.market})"
         )
         return
-    live = live.sort_values("time").drop_duplicates("quote_date", keep="last")
-    live = live.set_index("quote_date").sort_index()
+    live = (
+        live.sort_values(["quote_date", "reconciled", "time"])
+        .drop_duplicates("quote_date", keep="last")
+        .set_index("quote_date")
+        .sort_index()
+    )
 
     _, _, res, _ = load(args.market, 2.5, 200, 0.5, args.book)
     eq = res.equity
@@ -136,9 +147,9 @@ def main():
         if pos < 1:
             continue
         mark, prev = eq.index[pos], eq.index[pos - 1]
+        # Recompute from the current engine instead of trusting the row's own
+        # recorded shadow, which was produced by the logger being audited.
         shadow = eq.loc[mark] / eq.loc[prev] - 1.0
-        if "shadow_move" in r.index and pd.notna(r["shadow_move"]):
-            shadow = float(r["shadow_move"])
         live_val *= 1.0 + r["day_move"]
         shadow_val *= 1.0 + shadow
         gross_shadow = (
@@ -204,7 +215,10 @@ def main():
         )
     else:
         out = audit
-    out.sort_values(["book", "market", "date"]).to_csv(AUDIT, index=False)
+    out = out.sort_values(["book", "market", "date"])
+    tmp = AUDIT.with_name(f"{AUDIT.stem}.{os.getpid()}.tmp{AUDIT.suffix}")
+    out.to_csv(tmp, index=False)
+    os.replace(tmp, AUDIT)
     verified = int(audit["verified"].sum())
     print(
         f"\n{skipped} intraday row(s) skipped (not close-valid)"

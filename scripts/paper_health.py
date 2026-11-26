@@ -22,6 +22,7 @@ sys.path.insert(0, str(ROOT / "scripts"))
 
 import pandas as pd  # noqa: E402
 
+from bot import data  # noqa: E402
 from paper_daily import BOOKS, book_paths  # noqa: E402
 
 ET = ZoneInfo("America/New_York")
@@ -60,10 +61,12 @@ def main() -> int:
         else 0
     )
 
-    after_close = et.hour >= 16
-    weekday = et.weekday() < 5
+    # A market holiday has no SPY bar for the target session, so it is not stale.
+    target = data.target_session(now)
+    spy_last = data._last_date(data.BARS / "SPY.csv", target)
+    session_ready = spy_last is not None and spy_last >= target
     last_valid_et = last_valid.astimezone(ET).date() if last_valid is not None else None
-    stale = bool(weekday and after_close and (last_valid_et != et.date()))
+    stale = bool(session_ready and last_valid_et != target.date())
 
     print(
         f"HEALTH {'STALE' if stale else 'OK'}  book={args.book}  "

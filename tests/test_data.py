@@ -77,8 +77,17 @@ def main() -> None:
         universe.canonical = lambda t: t
         calls: list[tuple[str, pd.Timestamp | None]] = []
 
+        # an intentionally empty JSON must not resurrect stale text entries
+        (cache / "missing.json").write_text("{}")
+        (cache / "missing_symbols.txt").write_text("ANCIENT\n")
+        data._MISSING = None
+        assert "ANCIENT" not in data._missing()
+        data._MISSING = {}
+
         def fetch_at(last: str):
-            def one(symbol: str, force: bool = False, since=None) -> pd.DataFrame:
+            def one(
+                symbol: str, force: bool = False, since=None, target=None
+            ) -> pd.DataFrame:
                 calls.append((symbol, since))
                 df = bars(last)
                 df.to_csv(bars_dir / f"{symbol.replace('/', '_')}.csv", index=False)
@@ -174,6 +183,45 @@ def main() -> None:
             saved = pd.read_csv(bars_dir / "MSFT2.csv")
             assert abs(saved["adjclose"].iloc[0] - old_bars["adjclose"].iloc[0]) < 1e-9
 
+            # a truncated "full" response must not delete cached history
+            long_bars = bars(str(target.date()), start="2026-11-01")
+            long_bars.to_csv(bars_dir / "MSFT3.csv", index=False)
+            long_restated = long_bars.copy()
+            long_restated["adjclose"] *= 0.99
+            long_restated["close"] *= 0.99
+            starts.clear()
+
+            def fake_get3(symbol, start=data.START):
+                starts.append(start)
+                return {"call": len(starts)}
+
+            def fake_parse3(res):
+                return long_restated if res["call"] == 1 else long_restated.tail(2)
+
+            data._get, data._parse = fake_get3, fake_parse3
+            kept = real_fetch("MSFT3", since=target)
+            assert len(kept) == len(long_bars), "truncated full refetch deleted history"
+
+            # volume/OHLC-only corrections merge and rewrite, even when the
+            # adjusted close is unchanged
+            old_bars.to_csv(bars_dir / "MSFT4.csv", index=False)
+            corrected = old_bars.copy()
+            corrected["volume"] = 9_000_000
+            corrected["high"] = corrected["high"] + 50.0
+            data._get = lambda symbol, start=data.START: {"ok": 1}
+            data._parse = lambda res: corrected
+            fixed = real_fetch("MSFT4", since=target)
+            assert float(fixed["volume"].iloc[-1]) == 9_000_000
+            assert float(fixed["high"].iloc[-1]) == corrected["high"].iloc[-1]
+            saved = pd.read_csv(bars_dir / "MSFT4.csv")
+            assert float(saved["volume"].iloc[-1]) == 9_000_000
+
+            # panel slices with the same shape but restated values are not equal
+            pa = data._panel_rows("A", old_bars)
+            pb = pa.copy()
+            pb["adjclose"] *= 0.99
+            assert not data._panel_equal(pa, pb), "panel restatement treated as equal"
+
             # panel: hold on a closed market, write once on a new bar, then no fetch
             for sym in ("AAPL", "SPY", "QQQ", "SOXX", "SMH"):
                 bars("2026-11-24").to_csv(
@@ -221,6 +269,20 @@ def main() -> None:
                 "current panel was rewritten"
             )
             assert len(again) == len(fresh)
+
+            # a per-ticker hole is repaired from cache even when the panel's
+            # global last date is already the target
+            holed = fresh[~((fresh["ticker"] == "AAPL") & (fresh["date"] == target))]
+            holed.to_parquet(cache / "panel.parquet", index=False)
+            calls.clear()
+            data.fetch_one = fetch_at(str(target.date()))
+            repaired = data.update_panel(mem)
+            assert (
+                (repaired["ticker"] == "AAPL") & (repaired["date"] == target)
+            ).any(), "per-ticker panel hole was not repaired"
+            assert "AAPL" in {c[0] for c in calls}, "hole repair did not use cache"
+            fresh = repaired
+            fresh_mtime = (cache / "panel.parquet").stat().st_mtime_ns
 
             # a closed session after a current panel: one probe, no rewrite
             data.target_session = lambda now=None: pd.Timestamp("2026-11-26")

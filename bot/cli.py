@@ -703,7 +703,9 @@ def cmd_paper(args):
         targets = {t: w * scale for t, w in targets.items()}
         print(f"paper: risk cut to {scale:.0%} (core below its {cfg.trend_ma}d MA)")
     last_close = mkt.px.loc[d]
-    path = RESULTS / "paper_ledger.csv"
+    path = RESULTS / (
+        "paper_ledger.csv" if market == "TECH" else f"paper_ledger_{market.lower()}.csv"
+    )
     for it in range(args.iterations):
         prices = data.latest_prices(list(targets) + ["SPY"])
         print(

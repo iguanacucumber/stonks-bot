@@ -20,6 +20,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
@@ -56,6 +57,13 @@ BOOK_FILES = {
     "monthly": (DAILY, LEDGER, REPLAY),
     "tax": (DAILY_TAX, LEDGER_TAX, REPLAY_TAX),
 }
+
+
+def atomic_csv(df: pd.DataFrame, path: Path) -> None:
+    """Replace a whole CSV in one rename so readers never see half a file."""
+    tmp = path.with_name(f"{path.stem}.{os.getpid()}.tmp{path.suffix}")
+    df.to_csv(tmp, index=False)
+    os.replace(tmp, path)
 
 
 def book_config(book: str) -> dict:
@@ -115,20 +123,24 @@ def load(
     book: str = "monthly",
     core_close_fill: bool = False,
 ):
-    panel, mem = markets.build(market, core_close_fill=core_close_fill)
-    if market != "US":
-        universe.canonical = lambda t: t
-    cfg = strategy.Config(
-        start="2015-01-01",
-        rebalance_mode="calendar",
-        exec_price="open",
-        leverage=leverage,
-        financing_bps=500.0,
-        trend_ma=trend_ma,
-        trend_scale=trend_scale,
-        **book_config(book),
-    )
-    mkt = strategy.Market(panel, mem, cfg)
+    old_canonical = universe.canonical
+    try:
+        if market != "US":
+            universe.canonical = lambda t: t
+        panel, mem = markets.build(market, core_close_fill=core_close_fill)
+        cfg = strategy.Config(
+            start="2015-01-01",
+            rebalance_mode="calendar",
+            exec_price="open",
+            leverage=leverage,
+            financing_bps=500.0,
+            trend_ma=trend_ma,
+            trend_scale=trend_scale,
+            **book_config(book),
+        )
+        mkt = strategy.Market(panel, mem, cfg)
+    finally:
+        universe.canonical = old_canonical
     res = backtest.run(mkt)
     return panel, mkt, res, cfg
 
@@ -301,8 +313,36 @@ def reconcile(
         if pd.notna(op) and op > 0 and pd.notna(p1):
             intraday += x * (p1 / op - 1.0)
     move = (1.0 + overnight) * (1.0 + intraday) - 1.0
+    rebalanced = set(new) != set(old) or abs(sum(new.values()) - sum(old.values())) > (
+        0.05 * max(1.0, sum(old.values()))
+    )
+    if (
+        rebalanced
+        and res.eq_open is not None
+        and res.eq_open_pre is not None
+        and dm in res.eq_open.index
+        and dm in res.eq_open_pre.index
+    ):
+        cost_f = float(res.eq_open.loc[dm] / res.eq_open_pre.loc[dm] - 1.0)
+        move = (1.0 + move) * (1.0 + cost_f) - 1.0
+    held = set(old) | set(new)
+    missing = [
+        t for t in held if t not in raw_close.columns or pd.isna(raw_close[t].loc[dm])
+    ]
+    missing_prev = [
+        t for t in old if t not in raw_close.columns or pd.isna(raw_close[t].loc[dprev])
+    ]
+    if missing or missing_prev:
+        print(
+            f"cannot reconcile {dm.date()}: missing closes {missing}, "
+            f"missing prior closes {missing_prev}"
+        )
+        return
     shadow = float(res.equity.loc[dm] / res.equity.loc[dprev] - 1.0)
     old_move = float(df.loc[idx, "day_move"])
+    if "original_move" not in df.columns:
+        df["original_move"] = float("nan")
+    df.loc[idx, "original_move"] = old_move
     old_shadow = (
         float(df.loc[idx, "shadow_move"])
         if pd.notna(df.loc[idx, "shadow_move"])
@@ -316,7 +356,7 @@ def reconcile(
     df.loc[idx, "reconciled"] = True
     df.loc[idx, "shadow_move"] = shadow
     df.loc[idx, "shadow_gross"] = float(sum(new.values()))
-    df.to_csv(daily_path, index=False)
+    atomic_csv(df, daily_path)
     print(
         f"reconciled {dm.date()}: live {old_move:+.2%} -> {move:+.2%}, "
         f"shadow {old_shadow:+.2%} -> {shadow:+.2%}, "
@@ -411,7 +451,8 @@ def main():
     wopen = res.weights_open if res.weights_open is not None else res.weights
     w = current_weights(wopen, dm)
     scale = risk_scale(mkt, dm, cfg)
-    prices = data.latest_prices(sorted(set(w) | set(old)) + ["SPY"])
+    bench = markets.MARKETS[args.market]["bench"]
+    prices = data.latest_prices(sorted(set(w) | set(old)) + [bench])
     overnight = 0.0
     for t, x in old.items():
         if t not in raw_close.columns:
@@ -437,7 +478,8 @@ def main():
         if pd.notna(op) and op > 0 and pd.notna(p1):
             intraday += x * (p1 / op - 1.0)
     total_w = sum(w.values())
-    if total_w < 0.1 or total_w > cfg.leverage * 1.2 or len(w) < 0.6 * len(old):
+    dirty = total_w < 0.1 or total_w > cfg.leverage * 1.2 or len(w) < 0.6 * len(old)
+    if dirty:
         w = old
         move = sum(
             x
@@ -459,6 +501,19 @@ def main():
         prev = {t: float(raw_close[t].loc[dprev]) for t in w if t in raw_close.columns}
     else:
         move = (1.0 + overnight) * (1.0 + intraday) - 1.0
+    rebalanced = set(w) != set(old) or abs(sum(w.values()) - sum(old.values())) > (
+        0.05 * max(1.0, sum(old.values()))
+    )
+    if (
+        not dirty
+        and rebalanced
+        and res.eq_open is not None
+        and res.eq_open_pre is not None
+        and dm in res.eq_open.index
+        and dm in res.eq_open_pre.index
+    ):
+        cost_f = float(res.eq_open.loc[dm] / res.eq_open_pre.loc[dm] - 1.0)
+        move = (1.0 + move) * (1.0 + cost_f) - 1.0
     ref = dprev
     daily = {
         "time": str(now),
@@ -477,9 +532,6 @@ def main():
     missing_close = [
         t for t in held if t not in raw_close.columns or pd.isna(raw_close[t].loc[dm])
     ]
-    rebalanced = set(w) != set(old) or abs(sum(w.values()) - sum(old.values())) > (
-        0.05 * max(1.0, sum(old.values()))
-    )
     missing_open = [
         t
         for t in held
@@ -510,17 +562,17 @@ def main():
 
     if daily_path.exists():
         old = pd.read_csv(daily_path)
-        pd.concat([old, pd.DataFrame([daily])], ignore_index=True).to_csv(
-            daily_path, index=False
+        atomic_csv(
+            pd.concat([old, pd.DataFrame([daily])], ignore_index=True), daily_path
         )
     else:
-        pd.DataFrame([daily]).to_csv(daily_path, index=False)
+        atomic_csv(pd.DataFrame([daily]), daily_path)
     row = {
         "time": str(now),
         "signal_date": str(d.date()),
         "targets": daily["targets"],
         "prices": json.dumps(
-            {k: round(v, 4) for k, v in (px | {"SPY": prices.get("SPY", 0.0)}).items()}
+            {k: round(v, 4) for k, v in (px | {bench: prices.get(bench, 0.0)}).items()}
         ),
         "stops": json.dumps({t: False for t in w}),
     }

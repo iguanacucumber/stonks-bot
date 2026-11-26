@@ -568,6 +568,12 @@ def main():
         "monthly",
         "TECH",
     )["verified"].iloc[0]
+    assert not audit_frame(
+        [row],
+        [{"date": "2026-11-25", "max_w_diff_bps": 0.0, "fills": "0/0"}],
+        "monthly",
+        "TECH",
+    )["verified"].iloc[0]
 
     # calendar cadence: 1 month unchanged, 2 months keeps six dates
     dts3 = pd.bdate_range("2020-01-01", periods=260)
