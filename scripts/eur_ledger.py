@@ -48,6 +48,10 @@ def run(market: str, book: str) -> dict:
             broker_fixed_eur=1.0,
         ),
     )
+    def annual(eq, year):
+        e = eq.loc[str(year)]
+        return float(e.iloc[-1] / e.iloc[0] - 1.0) if len(e) > 2 else float("nan")
+
     return {
         "market": market,
         "book": book,
@@ -66,23 +70,29 @@ def run(market: str, book: str) -> dict:
         "trades": len(res.trades),
         "after_tax_native": headline["after_tax_native"],
         "tax_native": headline["tax_paid_eur"],
+        "y2018": annual(led.equity, 2018),
+        "y2022": annual(led.equity, 2022),
+        "worst12": float(led.equity.pct_change(252).min()),
     }
 
 
 def main() -> None:
     rows = []
-    for market in ("TECH", "US"):
-        for book in ("monthly", "tax"):
-            r = run(market, book)
-            rows.append(r)
-            print(
-                f"{market:4s} {book:7s} native {r['native_usd_mult']:6.2f}x  "
-                f"headline {r['headline_eur_mult']:6.2f}x  "
-                f"EUR-ledger {r['ledger_mult']:6.2f}x (€{r['ledger_after']:,.0f})  "
-                f"CAGR {r['cagr']:6.1%}  DD {r['maxdd']:7.1%}  "
-                f"tax €{r['tax']:,.0f}  exit €{r['exit']:,.0f}  "
-                f"fees €{r['fees']:,.0f}  gap €{r['reconcile']:,.0f}"
-            )
+    # The core-only tax book is always 100% SMH; it does not depend on the market.
+    cases = [("TECH", "monthly"), ("TECH", "tax"), ("US", "monthly")]
+    for market, book in cases:
+        r = run(market, book)
+        if book == "tax":
+            r["market"] = "CORE"
+        rows.append(r)
+        print(
+            f"{r['market']:4s} {book:7s} native {r['native_usd_mult']:6.2f}x  "
+            f"headline {r['headline_eur_mult']:6.2f}x  "
+            f"EUR-ledger {r['ledger_mult']:6.2f}x (€{r['ledger_after']:,.0f})  "
+            f"CAGR {r['cagr']:6.1%}  DD {r['maxdd']:7.1%}  "
+            f"tax €{r['tax']:,.0f}  exit €{r['exit']:,.0f}  "
+            f"fees €{r['fees']:,.0f}  gap €{r['reconcile']:,.0f}"
+        )
 
     lines = [
         "# EUR ledger: what a French investor actually keeps",
@@ -97,22 +107,22 @@ def main() -> None:
         "tickets. Signals and share quantities stay USD-native, so this is the same",
         "strategy, not a different one.",
         "",
-        "| market | book | USD-native | headline EUR | EUR ledger | CAGR | maxDD | tax paid | exit tax | fees |",
+        "| market | book | USD-native | headline EUR | EUR ledger | CAGR | maxDD | 2018 | 2022 | worst 12m |",
         "|---|---|---:|---:|---:|---:|---:|---:|---:|---:|",
     ]
     for r in rows:
         lines.append(
             f"| {r['market']} | {r['book']} | {r['native_usd_mult']:.2f}x | "
             f"{r['headline_eur_mult']:.2f}x | **{r['ledger_mult']:.2f}x** | "
-            f"{r['cagr']:.1%} | {r['maxdd']:.1%} | €{r['tax']:,.0f} | "
-            f"€{r['exit']:,.0f} | €{r['fees']:,.0f} |"
+            f"{r['cagr']:.1%} | {r['maxdd']:.1%} | {r['y2018']:.1%} | "
+            f"{r['y2022']:.1%} | {r['worst12']:.1%} |"
         )
     lines += [
         "",
         "`USD-native` is the after-tax result in the asset currency. `headline EUR` is",
         "the current README method: USD-native after tax multiplied by terminal FX.",
-        "`EUR ledger` is the annual EUR tax/accounting replay. The gap is the currency",
-        "and tax-timing correction; it is not a strategy change.",
+        "`EUR ledger` is the annual EUR tax/accounting replay. 2018, 2022 and worst",
+        "rolling 12m are computed on the EUR daily equity curve, not the USD engine.",
         "",
         "## Reading",
         "",

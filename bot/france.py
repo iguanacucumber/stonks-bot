@@ -167,7 +167,10 @@ ALIASES = {
 # The CLI picks this automatically for --country fr. Other presets stay for
 # research/comparison, but the default is the lowest all-in cost for the US core.
 DEFAULT_BROKER = "Interactive Brokers"
-DEFAULT_MARKET = "TECH"
+# Best-evidence real-life book: US monthly has a higher after-tax EUR result and a
+# lower drawdown than TECH. TECH remains the forward-validation book; the logger
+# keeps its own `--market TECH` default.
+DEFAULT_MARKET = "US"
 
 CURRENCY = {
     "US": "USD",
