@@ -64,7 +64,9 @@ by penny stocks) without changing the shipped result.
 
 Known bias: ~18% of 2015–2026 index members have no Yahoo history (mostly acquired/delisted
 names). They are dropped. Results are survivor-biased; treat them as a sanity check, not a
-promise.
+promise. A point-in-time S&P IT sleeve check retains ~107% of the static-49 TECH headline,
+so the TECH sleeve is not mainly a survivorship artifact; the US all-PIT book is still
+better on return and drawdown.
 
 ## Results (paper backtest, 10 bps, month-end rebalance, next-open fill, 2.5x gross)
 

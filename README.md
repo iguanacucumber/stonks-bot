@@ -110,7 +110,7 @@ La stratégie française combine le CAC 40 et le cœur SMH. Elle finit à 6,4x c
 - Pire creux : **-57,5 %** sur le livre US (grand livre EUR). En 2022 : -33,3 %. En 2018 : -30,1 %. Le livre TECH fait -66,0 % au pire, -52,3 % en 2022 et -9,8 % en 2018.
 - Queue de risque : dans le bootstrap US (blocs de 10 jours), 5 % des trajectoires finissent sous **2,58x** après impôt proportionnel, médiane 64,4x. Le livre TECH reste plus fragile : p5 1,93x, creux p5 -90,9 %.
 - Régularité : le livre US bat SPY après impôt sur **7 fenêtres de 5 ans sur 7**, médiane 6,83x contre 1,74x. Le livre TECH bat QQQ sur 84 fenêtres sur 84, médiane 5,67x contre 1,97x.
-- Biais de survie : TECH utilise une liste statique de 49 valeurs NASDAQ choisies aujourd'hui. US utilise la composition historique du S&P, mais environ 18 % des membres 2015-2026 n'ont pas d'historique Yahoo et sont exclus. Le backtest est un contrôle de cohérence, pas une preuve.
+- Biais de survie : TECH utilise une liste statique de 49 valeurs NASDAQ choisies aujourd'hui. Le contrôle PIT S&P IT retient environ 107 % du résultat statique : le sleeve n'est donc pas principalement un artefact de survie, mais il reste derrière le livre US all-PIT. US utilise la composition historique du S&P, mais environ 18 % des membres 2015-2026 n'ont pas d'historique Yahoo et sont exclus. Le backtest est un contrôle de cohérence, pas une preuve.
 - Validation : le suivi forward papier TECH est à 1 date valide sur les 5 demandées. Le suivi forward US vient de démarrer ; il n'a pas encore de date clôturée.
 
 Ce n'est pas un conseil en investissement. C'est un backtest reproductible, avec ses hypothèses et ses erreurs possibles.
