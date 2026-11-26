@@ -16,9 +16,9 @@
 
 | variant | terminal-FX | EUR ledger | maxDD | trades | what changes |
 |---|---:|---:|---:|---:|---|
-| static-49 baseline | **57.01x** | 52.89x | -67.8% | 1836 | nothing |
-| S&P-dated TECH | **23.22x** | 21.43x | -87.6% | 832 | dated membership; non-S&P names removed |
-| public-at-2015 | **50.64x** | 46.57x | -68.3% | 1856 | later IPOs removed |
+| static-49 baseline | **57.01x** | 53.45x | -67.8% | 1836 | nothing |
+| S&P-dated TECH | **23.22x** | 21.66x | -87.6% | 832 | dated membership; non-S&P names removed |
+| public-at-2015 | **50.64x** | 47.00x | -68.3% | 1856 | later IPOs removed |
 
 The S&P-dated run is **33.79x lower** (59% of the baseline) on terminal-FX. This is a **sensitivity, not a lower bound**: the S&P-dated universe is not nested inside the static-49 list (it removes ASML, ARM, MELI, TEAM, ZS and ANT, and it starts names at their index addition), and it still contains only 2026 survivors. It shows that the TECH result is highly sensitive to universe construction; it does not measure the true NASDAQ-2015 bias, which is not reconstructible from this cache because failed and acquired names have no Yahoo history. The EUR ledger columns are the real-life accounting modes, not a causal decomposition.
 
@@ -49,7 +49,7 @@ Static equal-weight basket: **19.46x** over the window vs QQQ **6.71x**; median 
 - UNSAFE: That the 57x after-tax multiple is an expected forward return.
 - UNSAFE: That the static-49 momentum result generalises to the NASDAQ universe of 2015.
 
-**Bottom line:** even the real-life EUR-ledger TECH number (52.89x) is an upper bound on a biased universe, not an expected return; the 57.01x terminal-FX headline is not the real-life result. Report ETF-only (QQQ/SMH) results as survivorship-free evidence; treat stock-sleeve alpha as unproven until a point-in-time NASDAQ membership file with delisted names is added.
+**Bottom line:** even the real-life EUR-ledger TECH number (53.45x) is an upper bound on a biased universe, not an expected return; the 57.01x terminal-FX headline is not the real-life result. Report ETF-only (QQQ/SMH) results as survivorship-free evidence; treat stock-sleeve alpha as unproven until a point-in-time NASDAQ membership file with delisted names is added.
 
 ## Reproduce
 

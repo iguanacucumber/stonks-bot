@@ -1,6 +1,6 @@
 {
   "snapshot": "2026-11-25",
-  "runtime_seconds": 0.7193641490011942,
+  "runtime_seconds": 0.6495666089977021,
   "actual": {
     "multiple": 57.01253052888282,
     "maxdd": -0.6783071079473988,
@@ -172,15 +172,15 @@
     {
       "accounting_mode": "eur_ledger",
       "label": "EUR ledger (annual EUR tax, trade-date FX; real-life)",
-      "multiple": 52.893902371094775,
-      "after_tax_value": 528939.0237109477,
-      "cagr": 0.39686085239129176,
-      "max_dd": -0.6601928588891302,
+      "multiple": 53.450349842594356,
+      "after_tax_value": 534503.4984259435,
+      "cagr": 0.3980926167135228,
+      "max_dd": -0.650934630601337,
       "fees": 22090.322948920628,
-      "tax_paid": 119328.39027759279,
+      "tax_paid": 114590.55902556313,
       "exit_tax": 160980.07520599203,
       "is_real_life": true,
-      "note": "reconcile gap \u20ac-91,401"
+      "note": "reconcile gap \u20ac-85,837"
     }
   ]
 }

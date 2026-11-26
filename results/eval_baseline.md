@@ -2,8 +2,8 @@
 
 - Command: `uv run python scripts/reproduce.py baseline`
 - Data snapshot: **2026-11-25**
-- Runtime: **4.4s**
-- Generated: 2026-11-26T15:17:30+00:00
+- Runtime: **5.1s**
+- Generated: 2026-11-26T15:24:35+00:00
 
 > **Real-life result: the EUR-ledger column.** `terminal_fx` is the old
 > headline convention (native after-tax × spot EUR/USD); it ignores annual
@@ -11,14 +11,14 @@
 > number in the asset currency. Do not quote terminal-FX as what you keep.
 
 All rows: IBKR CTO, €10k, 2.5x, HIFO, 2015-01-02 to the snapshot, French
-PFU 31.4%, 5 bps spread, EUR ledger with trade-date FX and annual tax.
+year-dependent PFU (30% through 2025, 31.4% from 2026), 5 bps spread, EUR ledger with trade-date FX and annual tax.
 
 | market | book | native (USD) | terminal-FX (EUR) | EUR ledger | ledger vs terminal | CAGR (ledger) | maxDD (ledger) | fees | tax paid | exit tax |
 |---|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|
-| TECH | monthly | 51.82x | 57.01x | **52.89x** | -7.2% | 39.7% | -66.0% | €22,090 | €119,328 | €160,980 |
-| TECH | tax | 46.26x | 50.89x | **49.02x** | -3.7% | 38.8% | -64.2% | €8,206 | €58,736 | €210,907 |
-| US | monthly | 64.41x | 70.86x | **66.02x** | -6.8% | 42.3% | -57.5% | €23,971 | €138,086 | €210,493 |
-| US | tax | 46.26x | 50.89x | **49.02x** | -3.7% | 38.8% | -64.2% | €8,206 | €58,736 | €210,907 |
+| TECH | monthly | 51.82x | 57.01x | **53.45x** | -6.2% | 39.8% | -65.1% | €22,090 | €114,591 | €160,980 |
+| TECH | tax | 46.26x | 50.89x | **49.32x** | -3.1% | 38.9% | -63.9% | €8,206 | €56,117 | €210,907 |
+| US | monthly | 64.41x | 70.86x | **66.72x** | -5.8% | 42.4% | -56.4% | €23,971 | €131,989 | €210,493 |
+| US | tax | 46.26x | 50.89x | **49.32x** | -3.1% | 38.9% | -63.9% | €8,206 | €56,117 | €210,907 |
 
 `ledger vs terminal` is the correction from the old headline to the
 EUR-taxed path. The ranking is unchanged: US monthly is ahead of TECH on

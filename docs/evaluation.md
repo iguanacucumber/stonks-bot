@@ -49,12 +49,13 @@ terminal-FX number.
 
 | book | native USD | terminal-FX | EUR ledger | CAGR (ledger) | maxDD (ledger) |
 |---|---:|---:|---:|---:|---:|
-| TECH monthly | 51.82x | 57.01x | **52.89x** | 39.7% | -66.0% |
-| TECH core-only tax | 46.26x | 50.89x | **49.02x** | 38.8% | -64.2% |
-| US monthly | 64.41x | 70.86x | **66.02x** | 42.3% | -57.5% |
+| TECH monthly | 51.82x | 57.01x | **53.45x** | 39.8% | -65.1% |
+| TECH core-only tax | 46.26x | 50.89x | **49.32x** | 38.9% | -63.9% |
+| US monthly | 64.41x | 70.86x | **66.72x** | 42.4% | -56.4% |
 
-The terminal-FX headline overstates the real-life EUR result by roughly 7% on the
-monthly books. Ranking is unchanged: US monthly leads on return and drawdown; the
+The terminal-FX headline overstates the real-life EUR result by roughly 6.7% on the
+TECH monthly book and 6.2% on US monthly (year-dependent PFU: 30% through 2025,
+31.4% from 2026). Ranking is unchanged: US monthly leads on return and drawdown; the
 core-only book earns less but trades far less. `results/eval_baseline.md` is the
 generated table with fees, tax paid and exit tax.
 
@@ -148,7 +149,7 @@ cache:
 - 28/49 TECH names were S&P 500 members at the 2015 start, 15 joined later, 6 were
   never members;
 - the S&P-dated sensitivity drops the terminal-FX multiple from 57.01x to 23.22x
-  (EUR ledger: 52.89x to the variant's ledger number in the report). This is a
+  (EUR ledger: 53.45x to the variant's ledger number in the report). This is a
   **non-nested sensitivity, not a lower bound**: it removes non-S&P names and
   starts others at their index addition, so it is not the static-49 counterfactual;
 - the US point-in-time book still misses 16.2% of its 2014+ members because Yahoo

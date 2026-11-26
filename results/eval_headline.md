@@ -2,18 +2,18 @@
 
 - Command: `uv run python scripts/reproduce.py headline`
 - Data snapshot: **2026-11-25**
-- Runtime: **0.7s** for the baseline, 1.8s for two 10,000-path bootstraps
-- Generated: 2026-11-26T15:17:33+00:00
+- Runtime: **0.6s** for the baseline, 1.7s for two 10,000-path bootstraps
+- Generated: 2026-11-26T15:24:37+00:00
 
-> **Real-life result: EUR ledger 52.89x (€528,939 on €10k).** The terminal-FX headline (57.01x) is kept only for continuity with older reports. It is an upper bound, not what a French investor keeps.
+> **Real-life result: EUR ledger 53.45x (€534,503 on €10k).** The terminal-FX headline (57.01x) is kept only for continuity with older reports. It is an upper bound, not what a French investor keeps.
 
 ## Baseline
 
 | metric | value |
 |---|---:|
 | Terminal-FX after-tax multiple (legacy; NOT real-life) | **57.01x** |
-| **EUR-ledger after-tax multiple (real-life)** | **52.89x** |
-| **EUR-ledger after-tax value on €10k** | **€528,939** |
+| **EUR-ledger after-tax multiple (real-life)** | **53.45x** |
+| **EUR-ledger after-tax value on €10k** | **€534,503** |
 | Terminal-FX value on €10k (legacy) | €570,125 |
 | CAGR (terminal FX / legacy) | 40.57% |
 | Max drawdown (native path) | -67.83% |
@@ -34,11 +34,11 @@ The committed baseline table quotes QQQ at 5.38x; this cache reproduces 5.41x (0
 |---|---:|---:|---:|---|---|
 | native | **51.82x** | 39.4% | -67.8% | no | native currency, after tax (research) |
 | terminal_fx | **57.01x** | 40.6% | -67.8% | no | terminal-FX headline (legacy upper bound, NOT real-life) |
-| eur_ledger | **52.89x** | 39.7% | -66.0% | yes | EUR ledger (annual EUR tax, trade-date FX; real-life) |
+| eur_ledger | **53.45x** | 39.8% | -65.1% | yes | EUR ledger (annual EUR tax, trade-date FX; real-life) |
 
 ## Bootstrap
 
-10,000 paths, 21-day mean block, seed 7. The exit-tax overlay applies the path's effective final rate (32.1%) to gains above 1.0; realised taxes are already inside the returns. This is **not** the EUR-ledger after-tax path and is not comparable to 52.89x.
+10,000 paths, 21-day mean block, seed 7. The exit-tax overlay applies the path's effective final rate (32.1%) to gains above 1.0; realised taxes are already inside the returns. This is **not** the EUR-ledger after-tax path and is not comparable to 53.45x.
 
 | method | terminal p5 | terminal p50 | terminal p95 | maxDD p5 | exit-tax overlay p5 |
 |---|---:|---:|---:|---:|---:|
