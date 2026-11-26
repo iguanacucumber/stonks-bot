@@ -4,3 +4,6 @@ results/*.jsonl
 .venv/
 __pycache__/
 results/*.log
+
+!results/paper_daily.csv
+!results/paper_ledger.csv

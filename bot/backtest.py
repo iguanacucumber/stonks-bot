@@ -53,6 +53,10 @@ class Result:
     weights_open: pd.DataFrame | None = None
     eq_open_pre: pd.Series | None = None
     eq_open: pd.Series | None = None
+    tax_paid: float = 0.0
+    fees_paid: float = 0.0
+    ftt_paid: float = 0.0
+    unrealized_tax: float = 0.0
 
 
 def _sector_fallback(mkt: Market, date: pd.Timestamp) -> dict[str, float]:
@@ -138,10 +142,23 @@ def run(
     salt_used = 0.0
     salt_year = 0
     wash: dict[int, tuple[pd.Timestamp, float]] = {}
+    tax_paid = 0.0
+    fees_paid = 0.0
+    ftt_paid = 0.0
+    fr_realized = 0.0
+    fr_year: int | None = None
+    loss_carry: list[list[float]] = []
 
     def _tax(gain: float, date: pd.Timestamp) -> float:
         """Tax net realized gains; losses carry forward, never refund."""
-        nonlocal realized, salt_used, salt_year
+        nonlocal realized, salt_used, salt_year, fr_realized, fr_year
+        if cfg.tax_country == "fr":
+            # French CTO: tax the calendar-year net gain (PFU 30%), paid the
+            # following year. Nothing is withheld trade by trade.
+            if fr_year is None:
+                fr_year = date.year
+            fr_realized += gain
+            return 0.0
         if date.year != salt_year:
             salt_year = date.year
             salt_used = 0.0
@@ -157,6 +174,94 @@ def run(
         )
         salt_used += used
         return tax
+
+    def _fr_rate(year: int) -> float:
+        """French tax rate by year (PFU; PEA social contributions only)."""
+        if cfg.tax_rate:
+            return cfg.tax_rate
+        if cfg.tax_country == "fr_pea":
+            return 0.186 if year >= 2026 else 0.172
+        if year < 2018:
+            return 0.345  # 19% IR + 15.5% social, pre-PFU
+        if year < 2026:
+            return 0.30  # PFU 12.8% + 17.2%
+        return 0.314  # PFU 12.8% + 18.6% from 2026
+
+    def _settle_fr(year: int) -> float:
+        """French annual settlement: net the year, use old losses, tax the rest."""
+        nonlocal fr_realized, tax_paid, loss_carry
+        loss_carry = [x for x in loss_carry if year <= x[0]]
+        net = fr_realized
+        fr_realized = 0.0
+        if net > 0:
+            for x in loss_carry:
+                take = min(x[1], net)
+                x[1] -= take
+                net -= take
+                if net <= 1e-12:
+                    break
+            loss_carry = [x for x in loss_carry if x[1] > 1e-12]
+            tax = max(0.0, net) * _fr_rate(year)
+            tax_paid += tax
+            return tax
+        if net < 0:
+            loss_carry.append([year + 10, -net])
+        return 0.0
+
+    def _ftt_rate(date: pd.Timestamp) -> float:
+        """French financial transaction tax on share purchases."""
+        if date < pd.Timestamp("2017-01-01"):
+            return 0.002
+        if date < pd.Timestamp("2025-04-01"):
+            return 0.003
+        return 0.004
+
+    def _fee_rate(ci: int, date: pd.Timestamp) -> float:
+        """Approximate marginal rate, used to size an order before charging it."""
+        is_us = names[ci] in cfg.us_tickers
+        rate = cost_rate
+        if cfg.fx_bps and is_us:
+            rate += cfg.fx_bps / 1e4
+        if names[ci] in cfg.ftt_tickers:
+            rate += _ftt_rate(date)
+        grid = cfg.us_grid if is_us else cfg.broker_grid
+        rate += (cfg.us_bps if is_us else cfg.broker_bps) / 1e4 if grid else (
+            cfg.broker_bps / 1e4
+        )
+        return rate
+
+    def _fees(notional: float, is_buy: bool, ci: int, date: pd.Timestamp) -> float:
+        """All non-tax trading frictions: spread, broker, FX, and French FTT."""
+        nonlocal fees_paid, ftt_paid
+        if notional <= 0:
+            return 0.0
+        is_us = names[ci] in cfg.us_tickers
+        fee = notional * cost_rate
+        grid = cfg.us_grid if is_us else cfg.broker_grid
+        if grid:
+            ticket = notional * cfg.initial_capital
+            fixed = None
+            for limit, amount in grid:
+                if ticket <= limit:
+                    fixed = amount
+                    break
+            if fixed is not None:
+                fee += fixed / cfg.initial_capital
+            else:
+                fee += notional * (cfg.us_bps if is_us else cfg.broker_bps) / 1e4
+        else:
+            if cfg.broker_bps:
+                fee += notional * cfg.broker_bps / 1e4
+            if cfg.broker_min_eur and cfg.initial_capital > 0:
+                fee += cfg.broker_min_eur / cfg.initial_capital
+        if cfg.fx_bps and is_us:
+            fee += notional * cfg.fx_bps / 1e4
+        if is_buy and names[ci] in cfg.ftt_tickers:
+            ftt = notional * _ftt_rate(date)
+            fee += ftt
+            ftt_paid += ftt
+        fees_paid += fee
+        return fee
 
     lots: dict[int, list[list[float]]] = {}
 
@@ -221,6 +326,7 @@ def run(
         pr = np.where(np.isnan(row) | (row <= 0), 0.0, row)
         orow = arr_open[ri] if ri is not None else np.full(nc, np.nan)
         po = np.where(np.isnan(orow) | (orow <= 0), 0.0, orow)
+        prev_px = last_px.copy()  # prior close: the correct fallback for a missing open
         seen = pr > 0
         last_px[seen] = pr[seen]
 
@@ -228,7 +334,21 @@ def run(
         if cash < 0 and borrow_rate:
             cash *= 1.0 + borrow_rate
 
-        mark_open = np.where(po > 0, po, pr) if exec_open else pr
+        # French tax for the previous calendar year is paid at the start of the
+        # new one (self-declared CTO, no withholding at the trade).
+        if cfg.tax_country == "fr" and fr_year is not None and d.year != fr_year:
+            cash -= _settle_fr(fr_year)
+            fr_year = d.year
+
+        # A missing open must be marked at the PRIOR close, never today's close:
+        # using the close would leak the day's move into the open weights and make
+        # the forward paper tracker's intraday leg double-count it.
+        if exec_open:
+            mark_open = np.where(
+                po > 0, po, np.where(np.isnan(prev_px), pr, prev_px)
+            )
+        else:
+            mark_open = pr
         eq_open_pre_arr[i] = cash + float((shares * mark_open).sum())
 
         # 1. execute orders decided at the previous close, at today's close
@@ -244,7 +364,9 @@ def run(
                         keep.add(ci)
             for ci in pending_exit:
                 keep.discard(ci)
-            mark = np.where(exec_open & (po > 0), po, pr)
+            # Same mark as the reporting book: a missing open fills at the prior
+            # close, not at today's close (which would be look-ahead).
+            mark = mark_open
             equity_now = cash + float(shares @ mark)
             # sell exits first
             for ci in list(held):
@@ -253,9 +375,9 @@ def run(
                     if p == 0.0:
                         continue
                     notional = shares[ci] * p
-                    cash += notional - notional * cost_rate
+                    cash += notional - _fees(notional, False, ci, d)
                     gain = _sell(ci, shares[ci], p, d)
-                    if cfg.tax_rate or cfg.state_tax_rate:
+                    if cfg.tax_country.startswith("fr") or cfg.tax_rate or cfg.state_tax_rate:
                         cash -= _tax(gain, d)
                     trades.append(
                         (
@@ -285,25 +407,38 @@ def run(
                     if abs(delta) < max(cfg.trade_band, 1e-4) * equity_now:
                         continue
                     sh = delta / p
-                    cost = abs(delta) * cost_rate
+                    fee_rate = _fee_rate(ci, d)
                     if delta > 0:
                         if cfg.leverage <= 1.0:
-                            if cash < delta + cost:
-                                delta = max(0.0, cash - cost)
+                            if cash < delta * (1.0 + fee_rate):
+                                grid = (
+                                    cfg.us_grid
+                                    if names[ci] in cfg.us_tickers
+                                    else cfg.broker_grid
+                                )
+                                reserve = (
+                                    max((f for _, f in grid), default=0.0)
+                                    / cfg.initial_capital
+                                    if grid and cfg.initial_capital > 0
+                                    else 0.0
+                                )
+                                delta = max(0.0, cash - reserve) / (
+                                    1.0 + fee_rate
+                                )
                                 sh = delta / p
-                                cost = delta * cost_rate
                         else:
                             gross_now = float((shares * mark).sum())
                             headroom = cfg.leverage * equity_now - gross_now
-                            affordable = max(0.0, headroom) / (1.0 + cost_rate)
+                            affordable = max(0.0, headroom) / (1.0 + fee_rate)
                             if delta > affordable:
                                 delta = affordable
                                 sh = delta / p
-                                cost = delta * cost_rate
-                    cash -= delta + cost
+                    if abs(delta) < 1e-12:
+                        continue
+                    cash -= delta + _fees(abs(delta), delta > 0, ci, d)
                     if sh < 0:
                         gain = _sell(ci, -sh, p, d)
-                        if cfg.tax_rate or cfg.state_tax_rate:
+                        if cfg.tax_country.startswith("fr") or cfg.tax_rate or cfg.state_tax_rate:
                             cash -= _tax(gain, d)
                     if shares[ci] == 0.0 and sh != 0.0:
                         held.append(ci)
@@ -352,6 +487,13 @@ def run(
         prm = np.where(pr > 0, pr, last_px)
         prm = np.where(np.isnan(prm), 0.0, prm)
         vals = shares * prm
+        if cfg.custody_bps:
+            foreign = float(
+                sum(vals[ci] for ci in held if names[ci] in cfg.us_tickers)
+            )
+            charge = foreign * cfg.custody_bps / 1e4 / 252.0
+            cash -= charge
+            fees_paid += charge
         equity = cash + float(vals.sum())
         eqs[i] = equity
         cashs[i] = cash
@@ -374,9 +516,9 @@ def run(
                     if sell_sh <= 0:
                         continue
                     notional = sell_sh * p
-                    cash += notional - notional * cost_rate
+                    cash += notional - _fees(notional, False, ci, d)
                     gain = _sell(ci, sell_sh, p, d)
-                    if cfg.tax_rate or cfg.state_tax_rate:
+                    if cfg.tax_country.startswith("fr") or cfg.tax_rate or cfg.state_tax_rate:
                         cash -= _tax(gain, d)
                     shares[ci] -= sell_sh
                     trades.append(
@@ -466,6 +608,25 @@ def run(
             pending_target = base
             pending_reason = {cols[t]: "rebalance" for t in base if t in cols}
 
+    unrealized_tax = 0.0
+    if cfg.tax_country == "fr":
+        unrealized_gain = 0.0
+        for ci in held:
+            p = last_px[ci]
+            if (
+                shares[ci] > 0
+                and not np.isnan(entry[ci])
+                and not np.isnan(p)
+            ):
+                unrealized_gain += (p - entry[ci]) * shares[ci]
+        carry_left = sum(x[1] for x in loss_carry)
+        net = fr_realized + unrealized_gain - carry_left
+        unrealized_tax = max(0.0, net) * _fr_rate(dates[-1].year)
+    elif cfg.tax_country == "fr_pea":
+        # PEA: no annual tax. Social contributions are due on withdrawal, on the
+        # portfolio gain (contributions are the 1.0 unit invested at the start).
+        unrealized_tax = max(0.0, float(eqs[-1]) - 1.0) * _fr_rate(dates[-1].year)
+
     equity = pd.Series(eqs, index=dates, name="equity")
     cash_s = pd.Series(cashs, index=dates, name="cash")
     tr = pd.DataFrame(
@@ -485,6 +646,10 @@ def run(
         weights_open=wopen_df,
         eq_open_pre=pd.Series(eq_open_pre_arr, index=dates),
         eq_open=pd.Series(eq_open_arr, index=dates),
+        tax_paid=float(tax_paid),
+        fees_paid=float(fees_paid),
+        ftt_paid=float(ftt_paid),
+        unrealized_tax=float(unrealized_tax),
     )
 
 

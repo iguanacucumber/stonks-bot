@@ -45,8 +45,21 @@ def main():
         live["close_valid"] = False
     skipped = int((~live["close_valid"]).sum())
     live = live[live["close_valid"]]
+    incomplete = 0
+    if "data_complete" in live.columns:
+        dc = live["data_complete"].astype(str).str.lower().isin(["true", "1"])
+        rec = (
+            live["reconciled"].astype(str).str.lower().isin(["true", "1"])
+            if "reconciled" in live.columns
+            else pd.Series(False, index=live.index)
+        )
+        incomplete = int((~dc & ~rec).sum())
+        live = live[dc | rec]
     if live.empty:
-        print(f"no close-valid paper rows for {args.market} ({skipped} intraday skipped)")
+        print(
+            f"no complete close-valid paper rows for {args.market} "
+            f"({skipped} intraday, {incomplete} incomplete skipped)"
+        )
         print(f"GATE: WAIT 0/{args.min_rows} distinct dates")
         return
     live = live.sort_values("time").drop_duplicates("quote_date", keep="last")
@@ -79,10 +92,14 @@ def main():
             continue
         mark, prev = eq.index[pos], eq.index[pos - 1]
         shadow = eq.loc[mark] / eq.loc[prev] - 1.0
+        if "shadow_move" in r.index and pd.notna(r["shadow_move"]):
+            shadow = float(r["shadow_move"])
         live_val *= 1.0 + r["day_move"]
         shadow_val *= 1.0 + shadow
-        gross_bt = (
-            float(pd.read_csv(DAILY).iloc[0:0].shape[0]) if False else float("nan")
+        gross_shadow = (
+            float(r["shadow_gross"])
+            if "shadow_gross" in r.index and pd.notna(r["shadow_gross"])
+            else float("nan")
         )
         rows.append(
             {
@@ -91,6 +108,7 @@ def main():
                 "shadow": shadow,
                 "diff_bps": (r["day_move"] - shadow) * 1e4,
                 "gross_live": r["gross"],
+                "gross_shadow": gross_shadow,
                 "risk": r["risk_scale"],
                 "live_equity": live_val,
                 "shadow_equity": shadow_val,
@@ -101,7 +119,10 @@ def main():
         print(f"no comparable rows yet ({pending} waiting for a completed close)")
         return
     print(df.round(4).to_string(index=False))
-    print(f"\n{skipped} intraday row(s) skipped (not close-valid)")
+    print(
+        f"\n{skipped} intraday row(s) skipped (not close-valid)"
+        + (f"; {incomplete} incomplete close(s) skipped" if incomplete else "")
+    )
     print(
         f"{len(df)} close-valid live rows; live ${df.live_equity.iloc[-1]:,.0f} vs "
         f"shadow ${df.shadow_equity.iloc[-1]:,.0f}; "

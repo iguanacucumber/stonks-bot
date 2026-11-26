@@ -101,6 +101,27 @@ leverage band to 30%, and sells the highest-basis tax lots first. It makes less 
 the low-turnover tax book. A tax-sheltered account should run the monthly book.
 `results/realism.md`, `results/tax_markets.md`.
 
+**France (2026 rules):** `--tax-country fr` models the CTO: PFU on the annual net
+gain (34.5% before 2018, 30% 2018-2025, **31.4% in 2026**: 12.8% IR + 18.6% social),
+10-year loss carry, 0.4% FTT on French purchases since April 2025, real broker ticket
+grids, 0.25% EUR/USD, and EUR translation. The $2,191,762 headline is pre-tax,
+pre-fee, USD. On €10k after tax and real tariffs (`results/france.md`):
+
+| book (€10k) | Bourse Direct | Trade Republic | index after tax |
+|---|---:|---:|---:|
+| TECH core-only tax book | 34.0x | **38.8x** | 5.4x QQQ |
+| TECH monthly sleeve | 8.3x | 27.2x | 5.4x QQQ |
+| French CTO (CAC + SMH core) | 6.4x | 12.5x | 2.1x CAC |
+| French PEA (sleeve only) | 1.47x | 1.61x | 2.3x CAC |
+
+The core-only book is the only French product that survives a €10k account at
+Bourse Direct; its €8.50 US ticket plus 0.25% FX leaves the monthly sleeve 18.9x of
+terminal wealth behind Trade Republic. The PEA cannot hold SMH or borrow, and its
+French-only sleeve loses to the CAC even at the 18.6% social rate. Translating the
+price series to EUR **before** the 200-day rule hurts (24.6x vs 38.8x): measure the
+P&L in EUR, but keep the signal in the asset's own currency. `results/france.md`,
+`scripts/france.py`.
+
 **Cross-market:** the same config on **39 markets** (9 stock-level including a 49-name
 NASDAQ tech book, 30 country/tech ETFs) is profitable in **39/39** and beats the local
 index in **39/39** over 2015-2026, at 1x and at the shipped 2.5x + trend, at 10 bps and at

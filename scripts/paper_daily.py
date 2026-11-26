@@ -159,6 +159,78 @@ def replay(mkt, res, cfg, n: int, panel):
     return df
 
 
+def reconcile(market, capital, leverage, trend_ma, trend_scale):
+    """Recompute the last close-valid row from final bars, keeping its live prices.
+
+    This is for a row whose log-time panel was missing closes (Yahoo publishes the
+    final daily bar after the 16:00 ET close). The live prices recorded in the row
+    are preserved; the weights and the shadow are rebuilt from the completed panel.
+    """
+    panel, mkt, res, cfg = load(market, leverage, trend_ma, trend_scale)
+    df = pd.read_csv(DAILY)
+    for c in ("data_complete", "reconciled"):
+        if c not in df.columns:
+            df[c] = False
+    for c in ("shadow_move", "shadow_gross"):
+        if c not in df.columns:
+            df[c] = float("nan")
+    m = df[(df.market == market)].copy()
+    m["close_valid"] = m["close_valid"].astype(str).str.lower().isin(["true", "1"])
+    m = m[m["close_valid"]]
+    if m.empty:
+        print("no close-valid rows to reconcile")
+        return
+    idx = m.index[-1]
+    dm = pd.Timestamp(df.loc[idx, "quote_date"])
+    dates = list(res.equity.index)
+    if dm not in dates:
+        print(f"{dm.date()} not in panel; nothing to reconcile")
+        return
+    j = dates.index(dm)
+    dprev = dates[j - 1]
+    old = current_weights(res, dprev)
+    wopen = res.weights_open if res.weights_open is not None else res.weights
+    new = current_weights(wopen, dm)
+    raw_close = panel.pivot(index="date", columns="ticker", values="close")
+    raw_open = panel.pivot(index="date", columns="ticker", values="open")
+    rec = json.loads(df.loc[idx, "prices"])
+    overnight = 0.0
+    for t, x in old.items():
+        cp = raw_close[t].loc[dprev] if t in raw_close.columns else float("nan")
+        op = raw_open[t].loc[dm] if t in raw_open.columns else float("nan")
+        if pd.isna(op) or op <= 0:
+            op = cp
+        if pd.notna(cp) and cp > 0 and pd.notna(op):
+            overnight += x * (op / cp - 1.0)
+    intraday = 0.0
+    for t, x in new.items():
+        op = raw_open[t].loc[dm] if t in raw_open.columns else float("nan")
+        cp = raw_close[t].loc[dm] if t in raw_close.columns else float("nan")
+        if pd.isna(op) or op <= 0:
+            op = cp
+        p1 = float(rec.get(t, cp))
+        if pd.notna(op) and op > 0 and pd.notna(p1):
+            intraday += x * (p1 / op - 1.0)
+    move = (1.0 + overnight) * (1.0 + intraday) - 1.0
+    shadow = float(res.equity.loc[dm] / res.equity.loc[dprev] - 1.0)
+    old_move = float(df.loc[idx, "day_move"])
+    old_shadow = float(df.loc[idx, "shadow_move"]) if pd.notna(df.loc[idx, "shadow_move"]) else float("nan")
+    df.loc[idx, "day_move"] = move
+    df.loc[idx, "equity"] = capital * (1.0 + move)
+    df.loc[idx, "gross"] = float(sum(new.values()))
+    df.loc[idx, "targets"] = json.dumps({k: round(v, 6) for k, v in new.items()})
+    df.loc[idx, "data_complete"] = True
+    df.loc[idx, "reconciled"] = True
+    df.loc[idx, "shadow_move"] = shadow
+    df.loc[idx, "shadow_gross"] = float(sum(new.values()))
+    df.to_csv(DAILY, index=False)
+    print(
+        f"reconciled {dm.date()}: live {old_move:+.2%} -> {move:+.2%}, "
+        f"shadow {old_shadow:+.2%} -> {shadow:+.2%}, "
+        f"diff {(move - shadow) * 1e4:+.1f} bps"
+    )
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--market", default="TECH")
@@ -168,12 +240,23 @@ def main():
     ap.add_argument("--capital", type=float, default=10000.0)
     ap.add_argument("--replay", type=int, default=0)
     ap.add_argument("--refresh", action="store_true")
+    ap.add_argument(
+        "--reconcile",
+        action="store_true",
+        help="recompute the last close-valid row from final bars (keeps live prices)",
+    )
     args = ap.parse_args()
 
     panel, mkt, res, cfg = load(
         args.market, args.leverage, args.trend_ma, args.trend_scale
     )
     d = mkt.dates[-1]
+
+    if args.reconcile:
+        reconcile(
+            args.market, args.capital, args.leverage, args.trend_ma, args.trend_scale
+        )
+        return
 
     if args.replay:
         df = replay(mkt, res, cfg, args.replay, panel)
@@ -263,6 +346,43 @@ def main():
         "targets": json.dumps({k: round(v, 6) for k, v in w.items()}),
         "prices": json.dumps({k: round(v, 4) for k, v in px.items()}),
     }
+    held = set(old) | set(w)
+    missing_close = [
+        t
+        for t in held
+        if t not in raw_close.columns or pd.isna(raw_close[t].loc[dm])
+    ]
+    rebalanced = set(w) != set(old) or abs(sum(w.values()) - sum(old.values())) > (
+        0.05 * max(1.0, sum(old.values()))
+    )
+    missing_open = [
+        t
+        for t in held
+        if rebalanced
+        and (
+            t not in raw_open.columns
+            or pd.isna(raw_open[t].loc[dm])
+            or raw_open[t].loc[dm] <= 0
+        )
+    ]
+    data_complete = not missing_close and not missing_open
+    close_valid = bool(close_valid and data_complete)
+    shadow_move = (
+        float(res.equity.loc[dm] / res.equity.loc[dprev] - 1.0)
+        if dm in res.equity.index and dprev in res.equity.index
+        else float("nan")
+    )
+    daily["close_valid"] = close_valid
+    daily["data_complete"] = data_complete
+    daily["reconciled"] = False
+    daily["shadow_move"] = shadow_move
+    daily["shadow_gross"] = float(sum(w.values()))
+    if not data_complete:
+        print(
+            "WARNING: incomplete bar; row flagged close_valid=False "
+            f"(missing closes {missing_close}, missing opens {missing_open})"
+        )
+
     if DAILY.exists():
         old = pd.read_csv(DAILY)
         pd.concat([old, pd.DataFrame([daily])], ignore_index=True).to_csv(

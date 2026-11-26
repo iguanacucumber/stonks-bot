@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import sys
+from dataclasses import replace
 from pathlib import Path
 
 import numpy as np
@@ -50,6 +51,64 @@ def main():
     again = backtest.run(mkt)
     assert np.allclose(res.equity.values, again.equity.values), "not deterministic"
 
+    # French CTO: annual netting can never tax more than the per-trade US model
+    us_tax = backtest.run(
+        strategy.Market(panel, mem, replace(cfg, tax_rate=0.30, state_tax_rate=0.0))
+    )
+    fr_tax = backtest.run(
+        strategy.Market(
+            panel, mem, replace(cfg, tax_country="fr", tax_rate=0.30)
+        )
+    )
+    assert fr_tax.tax_paid <= us_tax.tax_paid + 1e-9, "French annual tax > US per-trade"
+    # a full run from the first date crosses a year end, so the 2020 tax is paid
+    fr_long = backtest.run(
+        strategy.Market(
+            panel,
+            mem,
+            replace(
+                cfg,
+                start=str(dates[0].date()),
+                tax_country="fr",
+                tax_rate=0.30,
+            ),
+        )
+    )
+    assert fr_long.tax_paid > 0, "expected French annual settlement to pay tax"
+
+    # Bourse Direct-style fixed ticket fee: one EUR per order, 10k account
+    fee_res = backtest.run(
+        strategy.Market(
+            panel,
+            mem,
+            replace(
+                cfg,
+                cost_bps=0.0,
+                broker_grid=((1e9, 1.0),),
+                initial_capital=10000.0,
+            ),
+        )
+    )
+    assert abs(
+        fee_res.fees_paid - len(fee_res.trades) * 1.0 / 10000.0
+    ) < 1e-12, "fixed ticket fee not charged once per trade"
+
+    # French FTT: 0.30% on buys only, for the listed French shares
+    ftt_res = backtest.run(
+        strategy.Market(
+            panel,
+            mem,
+            replace(
+                cfg,
+                cost_bps=0.0,
+                ftt_tickers=frozenset(panel.ticker.unique()),
+            ),
+        )
+    )
+    buys = ftt_res.trades[ftt_res.trades.side == "BUY"]
+    expected_ftt = float((buys["notional"] * 0.003).sum())
+    assert abs(ftt_res.ftt_paid - expected_ftt) < 1e-9, "FTT should be 30 bps on buys"
+
     # no look-ahead: truncating future prices must not change earlier equity
     cut = dates[330]
     panel2 = panel[panel["date"] <= cut]
@@ -61,6 +120,31 @@ def main():
     a = res.equity.loc[:cut].iloc[:-1]
     b = res2.equity.loc[:cut].iloc[:-1]
     assert np.allclose(a.values, b.values), "look-ahead detected: truncated run differs"
+
+    # a missing open must be marked at the prior close, never at today's close:
+    # change only the close on the masked day and the open equity must not move
+    cut_open = dates[330]
+    p1 = panel.copy()
+    p1["open"] = p1["adjclose"]  # the synthetic panel has no open column
+    ocfg = strategy.Config(
+        start=str(dates[250].date()),
+        end=str(cut_open.date()),
+        top_n=5,
+        rebalance_days=5,
+        exec_price="open",
+    )
+    base = backtest.run(strategy.Market(p1, mem, ocfg))
+    held = base.weights.loc[cut_open].drop("CASH").idxmax()
+    mask = (p1.ticker == held) & (p1.date == cut_open)
+    p1.loc[mask, "open"] = np.nan
+    p2 = p1.copy()
+    p2.loc[mask, "adjclose"] *= 1.5
+    o1 = backtest.run(strategy.Market(p1, mem, ocfg))
+    o2 = backtest.run(strategy.Market(p2, mem, ocfg))
+    assert o1.weights.loc[cut_open, held] > 0.01, "test name not held on the cut"
+    assert abs(
+        o1.eq_open.loc[cut_open] - o2.eq_open.loc[cut_open]
+    ) < 1e-9, "missing open leaked today's close into open equity"
 
     # a missing bar (US holiday vs a local calendar) must carry the last price, not
     # the entry price: entry 50 -> last 100 would otherwise invent a -50% day

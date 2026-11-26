@@ -108,6 +108,26 @@ class Config:
         "XLY",
     )
     sector_top: int = 3
+    # --- French tax / retail frictions -------------------------------------
+    # "us" = federal+state per realized gain; "fr" = PFU 30% on the annual net
+    # capital gain, losses carried 10 years.
+    tax_country: str = "us"
+    # French FTT: 0.2% (2015-16), 0.3% (2017 - Mar 2025), 0.4% (Apr 2025+).
+    # Only buys of the listed French shares pay it.
+    ftt_tickers: frozenset[str] = frozenset()
+    broker_bps: float = 0.0  # commission per side, bps of notional
+    broker_min_eur: float = 0.0  # minimum ticket fee per order
+    initial_capital: float = 1.0  # account size in EUR, for fixed fees
+    fx_bps: float = 0.0  # FX conversion per side, non-EUR names
+    eur_tickers: frozenset[str] = frozenset()
+    # Broker tariff grids: (max ticket in EUR, fixed fee in EUR). Above the last
+    # bracket the broker's bps rate applies. Keep initial_capital in EUR, because
+    # the fixed fee is converted to equity units with it.
+    broker_grid: tuple[tuple[float, float], ...] = ()
+    us_grid: tuple[tuple[float, float], ...] = ()
+    us_tickers: frozenset[str] = frozenset()
+    us_bps: float = 0.0
+    custody_bps: float = 0.0  # annual custody fee on foreign securities
 
 
 class Market:
