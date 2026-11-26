@@ -368,6 +368,24 @@ def collect_gate(
             sub = sub.sort_values(["date", "verified"]).drop_duplicates(
                 "date", keep="last"
             )
+            # A verified audit row is only a valid forward date if it is a real
+            # NYSE session on/before the completed session. This blocks a
+            # fabricated weekend/holiday/future row from incrementing the gate.
+            session_day = session.date()
+            invalid_dates: list[str] = []
+            for value in sub["date"]:
+                if pd.isna(value):
+                    invalid_dates.append("NaT")
+                    continue
+                day = value.date()
+                if day > session_day or not calendar.is_session(day):
+                    invalid_dates.append(str(day))
+            if invalid_dates:
+                bg.issues.append(
+                    "audit contains non-session/future verified date(s): "
+                    f"{sorted(set(invalid_dates))}"
+                )
+                sub = sub[~sub["date"].dt.date.astype(str).isin(set(invalid_dates))]
             bg.verified = int(sub["verified"].sum())
             bg.rejected = int((~sub["verified"]).sum())
             if bg.verified:
@@ -406,13 +424,41 @@ def collect_gate(
                 if len(preview):
                     bg.equity = float(preview["equity"].iloc[-1])
                     bg.equity_source = "preview (not close-valid)"
-            if bg.verified and len(close):
-                missing = set(
-                    sub.loc[sub["verified"], "date"].dt.date.astype(str)
-                ) - set(close["quote_date"].dt.date.astype(str))
+            # paper_daily.equity is a single-day mark, not compounded wealth.
+            # paper_report stores compounded live_equity in the audit; prefer it
+            # for the gate's equity/drawdown display.
+            if "live_equity" in sub.columns:
+                audit_eq = sub.copy()
+                audit_eq["_eq"] = pd.to_numeric(
+                    audit_eq["live_equity"], errors="coerce"
+                )
+                audit_eq = (
+                    audit_eq.dropna(subset=["_eq"])
+                    .sort_values("date")
+                    .drop_duplicates("date", keep="last")
+                )
+                if len(audit_eq):
+                    vals = audit_eq["_eq"].astype(float).reset_index(drop=True)
+                    bg.equity = float(vals.iloc[-1])
+                    bg.equity_source = "audit live_equity (compounded)"
+                    bg.drawdown = (
+                        float((vals / vals.cummax() - 1.0).min())
+                        if len(vals) > 1
+                        else 0.0
+                    )
+            if bg.verified:
+                close_dates = (
+                    set(close["quote_date"].dt.date.astype(str))
+                    if len(close)
+                    else set()
+                )
+                missing = (
+                    set(sub.loc[sub["verified"], "date"].dt.date.astype(str))
+                    - close_dates
+                )
                 if missing:
                     bg.issues.append(
-                        f"audit verified date(s) missing from close-valid paper rows: "
+                        "audit verified date(s) missing from close-valid paper rows: "
                         f"{sorted(missing)}"
                     )
         except FileNotFoundError:

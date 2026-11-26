@@ -574,6 +574,12 @@ def main():
         "monthly",
         "TECH",
     )["verified"].iloc[0]
+    # A missing exposure/fills merge must be unverified, not a KeyError.
+    assert not audit_frame([row], [], "monthly", "TECH")["verified"].iloc[0]
+
+    # A same-name reweight is still a rebalance and needs its opens.
+    assert not paper_cli.is_rebalanced({"A": 0.5}, {"A": 0.5})
+    assert paper_cli.is_rebalanced({"A": 0.6, "B": 0.4}, {"A": 0.5, "B": 0.5})
 
     # calendar cadence: 1 month unchanged, 2 months keeps six dates
     dts3 = pd.bdate_range("2020-01-01", periods=260)

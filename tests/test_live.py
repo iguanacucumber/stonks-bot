@@ -110,6 +110,20 @@ def extra_tests() -> None:
     from bot import backtest, strategy
     from bot.live.engine import resolve_session
 
+    # Half-day close uses 13:30 ET; a holiday fails closed instead of regressing
+    # to an older session.
+    assert resolve_session("2026-11-27T18:30:00+00:00", None) == pd.Timestamp(
+        "2026-11-27"
+    )
+    assert resolve_session("2026-11-27T18:29:00+00:00", None) == pd.Timestamp(
+        "2026-11-25"
+    )
+    # The live engine keeps the holiday date so build_snapshot fails closed;
+    # forward_gate separately reports the last completed 11-25 session.
+    assert resolve_session("2026-11-26T17:24:00+00:00", None) == pd.Timestamp(
+        "2026-11-26"
+    )
+
     panel, mem, dates = synthetic()
     s1, s2 = "2021-11-30", "2021-12-01"
 
@@ -270,7 +284,9 @@ def extra_tests() -> None:
         blocked = LiveEngine(cfg).run(
             now="2021-12-02T02:00:00+00:00", as_of=s2, panel=panel, membership=mem
         )
-        assert blocked.blocked and "max_turnover" in (blocked.blocked_reason or ""), blocked.blocked_reason
+        assert blocked.blocked and "max_turnover" in (blocked.blocked_reason or ""), (
+            blocked.blocked_reason
+        )
         state = store.load()
         assert state.risk_off and state.pending_cut is not None
         assert state.pending_cut["reason"] in ("risk_off", "trend")

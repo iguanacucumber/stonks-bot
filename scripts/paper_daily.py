@@ -167,6 +167,21 @@ def current_weights(res, date) -> dict[str, float]:
     return {t: float(x) for t, x in w.items() if x > 1e-9}
 
 
+def is_rebalanced(
+    old: dict[str, float], new: dict[str, float], tol: float = 1e-6
+) -> bool:
+    """True when any name changes weight, even if the set and gross are unchanged.
+
+    Comparing only the ticker set or total gross misses a same-name reweight
+    (the common month-end case), which would let a row with a missing open be
+    marked data-complete.
+    """
+    return any(
+        abs(float(old.get(t, 0.0)) - float(new.get(t, 0.0))) > tol
+        for t in set(old) | set(new)
+    )
+
+
 def replay(mkt, res, cfg, n: int, panel, path: Path = REPLAY):
     """Daily P&L split at the open: prior book overnight, post-fill book intraday."""
     dates = list(res.equity.index)
@@ -320,9 +335,7 @@ def reconcile(
         if pd.notna(op) and op > 0 and pd.notna(p1):
             intraday += x * (p1 / op - 1.0)
     move = (1.0 + overnight) * (1.0 + intraday) - 1.0
-    rebalanced = set(new) != set(old) or abs(sum(new.values()) - sum(old.values())) > (
-        0.05 * max(1.0, sum(old.values()))
-    )
+    rebalanced = is_rebalanced(old, new)
     if (
         rebalanced
         and res.eq_open is not None
@@ -508,9 +521,7 @@ def main():
         prev = {t: float(raw_close[t].loc[dprev]) for t in w if t in raw_close.columns}
     else:
         move = (1.0 + overnight) * (1.0 + intraday) - 1.0
-    rebalanced = set(w) != set(old) or abs(sum(w.values()) - sum(old.values())) > (
-        0.05 * max(1.0, sum(old.values()))
-    )
+    rebalanced = is_rebalanced(old, w)
     if (
         not dirty
         and rebalanced
