@@ -31,6 +31,7 @@ from bot.live.brokers.ibkr import (  # noqa: E402
     IBKRPaperConfig,
     IBKRReadOnlySnapshot,
     IBKRReadOnlyError,
+    IBKRConfigError,
     IBKRRequestError,
     IBKRTransientError,
     IBKRUnavailable,
@@ -864,6 +865,74 @@ def test_engine_end_to_end_submit_fill_reconcile() -> None:
         assert rep.ok, rep.issues
 
 
+def test_fill_without_broker_price_fails_closed() -> None:
+    fake = FakeTransport()
+    broker = _broker(fake)
+    order = OrderIntent(
+        "no-price", "SMH", "BUY", 1.0, 10.0, "test", "2026-01-02"
+    )
+    plan = _plan(order)
+    # The first submit records OID1; the status says filled but carries no price.
+    fake.status_scripts["OID1"] = [
+        {
+            "status": "Filled",
+            "filledQuantity": 1.0,
+            "remainingQuantity": 0.0,
+            "avgPrice": 0.0,
+            "lastFillPrice": 0.0,
+        }
+    ]
+    try:
+        broker.execute(plan, {}, "2026-01-02T14:30:00+00:00", Portfolio(cash=1000.0))
+        raise AssertionError("a fill without a broker price must not be recorded")
+    except IBKRRequestError as exc:
+        assert "no avg/last price" in str(exc)
+
+
+def test_snapshot_account_mismatch_fails_closed() -> None:
+    fake = FakeTransport()
+    broker = _broker(fake)
+    snap = IBKRReadOnlySnapshot(
+        account_id="DU9999999",
+        fetched_at="2026-01-02T14:30:00+00:00",
+        summary={},
+        positions=[],
+        cash=1000.0,
+        open_orders=[],
+        executions=[],
+    )
+    try:
+        broker.reconcile_strict(
+            Portfolio(cash=1000.0),
+            snapshot=snap,
+            now="2026-01-02T14:30:01+00:00",
+        )
+        raise AssertionError("cross-account snapshot must be refused")
+    except IBKRConfigError as exc:
+        assert "does not match" in str(exc)
+
+
+def test_filled_order_can_be_adopted_from_execution() -> None:
+    fake = FakeTransport()
+    broker = _broker(fake)
+    order = OrderIntent("adopt", "SMH", "BUY", 1.0, 10.0, "test", "2026-01-02")
+    coid = broker.client_order_id(order)
+    fake.executions_rows = [
+        {
+            "cOID": coid,
+            "order_id": "OID-EXEC",
+            "ticker": "SMH",
+            "filledQuantity": 1.0,
+            "avgPrice": 10.0,
+        }
+    ]
+    rec = broker._find_by_coid(coid)
+    assert rec is not None
+    assert rec["broker_order_id"] == "OID-EXEC"
+    assert rec["status"] == "Filled"
+    assert rec["filled_qty"] == 1.0
+
+
 def main() -> None:
     checks = [
         test_config_is_paper_only_and_env_only,
@@ -886,6 +955,9 @@ def main() -> None:
         test_fake_http_retry_malformed_timeout,
         test_fake_http_strict_mismatch_and_unknown_execution,
         test_engine_end_to_end_submit_fill_reconcile,
+        test_fill_without_broker_price_fails_closed,
+        test_snapshot_account_mismatch_fails_closed,
+        test_filled_order_can_be_adopted_from_execution,
     ]
     for fn in checks:
         fn()

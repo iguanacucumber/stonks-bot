@@ -455,6 +455,10 @@ def _corporate(args: argparse.Namespace) -> int:
     if state is None:
         print("ERROR: no state file; run a paper session first")
         return EXIT_ERROR
+    # State is the source of truth. If a crash happened between the atomic state
+    # write and the corporate-action CSV append, repair the CSV before deciding
+    # whether this event is a duplicate.
+    store.sync_corporate_actions(state)
     event_id = args.event_id or f"{args.kind}-{args.ticker.upper()}-{args.session}"
     if any(e.get("event_id") == event_id for e in state.corporate_actions):
         print(f"ERROR: corporate action {event_id} already applied")

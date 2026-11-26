@@ -709,6 +709,43 @@ class IBKRPaperBroker:
                 avg_price=_number(row, "avgPrice", "averagePrice", default=0.0),
                 commission=_number(row, "commission", "commissionAmount", default=0.0),
             )
+        # An order can fill before the timeout/duplicate response is observed, so
+        # it may disappear from open_orders. Adopt a matching execution when the
+        # broker exposes the client order id there; never post a second order.
+        try:
+            executions = self._retry(self.transport.executions)
+        except IBKRError:
+            executions = []
+        for row in executions:
+            value = row.get("cOID") or row.get("coid") or row.get("clientOrderId")
+            if value != coid:
+                continue
+            broker_id = (
+                row.get("order_id")
+                or row.get("orderId")
+                or row.get("execution_id")
+                or row.get("executionId")
+            )
+            if broker_id is None:
+                continue
+            return self._record(
+                coid=coid,
+                broker_order_id=str(broker_id),
+                ticker=str(
+                    row.get("ticker") or row.get("symbol") or row.get("contractDesc") or ""
+                ),
+                status="Filled",
+                filled_qty=_number(
+                    row,
+                    "filledQuantity",
+                    "quantity",
+                    "shares",
+                    "size",
+                    default=0.0,
+                ),
+                avg_price=_number(row, "avgPrice", "averagePrice", "price", default=0.0),
+                commission=_number(row, "commission", "commissionAmount", default=0.0),
+            )
         return None
 
     def submit(
@@ -779,7 +816,9 @@ class IBKRPaperBroker:
                 avg * cum_qty - float(rec["avg_price"]) * rec["filled_qty"]
             ) / delta
         else:
-            price = float(order.ref_price)
+            raise IBKRRequestError(
+                f"{order.order_id}: broker reports a fill but no avg/last price"
+            )
         commission_total = _number(
             status,
             "commission",
@@ -990,6 +1029,11 @@ class IBKRPaperBroker:
         seconds also fails closed.
         """
         snap = snapshot or self.read_snapshot()
+        if snap.account_id != self.config.account_id:
+            raise IBKRConfigError(
+                f"snapshot account {snap.account_id!r} does not match configured "
+                f"paper account {self.config.account_id!r}"
+            )
         report = BrokerReconcile(
             broker_cash=float(snap.cash),
             broker_positions=_position_map(snap.positions),
