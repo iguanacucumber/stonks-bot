@@ -7,3 +7,7 @@ results/*.log
 
 !results/paper_daily.csv
 !results/paper_ledger.csv
+
+# worktree symlinks
+/.venv
+/cache
