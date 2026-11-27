@@ -64,7 +64,7 @@ all-in, and 0.60x at 2x costs. The always-overnight comparator loses 88% on SPY
 before tax at a 10 bps per side (20 bps round trip) daily cost. Verdict: **reject**. No short-horizon satellite; the
 monthly book remains the only production strategy. A market maker with sub-bp
 spreads might find a gross overnight edge, but that is not a French retail CTO.
-Actual intraday data (Yahoo 1h 2y and 5m 60d) was tested in v8: best SPY gap fade 1.04x vs QQQ 1.26x, 0.92x at 2x costs. No short satellite. See `results/short_horizon_conclusion.md`.
+Actual intraday data (Yahoo 1h 2y and 5m 60d) was tested in v8: best SPY gap fade 1.04x vs QQQ 1.26x, 0.92x at 2x costs. v11 isolated earnings 8-K item 2.02 events: the daily PEAD drift is statistically real (+0.73% per five sessions, placebo p=0.002, DSR 0.950) but the long-only book is under-invested and makes only **2.73x after tax vs QQQ 5.94x** (2.45x at 2x costs). Intraday earnings continuation/fade also failed: fixed-slot 1.149x vs QQQ 1.170x. No short satellite. See `results/pead.md` and `results/short_horizon_conclusion.md`.
 
 ## US estate tax and the PEA
 
@@ -376,15 +376,17 @@ remains **WAIT US 0/5, TECH 1/5, tax 0/5**; next real session **2026-11-27**,
 ETA 5/5 **2026-12-02/03** if no session is missed. No forward evidence.
 
 Short horizon: every tested family is rejected, including actual intraday
-(1h 2y, 5m 60d), pairs/lead-lag, 8-K event drift, seasonality and breakout.
-Best 1h SPY gap fade **1.04x** vs QQQ **1.26x**; best intraday pair **1.053x**
-vs QQQ **1.247x** (0.912x at 2x costs); sector OOS **1.29x** vs QQQ **2.80x**.
-No satellite. See `results/short_horizon_conclusion.md`,
-`results/v9_summary.md` and `results/review_short.md`.
+(1h 2y, 5m 60d), pairs/lead-lag, 8-K event drift, seasonality, breakout and
+v11 earnings PEAD. PEAD has real event alpha (+0.73% per 5 sessions, placebo
+p=0.002, DSR 0.950) but only **2.73x after tax vs QQQ 5.94x** (2.45x at 2x);
+intraday earnings failed at 1.149x vs QQQ 1.170x. No satellite. See
+`results/pead.md`, `results/earn_intraday.md`,
+`results/short_horizon_conclusion.md`.
 
-The v10 audits corrected stale README numbers and fixed two gate/paper bugs
-(non-session dates, half-day sessions); see `results/review_release.md` and
-`results/review_live.md`.
+The v10 audits corrected stale README numbers and fixed gate/paper bugs; the
+v11 forward proof adds an append-only lockbox and watchdog. Gate remains WAIT;
+see `results/review_release.md`, `results/review_live.md` and
+`results/forward_proof.md`.
 
 [RELEASE.md](RELEASE.md) is the release acceptance sheet: headline, profiles,
 paper-only boundaries, research verdicts, what is not done, quick start, file map

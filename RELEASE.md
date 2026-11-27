@@ -76,6 +76,11 @@ gate report; WAIT is the honest state, BLOCKED would be a release failure.
   sample is only ~60 days and is execution-quality, not evidence; daily gap-fade and
   cross-sectional reversal are below QQQ after tax. No satellite. The report is
   `results/short3.md`.
+- **Earnings events: reject (v11).** 8-K item 2.02 PEAD has real event alpha
+  (+0.73% per five sessions, placebo p=0.002, DSR 0.950) but only 2.73x after tax
+  vs QQQ 5.94x (2.45x at 2x costs). Intraday earnings continuation/fade made 1.149x
+  vs QQQ 1.170x. Both fail the QQQ/BIL hurdle; no satellite. `results/pead.md`,
+  `results/earn_intraday.md`.
 - **PIT Nasdaq-100: paper robustness, not a replacement.** EUR ledger 50.29x vs 53.42x
   static; retains ~95% of the static TECH terminal. US all-PIT remains the default.
   `results/pit_tech.md`.

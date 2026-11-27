@@ -46,7 +46,7 @@ Les ordres partent à l'ouverture suivante. La stratégie française paie 5 bps 
 
 ## Et le court terme ?
 
-Testé et rejeté. Le rebalancement hebdomadaire/quotidien du même livre, le reversal 1/5 jours, le momentum 20 jours et l'effet overnight close-to-open ne survivent pas aux coûts et au PFU. En walk-forward 2019-2026, le meilleur signal close-to-close fait **2,64x après impôt contre 5,49x pour QQQ** ; à coûts doublés il tombe à 1,13x, sous BIL (1,20x). L'overnight fait 1,01x en hypothèse optimiste, 0,82x tous frais, 0,60x à coûts doublés. Le comparator always-overnight perd 88 % sur SPY avant impôt avec 10 bps par côté (20 bps aller-retour). Le short III (intraday 1h/5m, gap fade, reversal cross-section) confirme : **reject**, meilleur 1h SPY gap-fade 1,04x après impôt contre QQQ 1,26x sur 2 ans, et 0,92x à coûts doublés. Il n'y a pas de satellite court terme à allouer : le livre mensuel reste la seule stratégie de production. Voir `results/short_horizon_conclusion.md` (synthèse de tous les essais).
+Testé et rejeté. Le rebalancement hebdomadaire/quotidien du même livre, le reversal 1/5 jours, le momentum 20 jours et l'effet overnight close-to-open ne survivent pas aux coûts et au PFU. En walk-forward 2019-2026, le meilleur signal close-to-close fait **2,64x après impôt contre 5,49x pour QQQ** ; à coûts doublés il tombe à 1,13x, sous BIL (1,20x). L'overnight fait 1,01x en hypothèse optimiste, 0,82x tous frais, 0,60x à coûts doublés. Le comparator always-overnight perd 88 % sur SPY avant impôt avec 10 bps par côté (20 bps aller-retour). Le short III (intraday 1h/5m, gap fade, reversal cross-section) confirme : **reject**, meilleur 1h SPY gap-fade 1,04x après impôt contre QQQ 1,26x sur 2 ans, et 0,92x à coûts doublés. Le v11 isole les 8-K 2.02 : le drift PEAD est statistiquement réel (+0,73 % par 5 séances, placebo p=0,002, DSR 0,950) mais le livre long-only est sous-investi et ne fait que **2,73x après impôt contre QQQ 5,94x** (2,45x à 2x coûts). L'intraday earnings échoue aussi (1,149x vs QQQ 1,170x). Il n'y a pas de satellite court terme à allouer : le livre mensuel reste la seule stratégie de production. Voir `results/short_horizon_conclusion.md` (synthèse de tous les essais).
 
 ## Le broker
 
@@ -172,9 +172,9 @@ Les détails techniques sont dans le [README anglais](README.en.md), les [résul
 
 Backtest EUR ledger : **66,69x US / 53,42x TECH / 49,27x CORE**. Le gate forward reste **WAIT US 0/5, TECH 1/5, tax 0/5** ; prochaine séance réelle **2026-11-27**, ETA 5/5 **2026-12-02/03** si aucune séance n'est manquée. Aucune preuve forward.
 
-Court terme : toutes les familles testées sont rejetées, y compris l'intraday réel (1h 2 ans, 5m 60 jours), les paires/lead-lag, le drift 8-K, la saisonnalité et le breakout. Meilleur 1h SPY gap-fade **1,04x** vs QQQ **1,26x** ; meilleure paire intraday **1,053x** vs QQQ **1,247x** (0,912x à 2x coûts) ; secteur OOS **1,29x** vs QQQ **2,80x**. Pas de satellite. Voir `results/short_horizon_conclusion.md`, `results/v9_summary.md` et `results/review_short.md`.
+Court terme : toutes les familles testées sont rejetées, y compris l'intraday réel (1h 2 ans, 5m 60 jours), les paires/lead-lag, le drift 8-K, la saisonnalité, le breakout et le PEAD earnings v11. Le PEAD a un alpha événementiel réel (+0,73 % par 5 séances, placebo p=0,002, DSR 0,950) mais seulement **2,73x après impôt vs QQQ 5,94x** (2,45x à 2x) ; l'intraday earnings échoue à 1,149x vs QQQ 1,170x. Pas de satellite. Voir `results/pead.md`, `results/earn_intraday.md` et `results/short_horizon_conclusion.md`.
 
-Les audits v10 ont corrigé des chiffres README obsolètes et deux bugs de gate/paper (dates non-session, demi-journées) ; voir `results/review_release.md` et `results/review_live.md`.
+Les audits v10 ont corrigé des chiffres README obsolètes et des bugs de gate/paper ; le forward proof v11 ajoute un lockbox append-only et un watchdog. Le gate reste WAIT ; voir `results/review_release.md`, `results/review_live.md` et `results/forward_proof.md`.
 
 La fiche [RELEASE.md](RELEASE.md) rassemble les chiffres, les verdicts, ce qui n'est pas fait et la checklist. Pour vérifier une copie locale avant tag :
 
