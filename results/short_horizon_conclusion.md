@@ -33,6 +33,17 @@ after-tax hurdles (BIL, QQQ) at 2x costs. That is the result, not a missing test
 | v9 | calendar/seasonality | daily 2019-2026 | 1.01x; below BIL at 2x | reject |
 | v9 | volatility breakout | daily 2019-2026 | 0.91x; 2/8 positive folds | reject |
 | v11 | earnings 8-K 2.02 intraday continuation/fade | 2.02 timestamps + 1h 2y, 5m 60d | fixed-slot best 1.149x vs QQQ 1.170x; full-capital gap fade 1.190x but 2026 -0.7%, p=0.035 | reject |
+| v11 | 8-K 2.02 PEAD (positive gap, 5d) | SEC 8-K cache + daily bars | 2.73x after tax vs QQQ 5.94x; 2.45x at 2x; placebo p=0.002, DSR 0.950 | reject |
+
+v11 isolated earnings releases (8-K item 2.02) and used SEC acceptance
+timestamps, not filing dates. The daily PEAD primary does show event-specific
+drift: 1,756 positive-gap events, +0.73% net mean per five sessions, placebo
+p=0.002, and a higher Sharpe than QQQ (1.16 vs 0.87) with a smaller
+drawdown. It still fails the pre-registered QQQ terminal hurdle after tax
+(2.73x vs 5.94x; 2.45x vs 5.94x at 2x costs), and no registered secondary
+clears it. The event edge is real in this current-filer sample but too
+small and too under-invested to beat buy-and-hold QQQ; survivorship in the
+86-ticker cache is a further reason not to rescue it. Verdict: reject.
 
 ## Why the result is credible
 
@@ -45,9 +56,14 @@ after-tax hurdles (BIL, QQQ) at 2x costs. That is the result, not a missing test
   both a 20%-slot risk budget and an upper-bound full-capital sizing; the only
   full-capital lead fails the year-fold rule. The 5m book has only 15 events
   in 60 days and is execution quality only.
+- The daily PEAD study uses SEC acceptance times, completed pre-entry bars,
+  24h companion-filing de-duplication, 5/10 bps per side and 50 registered
+  trials. Survivorship in the current-filer cache is stated, not hidden.
 - Every variant and failed fold is in the trial registries:
   `results/alpha_trials.csv`, `results/short2_trials.csv`,
-  `results/short3.md`, `results/earn_intraday_trials.csv`.
+  `results/short3.md`, `results/earn_intraday_trials.csv`,
+  `results/pead_trials.csv` (50 daily PEAD trials, protocol in
+  `docs/pead_protocol.md`).
 
 ## What would be needed to revisit
 
@@ -57,6 +73,8 @@ after-tax hurdles (BIL, QQQ) at 2x costs. That is the result, not a missing test
   overnight gap that carries most of the earnings reaction.
 - A market-making/execution edge with sub-bp spreads and queue position.
 - A funding/borrow model for neutral pairs.
+- A point-in-time earnings-event sample with delisted/acquired names; the
+  current 86-ticker daily PEAD cache is survivor-biased.
 - Real forward paper evidence at 5/5 before any allocation.
 
 Until then: **no short-horizon satellite**. The monthly US book remains the only
