@@ -16,8 +16,9 @@ the optional IBKR adapter is a DU paper/read-only path.
 > **v12: simulated real money only.** `scripts/prod_sim.py` replays the monthly
 > book against a simulated broker (cash, fees, slippage, partial fills,
 > persistence). There is no real broker adapter, no credentials and no live
-> order path. See `docs/prod_sim_contract.md` and
-> `deploy/prodsim/RUNBOOK.md`.
+> order path. See `docs/prod_sim_contract.md`, `deploy/prodsim/RUNBOOK.md`
+> and `results/prod_sim.md`. Run the in-process demo with
+> `uv run python scripts/prodsim_demo.py --port 8099`.
 
 ## What it does
 

@@ -274,7 +274,8 @@ class Simulation:
                 },
             )
             self._persist_status(force=True)
-            self._stop_api()
+            # Keep the API alive after a kill so operators can read the final
+            # status/account and investigate. ``stop()`` owns API shutdown.
             return {
                 "ok": True,
                 "state": "KILLED",

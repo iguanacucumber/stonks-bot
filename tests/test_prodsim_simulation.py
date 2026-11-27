@@ -21,7 +21,9 @@ from bot.prodsim.strategy import MonthlyBookStrategy  # noqa: E402
 T0 = datetime(2026, 1, 2, 14, 30, tzinfo=timezone.utc)
 
 
-def _tick(i: int, last: float = 100.0, symbol: str = "AAA", volume: float = 1e6) -> Tick:
+def _tick(
+    i: int, last: float = 100.0, symbol: str = "AAA", volume: float = 1e6
+) -> Tick:
     return Tick(
         ts=T0 + timedelta(seconds=i),
         symbol=symbol,
@@ -80,9 +82,7 @@ def test_pause_blocks_ticks_and_orders() -> None:
     else:
         raise AssertionError("paused simulation accepted a tick")
     try:
-        sim.submit(
-            OrderRequest(client_order_id="p1", symbol="AAA", side="BUY", qty=1)
-        )
+        sim.submit(OrderRequest(client_order_id="p1", symbol="AAA", side="BUY", qty=1))
     except SimulationError:
         pass
     else:
@@ -142,13 +142,30 @@ def test_cancel_unknown_and_kill() -> None:
     assert sim.order(order.order_id).status == "CANCELED"
     assert not ex.open_orders()
     try:
-        sim.submit(
-            OrderRequest(client_order_id="k2", symbol="AAA", side="BUY", qty=1)
-        )
+        sim.submit(OrderRequest(client_order_id="k2", symbol="AAA", side="BUY", qty=1))
     except SimulationError:
         pass
     else:
         raise AssertionError("killed simulation accepted an order")
+
+
+def test_kill_keeps_api_alive_until_stop() -> None:
+    class _API:
+        def __init__(self) -> None:
+            self.shutdown_called = False
+
+        def shutdown(self) -> None:
+            self.shutdown_called = True
+
+    sim, _, _ = _sim()
+    sim.start()
+    sim.on_tick(_tick(0))
+    api = _API()
+    sim._api = api  # injected stand-in for the HTTP server
+    sim.kill("drill", "tester")
+    assert api.shutdown_called is False
+    sim.stop()
+    assert api.shutdown_called is True
 
 
 def test_health_outage_and_stale() -> None:
