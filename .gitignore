@@ -16,6 +16,7 @@ results/*.log
 !results/intraday_events.csv
 !results/earn_intraday_trials.csv
 !results/covered_calls.csv
+!results/pead_trials.csv
 
 # worktree symlinks
 /.venv
