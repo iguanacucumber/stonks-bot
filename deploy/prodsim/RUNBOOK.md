@@ -35,6 +35,17 @@ sudo systemctl daemon-reload
 sudo systemctl enable --now stonks-prodsim.service
 ```
 
+### Strategy universe note
+
+The CLI auto-previews the monthly target at the replay start (or the latest
+completed session for `live-paper`) and feeds those symbols. The real
+`SimulatedExchange` has a closed universe, so a later month-end target that
+introduces a name outside `--symbols` is rejected as `unknown symbol` rather
+than silently traded. For multi-month replays either pass a wider `--symbols`
+list or restart the run with a refreshed preview. This is the documented
+integration point with the existing selector; the target weights themselves
+come from the shipped `bot.live.signal`/`backtest.target_book` path.
+
 The cache must already be refreshed by the existing data job. `live-paper`
 polls the cache and fails closed (`ERROR`, `READY=false`) if the newest
 completed session is older than `--max-stale-days` (default 3). It never
