@@ -4,6 +4,16 @@
 GitHub release; this branch only prepares the acceptance evidence and documentation.
 This is **not** a claim of a proven forward edge: the gate is still WAIT.
 
+## v12 production simulation boundary
+
+`scripts/prod_sim.py` adds a long-lived **simulation** of the real-money service:
+replay/live-paper clock, deterministic cached-bar ticks, the monthly book at
+session close -> next tick/open, simulated exchange/ledger/OMS, durable store,
+HTTP API and systemd deployment. It is simulated money only: no real broker
+adapter, no credentials, no live order path. The API binds to localhost by
+default. Scenarios and the 10k-tick/1k-order load check run in-process with no
+network. See `docs/prod_sim_contract.md` and `deploy/prodsim/RUNBOOK.md`.
+
 **Data snapshot:** 2026-11-25, v10 review base `dd2890e`. No real orders, no broker
 keys, no network calls in the release check.
 
