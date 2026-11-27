@@ -12,6 +12,13 @@ the optional IBKR adapter is a DU paper/read-only path.
 > 70.9x/57.0x for the older terminal-FX headline. See `docs/accounting.md`. The default
 > for a new investor is US monthly; TECH remains the forward-validation book.
 
+> [!IMPORTANT]
+> **v12: simulated real money only.** `scripts/prod_sim.py` replays the monthly
+> book against a simulated broker (cash, fees, slippage, partial fills,
+> persistence). There is no real broker adapter, no credentials and no live
+> order path. See `docs/prod_sim_contract.md` and
+> `deploy/prodsim/RUNBOOK.md`.
+
 ## What it does
 
 **Default: dual-momentum rotation, 2.5x gross, daily trend cut.** Hold SMH while its

@@ -1,0 +1,52 @@
+# stonks-bot v12 production simulation
+#
+# Systemd unit for the simulated real-money service. There is no real broker
+# adapter and no credentials in this unit. The HTTP API binds to localhost.
+#
+# Install per deploy/prodsim/RUNBOOK.md. Keep the environment file root-owned
+# and mode 0600: it holds the API token.
+
+[Unit]
+Description=stonks-bot v12 production simulation (simulated money only)
+Documentation=file:/opt/stonks-bot/deploy/prodsim/RUNBOOK.md
+After=network-online.target
+Wants=network-online.target
+StartLimitIntervalSec=600
+StartLimitBurst=5
+
+[Service]
+Type=simple
+WorkingDirectory=/opt/stonks-bot
+User=stonks
+Group=stonks
+UMask=0077
+EnvironmentFile=/etc/stonks-prodsim/env
+Environment=PYTHONUNBUFFERED=1
+ExecStart=/usr/bin/env uv run python scripts/prod_sim.py run \
+    --mode live-paper \
+    --speed 1 \
+    --state-dir /var/lib/stonks-prodsim \
+    --api-host 127.0.0.1 \
+    --api-port 8080 \
+    --poll-seconds 30 \
+    --max-stale-days 3
+Restart=on-failure
+RestartSec=60
+TimeoutStopSec=30
+KillSignal=SIGTERM
+# NoNewPrivileges and a read-only code tree; only state is writable.
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectSystem=strict
+ProtectHome=yes
+ReadWritePaths=/var/lib/stonks-prodsim
+CapabilityBoundingSet=
+AmbientCapabilities=
+LockPersonality=yes
+MemoryDenyWriteExecute=yes
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+RestrictNamespaces=yes
+SystemCallArchitectures=native
+
+[Install]
+WantedBy=multi-user.target

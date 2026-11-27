@@ -17,6 +17,12 @@
 > [!WARNING]
 > C'est un backtest, pas une promesse de rendement. Le livre US a perdu 56,9 % au pire creux (grand livre EUR) et 33,7 % en 2022. À 2,5x, la baisse peut aller plus vite que ta capacité à couper. N'investis pas de l'argent dont tu as besoin.
 
+> [!IMPORTANT]
+> **v12 : simulation d'argent réel uniquement.** Le service `scripts/prod_sim.py`
+> rejoue le livre mensuel dans un broker simulé (cash, frais, slippage, fills
+> partiels, persistance). Il n'y a ni broker réel, ni credentials, ni ordre live.
+> Voir `docs/prod_sim_contract.md` et `deploy/prodsim/RUNBOOK.md`.
+
 > [!NOTE]
 > Le grand livre EUR compte l'impôt français sur les gains en EUR chaque année, avec une base de coût en EUR au taux de change du jour. Il donne 66,69x pour le livre US et 53,4x pour le livre TECH, contre 70,9x/57,0x pour l'ancienne méthode qui ne convertit qu'à la fin. Voir `docs/accounting.md`. Le livre TECH reste le suivi forward ; le livre US devient le défaut pour un nouvel investisseur.
 
