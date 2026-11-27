@@ -38,10 +38,12 @@ def iso(ts: datetime) -> str:
 
 def jsonable(value: Any) -> Any:
     """Recursively convert dataclasses/datetimes to JSON-safe primitives."""
-    if hasattr(value, "to_dict"):
-        return value.to_dict()
+    # Dataclasses first: their ``to_dict`` methods delegate back here, so
+    # checking ``to_dict`` first would recurse forever.
     if hasattr(value, "__dataclass_fields__"):
         return {k: jsonable(v) for k, v in asdict(value).items()}
+    if hasattr(value, "to_dict"):
+        return value.to_dict()
     if isinstance(value, datetime):
         return iso(value)
     if isinstance(value, Mapping):
