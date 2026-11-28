@@ -258,6 +258,13 @@ def test_gate_and_separate_books() -> None:
         assert fd.gate_text("monthly", "US", results) == "WAIT 1/5 verified"
         assert fd.gate_text("monthly", "TECH", results, target=1) == "PASS 1/1 verified"
         assert fd.gate_text("tax", "TECH", results) == "WAIT 0/5 verified"
+        # An acknowledged gap voids older dates for the status display too.
+        (results / "forward_resets.json").write_text(
+            json.dumps({"monthly/TECH": {"date": "2026-11-25"}})
+        )
+        assert fd.gate_text("monthly", "TECH", results) == "WAIT 0/5 verified"
+        assert fd.gate_text("monthly", "US", results) == "WAIT 1/5 verified"
+        (results / "forward_resets.json").unlink()
         # A future/non-session audit row cannot make the status table claim PASS.
         assert (
             fd.gate_text("monthly", "US", results, session="2026-11-24")

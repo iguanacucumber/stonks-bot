@@ -262,10 +262,22 @@ def gate_text(
         verified = df["verified"].astype(str).str.lower().isin(["true", "1"])
         dates = pd.to_datetime(df.loc[verified, "date"], errors="coerce").dt.date
         cutoff = pd.Timestamp(session).date() if session else None
+        floor = None
+        reset_path = results_dir / "forward_resets.json"
+        if reset_path.exists():
+            try:
+                resets = json.loads(reset_path.read_text())
+                entry = resets.get(f"{book}/{market}")
+                if entry:
+                    floor = pd.Timestamp(entry["date"]).date()
+            except Exception:
+                floor = None
         valid = {
             d
             for d in dates.dropna()
-            if calendar.is_session(d) and (cutoff is None or d <= cutoff)
+            if calendar.is_session(d)
+            and (cutoff is None or d <= cutoff)
+            and (floor is None or d >= floor)
         }
         n = len(valid)
         return f"{'PASS' if n >= target else 'WAIT'} {n}/{target} verified"
