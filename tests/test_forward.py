@@ -221,6 +221,26 @@ def test_stale_holiday_and_health_fail() -> None:
         assert not failed.ok
         assert "legacy logger down" in (failed.books[0].error or "")
 
+    # A late catch-up must write a clean ATTENTION status without leaving a
+    # temp file behind (the production job hit a broken temp path).
+    with TemporaryDirectory() as tmp:
+        root = Path(tmp)
+        results = root / "results"
+        late = fd.run_forward(
+            _base(root),
+            [("monthly", "US")],
+            paper=True,
+            now="2026-11-28T06:23:00+00:00",
+            results_dir=results,
+            cache_check=lambda s: (True, "test"),
+            write_status=True,
+        )
+        assert not late.ok
+        assert "completed half-day" in late.errors[0]
+        status = (results / "forward_status.md").read_text()
+        assert "ATTENTION" in status and "2026-11-27" in status
+        assert not list(results.glob("*.tmp")), "status temp file left behind"
+
 
 def test_gate_and_separate_books() -> None:
     with TemporaryDirectory() as tmp:

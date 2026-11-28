@@ -141,3 +141,15 @@ uv run python scripts/forward_gate.py --check --write-status --lock --require-st
 uv run python tests/test_forward_proof.py
 uv run python tests/test_forward_gate.py
 ```
+
+## 2026-11-27 missed session (recorded 2026-11-28)
+
+The weekday automation caught up at 06:23 UTC on 2026-11-28 instead of running
+before the 2026-11-27 13:00 ET half-day close + 30-minute data gate.
+`forward_daily.py` correctly refused to write a close-valid row after that
+window and wrote `results/forward_status.md` with `ATTENTION`. No 2026-11-27
+audit or paper row exists and none was fabricated. The cache was advanced to
+11-27 on 11-28, so only the honest *missed session* blocker remains for
+monthly/TECH; US and tax still expect 11-30. The gate stays `BLOCKED` until
+the operator decides whether to void the partial TECH track and restart a
+fresh 5-session window, or keep the historical break on record.

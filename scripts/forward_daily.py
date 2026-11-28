@@ -27,6 +27,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import subprocess
 import sys
 from dataclasses import dataclass, field
@@ -383,9 +384,9 @@ def _write_status(report: ForwardReport, path: Path) -> None:
         "",
     ]
     path.parent.mkdir(parents=True, exist_ok=True)
-    tmp = path.with_name(f"{path.name}.{Path(str(path)).stem}.tmp")
+    tmp = path.with_name(f".{path.name}.{os.getpid()}.tmp")
     tmp.write_text("\n".join(lines))
-    tmp.replace(path)
+    os.replace(tmp, path)
 
 
 def run_forward(
