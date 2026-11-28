@@ -19,16 +19,20 @@ Run:
   uv run python scripts/forward_gate.py --check --write-status
   uv run python scripts/forward_gate.py --check --write-status --lock
   uv run python scripts/forward_gate.py --check --since 2026-11-25
+  uv run python scripts/forward_gate.py --ack-missed 2026-11-27 --book monthly/TECH
 
 ``--lock`` appends newly verified dates to ``results/forward_proof.jsonl`` only
 when the gate is WAIT/PASS. The lockbox is evidence, not a counter; the gate
-still counts only distinct verified dates in ``paper_audit.csv``.
+still counts only distinct verified dates in ``paper_audit.csv``. ``--ack-missed``
+voids a partial window after a documented gap and restarts from the next session;
+it never adds, edits or backfills an audit/paper row.
 """
 
 from __future__ import annotations
 
 import argparse
 import json
+import os
 import sys
 from dataclasses import dataclass, field
 from datetime import date, datetime, timezone
@@ -53,6 +57,7 @@ EXIT_ERROR = 1
 EXIT_WAIT = 0  # automation-safe: a healthy short track is not an error
 EXIT_BLOCKED = 2
 TARGET_DEFAULT = 5
+RESET_NAME = "forward_resets.json"
 
 
 @dataclass
@@ -307,6 +312,31 @@ def _audit_conflicts(df: pd.DataFrame) -> list[str]:
     return issues
 
 
+def _reset_path(results_dir: Path) -> Path:
+    return Path(results_dir) / RESET_NAME
+
+
+def _read_resets(results_dir: Path) -> dict:
+    try:
+        value = json.loads(_reset_path(results_dir).read_text())
+        return value if isinstance(value, dict) else {}
+    except Exception:
+        return {}
+
+
+def _write_reset(results_dir: Path, book: str, market: str, day: str, now: str) -> None:
+    path = _reset_path(results_dir)
+    resets = _read_resets(results_dir)
+    resets[f"{book}/{market}"] = {
+        "date": day,
+        "reason": "missed required session",
+        "acknowledged_at": now,
+    }
+    tmp = path.with_name(f".{path.name}.{os.getpid()}.tmp")
+    tmp.write_text(json.dumps(resets, indent=2, sort_keys=True) + "\n")
+    os.replace(tmp, path)
+
+
 def collect_gate(
     *,
     results_dir: Path | None = None,
@@ -316,9 +346,11 @@ def collect_gate(
     since: str | None = None,
     bench_last: str | date | None = None,
     state_dir: Path | None = None,
+    resets: dict | None = None,
 ) -> GateReport:
     results_dir = Path(results_dir or (ROOT / "results"))
     books = books or list(DEFAULT_BOOKS)
+    active_resets = _read_resets(results_dir) if resets is None else resets
     now_dt = _now_dt(now)
     et = now_dt.astimezone(ET)
     today = et.date()
@@ -379,6 +411,13 @@ def collect_gate(
                 f"stale data: SPY last={bg.data_last} session={session.date()}"
             )
         sub = audit[(audit["book"] == book) & (audit["market"] == market)].copy()
+        reset = active_resets.get(f"{book}/{market}")
+        if reset:
+            reset_day = pd.Timestamp(reset["date"]).normalize()
+            sub = sub[sub["date"] >= reset_day]
+            bg.warnings.append(
+                f"forward window restarted at {reset_day.date()} after a missed session"
+            )
         for issue in audit_issues:
             if f"{book}/{market}" in issue:
                 bg.issues.append(issue)
@@ -515,7 +554,8 @@ def collect_gate(
         last_verified = (
             date.fromisoformat(bg.last_verified) if bg.last_verified else None
         )
-        bg.next_required = str(_next_required(last_verified, today, after_close))
+        basis = date.fromisoformat(reset["date"]) if reset else last_verified
+        bg.next_required = str(_next_required(basis, today, after_close))
         next_session = date.fromisoformat(bg.next_required)
         # The remaining sessions are the next real NYSE sessions needed to reach
         # the target. Do not skip a normal session (for example 11-30) just
@@ -745,6 +785,12 @@ def main(argv: list[str] | None = None) -> int:
         action="store_true",
         help="refuse a new lock record when the live state file is absent",
     )
+    ap.add_argument(
+        "--ack-missed",
+        default=None,
+        metavar="YYYY-MM-DD",
+        help="acknowledge a missed session and restart that book's 5-date window",
+    )
     ap.add_argument("--status-file", default=None)
     ap.add_argument("--results-dir", default=None)
     ap.add_argument("--state-dir", default=None)
@@ -769,20 +815,47 @@ def main(argv: list[str] | None = None) -> int:
                 ap.error("--book must be book/market")
             b, m = item.split("/", 1)
             books.append((b, m))
+    results_dir = Path(args.results_dir) if args.results_dir else ROOT / "results"
     try:
         report = collect_gate(
-            results_dir=Path(args.results_dir) if args.results_dir else None,
+            results_dir=results_dir,
             books=books,
             target=args.target,
             now=args.now,
             since=args.since,
             bench_last=args.bench_last,
             state_dir=Path(args.state_dir) if args.state_dir else None,
+            resets={} if args.ack_missed else None,
         )
+        if args.ack_missed:
+            stamp = date.fromisoformat(args.ack_missed)
+            if not calendar.is_session(stamp):
+                print(f"ACK FAILED: {stamp} is not an NYSE session")
+                return EXIT_BLOCKED
+            affected = [
+                b
+                for b in report.books
+                if any(
+                    f"missed required session {args.ack_missed}" in x for x in b.issues
+                )
+            ]
+            if not affected:
+                print(f"ACK FAILED: no book missed {args.ack_missed}")
+                return EXIT_BLOCKED
+            for b in affected:
+                _write_reset(results_dir, b.book, b.market, args.ack_missed, report.now)
+            report = collect_gate(
+                results_dir=results_dir,
+                books=books,
+                target=args.target,
+                now=args.now,
+                since=args.since,
+                bench_last=args.bench_last,
+                state_dir=Path(args.state_dir) if args.state_dir else None,
+            )
     except Exception as exc:  # noqa: BLE001
         print(f"ERROR: {exc}")
         return EXIT_ERROR
-    results_dir = Path(args.results_dir) if args.results_dir else ROOT / "results"
     lockbox_path = (
         Path(args.lockbox) if args.lockbox else results_dir / proof.DEFAULT_NAME
     )

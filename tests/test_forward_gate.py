@@ -6,6 +6,8 @@ benchmark freshness is injected.
 
 from __future__ import annotations
 
+import contextlib
+import io
 import json
 import sys
 from datetime import date, datetime
@@ -543,6 +545,49 @@ def test_cli_json_and_exit_codes():
         assert len(lockbox.read_text().splitlines()) == 1
 
 
+def test_ack_missed_restarts_window():
+    with TemporaryDirectory() as tmp:
+        root = Path(tmp)
+        audit, paper = _five_verified()
+        _write(root, _audit(audit[-1:]), _paper(paper[-1:])[1])
+        blocked = fg.collect_gate(
+            results_dir=root,
+            books=[("monthly", "TECH")],
+            now="2026-11-28T12:00:00+00:00",
+            bench_last="2026-11-27",
+            resets={},
+        )
+        assert blocked.status == fg.BLOCKED
+        assert any(
+            "missed required session 2026-11-27" in x for x in blocked.books[0].issues
+        )
+
+        buf = io.StringIO()
+        with contextlib.redirect_stdout(buf):
+            code = fg.main(
+                [
+                    "--results-dir",
+                    str(root),
+                    "--book",
+                    "monthly/TECH",
+                    "--now",
+                    "2026-11-28T12:00:00+00:00",
+                    "--bench-last",
+                    "2026-11-27",
+                    "--ack-missed",
+                    "2026-11-27",
+                    "--json",
+                ]
+            )
+        assert code == fg.EXIT_WAIT, buf.getvalue()
+        payload = json.loads(buf.getvalue())
+        book = payload["books"][0]
+        assert book["verified"] == 0
+        assert book["next_required"] == "2026-11-30"
+        assert any("restarted" in w for w in book["warnings"])
+        assert "monthly/TECH" in json.loads((root / fg.RESET_NAME).read_text())
+
+
 if __name__ == "__main__":
     test_pass_and_wait_counts()
     test_nonverified_and_duplicate_dates()
@@ -557,4 +602,5 @@ if __name__ == "__main__":
     test_snapshot_and_jsonl_log_are_machine_readable()
     test_status_write_is_report_only_and_idempotent()
     test_cli_json_and_exit_codes()
+    test_ack_missed_restarts_window()
     print("test_forward_gate: all checks passed")

@@ -153,3 +153,10 @@ audit or paper row exists and none was fabricated. The cache was advanced to
 monthly/TECH; US and tax still expect 11-30. The gate stays `BLOCKED` until
 the operator decides whether to void the partial TECH track and restart a
 fresh 5-session window, or keep the historical break on record.
+
+**Resolution (2026-11-28):** the operator used
+`forward_gate.py --ack-missed 2026-11-27 --book monthly/TECH`. That writes
+`results/forward_resets.json`, voids the partial TECH 1/5 window and restarts
+all three books at **0/5** from 2026-11-30. No audit or paper row was added,
+changed or backfilled; the 2026-11-25 lockbox record remains as history.
+ETA is **2026-12-04** for all books if no further session is missed.
